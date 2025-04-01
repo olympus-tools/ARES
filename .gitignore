@@ -1,0 +1,23 @@
+# vs code
+.vscode/*
+launch.json
+
+# folders
+**/log/*
+
+
+# python
+**/venv_win/*
+**/venv_lin/*
+**/env/
+*.env/
+**/__pycache__/*
+**/ARES.egg-info/*
+*.pyc
+*.pyo
+**/build/*
+
+# measurement
+*.mf4
+*.mat
+*.parquet

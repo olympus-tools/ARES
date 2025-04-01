@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema#",
+  "title": "Project Configuration",
+  "description": "Schema for validating project configuration JSON.",
+  "type": "object",
+  "patternProperties": {
+    "^[a-zA-Z0-9_]+$": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["in", "inout", "out"]
+        }
+      },
+    "allOf": [
+      {
+        "if": { "properties": { "type": { "const": "in" } } },
+        "then": { "$ref": "#/definitions/in" }
+      },
+      {
+        "if": { "properties": { "type": { "const": "inout" } } },
+        "then": { "$ref": "#/definitions/inout" }
+      },
+      {
+        "if": { "properties": { "type": { "const": "out" } } },
+        "then": { "$ref": "#/definitions/out" }
+      }
+    ]
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+
+    "in": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "in" }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    },
+    "inout": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "inout" }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    },
+    "out": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "out" }
+      },
+      "required": ["type"],
+      "additionalProperties": true
+    }
+
+  }
+}

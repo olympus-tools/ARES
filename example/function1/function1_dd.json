@@ -1,0 +1,57 @@
+{
+    "fun1_scalar1_float": {
+        "type": "in",
+        "datatype": "float",
+        "size": [1],
+        "input_alternatives": [
+            0,
+            "test_alternative"
+        ]
+    },
+    "fun1_pointer1_float": {
+        "type": "inout",
+        "datatype": "float",
+        "size": [1],
+        "input_alternatives": [
+            0,
+            "test_alternative"
+        ]
+    },
+    "fun1_array1_float": {
+        "type": "inout",
+        "datatype": "float",
+        "size": [4],
+        "input_alternatives": [
+            "test_alternative",
+            [0,0,0,0]
+        ]
+    },
+    "fun1_array2_float": {
+        "type": "inout",
+        "datatype": "float",
+        "size": [1],
+        "input_alternatives": [
+            "test_alternative",
+            [0]
+        ]
+    },
+    "global_simulation_variable1": {
+        "type": "out",
+        "datatype": "int",
+        "size": [1]
+    },
+    "filter_input": {
+        "type": "in",
+        "datatype": "float",
+        "size": [1],
+        "input_alternatives": [
+            3
+        ]
+    },
+    "filter_output": {
+        "type": "out",
+        "datatype": "float",
+        "size": [1]
+    }
+    
+}
