@@ -1,0 +1,24 @@
+# folders
+**/log/*
+
+# python
+**/venv_win/*
+**/venv_lin/*
+**/env/
+*.env/
+**/__pycache__/*
+**/ares.egg-info/*
+**/ARES.egg-info/*
+*.pyc
+*.pyo
+**/build/*
+
+# datasource
+*.mf4
+*.mat
+*.parquet
+
+# exceptions
+!examples/*.mf4
+!examples/*.mat
+!examples/*.parquet

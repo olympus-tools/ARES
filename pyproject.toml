@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ares"
+description = "automated rapid embedded simulation"
+readme = "README.md"
+authors = [
+  {name = "Andrä Carotta", email = "not_yet@ares.com"},
+]
+license = {file = "LICENSE"}
+requires-python = ">=3.12"
+keywords = ["embedded", "simulation", "automotive", "sil", "ares"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Environment :: Console",
+    "Development Status :: 1 - Planning",
+]
+
+dependencies = [
+    "argparse==1.4.0",
+    "numpy==2.2.4",
+    "asammdf==8.2.9",
+    "jsonschema==4.24.0",
+    "pydantic==2.11.7",
+    "typeguard==4.4.4"
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.2.0",
+    "coverage>=7.5.1",
+]
+dev = [
+    "black==25.1.0",
+    "ruff==0.4.1",
+    "ares[test]",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/AndraeCarotta/ares"
+"Bug Tracker" = "https://github.com/AndraeCarotta/ares/issues"
+"Repository" = "https://github.com/AndraeCarotta/ares"
+
+[tool.setuptools]
+packages = ["ares"]
+
+[tool.setuptools_scm]
+write_to = "ares/version.py"
