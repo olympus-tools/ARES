@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema#",
+  "title": "Project Configuration",
+  "description": "Schema for validating project configuration JSON.",
+  "type": "object",
+  "patternProperties": {
+    "^[a-zA-Z0-9_]+$": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "enum": ["data", "parameter", "sim_unit", "custom"]
+        }
+      },
+    "allOf": [
+      {
+        "if": { "properties": { "type": { "const": "data" } } },
+        "then": { "$ref": "#/definitions/data" }
+      },
+      {
+        "if": { "properties": { "type": { "const": "parameter" } } },
+        "then": { "$ref": "#/definitions/parameter" }
+      },
+      {
+        "if": { "properties": { "type": { "const": "sim_unit" } } },
+        "then": { "$ref": "#/definitions/simUnit" }
+      },
+      {
+        "if": { "properties": { "type": { "const": "custom" } } },
+        "then": { "$ref": "#/definitions/custom" }
+      }
+    ]
+    }
+  },
+  "additionalProperties": false,
+
+  "definitions": {
+
+    "data": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "data" },
+        "mode": { "enum": ["read", "write"] },
+        "path": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "source": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 0
+        },
+        "input": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "cycle_time": { "type": "integer", "minimum": 1 },
+        "output": { "type": "string" },
+        "additionalProperties": false
+      },
+      "required": ["type", "mode"],
+      "if": {
+        "properties": { "mode": { "const": "read" } }
+      },
+      "then": {
+        "required": ["path"]
+      },
+      "else": {
+        "required": ["input", "output"]
+      }
+    },
+
+    "parameter": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "parameter" },
+        "path": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      },
+      "required": ["type", "path"],
+      "additionalProperties": false
+    },
+
+    "simUnit": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "sim_unit" },
+        "path": { "type": "string" },
+        "parameter": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "cycle_time": { "type": "integer", "minimum": 1 },
+        "input": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "data_dictionary": { "type": "string" },
+        "init": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "cancel_condition": { "type": "string" }
+      },
+      "required": ["type", "path", "cycle_time", "input", "data_dictionary"],
+      "additionalProperties": true
+    },
+
+    "custom": {
+      "type": "object",
+      "properties": {
+        "type": { "const": "custom" },
+        "path": { "type": "string" },
+        "input": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "output": { "type": "string" },
+        "parameter": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "init": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "cancel_condition": { "type": "string" },
+        "plot_config": { "type": "object" },
+        "spec": { "type": "string" }
+      },
+      "required": ["type", "path"],
+      "additionalProperties": true
+    }
+  }
+}
