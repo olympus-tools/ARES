@@ -12,50 +12,92 @@
           "enum": ["in", "inout", "out"]
         }
       },
-    "allOf": [
-      {
-        "if": { "properties": { "type": { "const": "in" } } },
-        "then": { "$ref": "#/definitions/in" }
-      },
-      {
-        "if": { "properties": { "type": { "const": "inout" } } },
-        "then": { "$ref": "#/definitions/inout" }
-      },
-      {
-        "if": { "properties": { "type": { "const": "out" } } },
-        "then": { "$ref": "#/definitions/out" }
-      }
-    ]
+      "allOf": [
+        {
+          "if": { "properties": { "type": { "const": "in" } } },
+          "then": { "$ref": "#/definitions/in" }
+        },
+        {
+          "if": { "properties": { "type": { "const": "inout" } } },
+          "then": { "$ref": "#/definitions/inout" }
+        },
+        {
+          "if": { "properties": { "type": { "const": "out" } } },
+          "then": { "$ref": "#/definitions/out" }
+        }
+      ]
     }
   },
   "additionalProperties": false,
 
   "definitions": {
+    "datatype": {
+      "enum": [
+        "float", "double", "bool",
+        "short", "int", "long", "longlong",
+        "uint", "ulong", "ulonglong"
+      ]
+    },
+
+    "size": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          { "type": "number" },
+          { "type": "string" }
+        ]
+      },
+      "minItems": 1
+    },
+
+    "input_alternatives": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          { "type": "string" },
+          { "type": "number" },
+          {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 1
+          }
+        ]
+      }
+    },
 
     "in": {
       "type": "object",
       "properties": {
-        "type": { "const": "in" }
+        "type": { "const": "in" },
+        "datatype": { "$ref": "#/definitions/datatype" },
+        "size": { "$ref": "#/definitions/size" },
+        "input_alternatives": { "$ref": "#/definitions/input_alternatives" }
       },
-      "required": ["type"],
-      "additionalProperties": true
+      "required": ["type", "datatype", "size"],
+      "additionalProperties": false
     },
+
     "inout": {
       "type": "object",
       "properties": {
-        "type": { "const": "inout" }
+        "type": { "const": "inout" },
+        "datatype": { "$ref": "#/definitions/datatype" },
+        "size": { "$ref": "#/definitions/size" },
+        "input_alternatives": { "$ref": "#/definitions/input_alternatives" }
       },
-      "required": ["type"],
-      "additionalProperties": true
+      "required": ["type", "datatype", "size"],
+      "additionalProperties": false
     },
+
     "out": {
       "type": "object",
       "properties": {
-        "type": { "const": "out" }
+        "type": { "const": "out" },
+        "datatype": { "$ref": "#/definitions/datatype" },
+        "size": { "$ref": "#/definitions/size" }
       },
-      "required": ["type"],
-      "additionalProperties": true
+      "required": ["type", "datatype", "size"],
+      "additionalProperties": false
     }
-
   }
 }

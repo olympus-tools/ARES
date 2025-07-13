@@ -23,5 +23,5 @@ void ares_simunit()
                             fun1_pointer1_float,
                             fun1_array1_float);
 
-    float filter_output = lowpass_first_order(filter_input, 0.5f);
+    filter_output = lowpass_first_order(filter_input, 0.5f);
 }

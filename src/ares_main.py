@@ -42,8 +42,9 @@ from utilities.class_simunit import SimUnit
 # TESTBEFEHL: python3 ./src/ARES_main.py --workflow /mnt/c/Users/andra/OneDrive/Dokumente/10_Git/10_ac_projects/projects/ares/sim_data/workflow.json
 
 
-workflow_path = "/home/andrae/Dokumente/10_git/20_ARES/example/workflow.json"
-measurement_read_path = "/home/andrae/Dokumente/10_git/20_ARES/example/PO983_PT1104_Mue_2024-01-31 17_23_41.mf4"
+workflow_read_path = "/home/andrae/Dokumente/10_git/20_ARES/example/workflow.json"
+workflow_write_path = "/home/andrae/Dokumente/10_git/20_ARES/example/workflow_output.json"
+#measurement_read_path = "/home/andrae/Dokumente/10_git/20_ARES/example/PO983_PT1104_Mue_2024-01-31 17_23_41.mf4"
 #measurement_write_path = "/home/andrae/Dokumente/10_git/20_ARES/example/Testoutput.mf4"
 function1_lib_path = "/home/andrae/Dokumente/10_git/20_ARES/example/function1/wrapper1.so"
 function1_dd_path =  "/home/andrae/Dokumente/10_git/20_ARES/example/function1/function1_dd.json"
@@ -51,11 +52,12 @@ function1_dd_path =  "/home/andrae/Dokumente/10_git/20_ARES/example/function1/fu
 if __name__ == '__main__':
     ares_globals.logfile.write("ARES pipeline is starting.")
 
-    #Test_wf = Workflow(file_path=workflow_path)
-    #Test_meas = Measurement(file_path=measurement_read_path, sources=['CAN-Monitoring:3', 'FETK:1', 'FETK:2'])
-    #Test_meas.write_out(file_path=measurement_write_path, sources=['base'])
-    Test_simunit = SimUnit(file_path=function1_lib_path, dd_path=function1_dd_path)
+    Test_wf = Workflow(file_path = workflow_read_path)
+    Test_wf.write_out(file_path = workflow_write_path)
+    #Test_meas = Measurement(file_path = measurement_read_path, sources = ['CAN-Monitoring:3', 'FETK:1', 'FETK:2'])
+    #Test_meas.write_out(file_path = measurement_write_path, sources = ['base'])
+    Test_simunit = SimUnit(file_path = function1_lib_path, dd_path = function1_dd_path)
     tmp_measure = {"timestamps":[0,1,2,3,4,5]}
-    SimResult = Test_simunit.run_simulation(simulation_input=tmp_measure)
+    SimResult = Test_simunit.run_simulation(simulation_input = tmp_measure)
     
-    ares_globals.logfile.write("ARES successfully finished.")
+    ares_globals.logfile.write("ARES pipeline successfully finished.")

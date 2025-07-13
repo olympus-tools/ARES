@@ -13,7 +13,6 @@ float filter_last_output = 0;
  * @param[inout] fun1_array1_float A floating-point array of size 4.
  * @return int Returns 1 to indicate success.
  */
- 
 int function1(float fun1_scalar1_float,
               float fun1_pointer1_float[1],
               float fun1_array1_float[4])
@@ -22,7 +21,13 @@ int function1(float fun1_scalar1_float,
     return 1;
 }
 
-
+/**
+ * @brief A low pass filter first order as example function.
+ *
+ * @param[in] input_value Input signal, that should be filtered.
+ * @param[in] filter_alpha Filter coefficient.
+ * @return current filter value.
+ */
 float lowpass_first_order(float input_value,
                         float filter_alpha) 
 {
