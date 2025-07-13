@@ -230,18 +230,18 @@ class Workflow:
             ares_globals.logfile.write(f"Error during recursive path tracing from {element}: {e}", level="ERROR")
             return None
 
-    def _write(self, output_path: str):
+    def write_out(self, file_path: str):
         """
         Writes the current workflow dictionary to a JSON file.
 
-        :param output_path: Path where the JSON file will be saved.
+        :param file_path: Path where the JSON file will be saved.
         """
         try:
-            with open(output_path, 'w', encoding='utf-8') as file:
+            with open(file_path, 'w', encoding='utf-8') as file:
                 json.dump(self.workflow, file, indent=4, ensure_ascii=False)
-            ares_globals.logfile.write(f"Workflow successfully written to {output_path}.")
+            ares_globals.logfile.write(f"Workflow successfully written to {file_path}.")
         except Exception as e:
-            ares_globals.logfile.write(f"Error writing workflow to {output_path}: {e}", level="ERROR")
+            ares_globals.logfile.write(f"Error writing workflow to {file_path}: {e}", level="ERROR")
 
 
 

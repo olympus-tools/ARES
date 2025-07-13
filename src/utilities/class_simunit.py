@@ -59,9 +59,6 @@ class SimUnit:
         self._setup_c_interface()
         self._setup_sim_function()
 
-        if not self.sim_function:
-            ares_globals.logfile.write("Simulation function 'ares_simunit' could not be set up. Simulations are not possible.", level="ERROR")
-
     def _load_dd(self) -> dict | None:
         """
         Loads the Data Dictionary from the JSON file.
@@ -181,7 +178,7 @@ class SimUnit:
             self.sim_function = self.library.ares_simunit
             self.sim_function.argtypes = []
             self.sim_function.restype = None
-            ares_globals.logfile.write(f"ARES simulation function 'ares_simunit' successfully set up with handover variables '{self.sim_function.argtypes}' and return value '{self.sim_function.restype}'.", level="INFO")
+            ares_globals.logfile.write(f"ARES simulation function 'ares_simunit' successfully set up.", level="INFO")
         except AttributeError as e:
             self.sim_function = None
             ares_globals.logfile.write(f"ARES simulation function 'ares_simunit' not found in library: {e}", level="ERROR")
@@ -236,7 +233,7 @@ class SimUnit:
 
         Args:
             input_data (dict): The input data from an input (e.g. measurement).
-            num_steps (dict): Number of simulation steps.
+            num_steps (int): Number of simulation steps.
 
         Returns:
             dict | None: The mapped input values, ready to be written to the DLL,
