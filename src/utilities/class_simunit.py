@@ -27,7 +27,7 @@ ________________________________________________________________________
 
 """
 
-import ares_globals
+from .. import ares_globals
 import os
 import json
 from jsonschema import validate, ValidationError
@@ -178,13 +178,13 @@ class SimUnit:
             self.sim_function = self.library.ares_simunit
             self.sim_function.argtypes = []
             self.sim_function.restype = None
-            ares_globals.logfile.write(f"ARES simulation function 'ares_simunit' successfully set up.", level="INFO")
+            ares_globals.logfile.write(f"ares simulation function 'ares_simunit' successfully set up.", level="INFO")
         except AttributeError as e:
             self.sim_function = None
-            ares_globals.logfile.write(f"ARES simulation function 'ares_simunit' not found in library: {e}", level="ERROR")
+            ares_globals.logfile.write(f"ares simulation function 'ares_simunit' not found in library: {e}", level="ERROR")
         except Exception as e:
             self.sim_function = None
-            ares_globals.logfile.write(f"An unexpected error occurred while setting up ARES simulation function: {e}", level="ERROR")
+            ares_globals.logfile.write(f"An unexpected error occurred while setting up ares simulation function: {e}", level="ERROR")
 
     def run_simulation(self, simulation_input: dict) -> dict | None:
         """
@@ -200,7 +200,7 @@ class SimUnit:
             list[dict] | None: A list of dictionaries containing the output values per time step,
                                or None on error.
         """
-        ares_globals.logfile.write("Starting ARES simulation...", level="INFO")
+        ares_globals.logfile.write("Starting ares simulation...", level="INFO")
 
         try:
             sim_result = {}
@@ -220,10 +220,10 @@ class SimUnit:
                         sim_result[output_signal] = []
                     sim_result[output_signal].append(step_result[output_signal])
             
-            ares_globals.logfile.write(f"ARES simulation successfully finished.", level="INFO")
+            ares_globals.logfile.write(f"ares simulation successfully finished.", level="INFO")
             return sim_result
         except Exception as e:
-            ares_globals.logfile.write(f"Error while running ARES simulation: {e}", level="ERROR")
+            ares_globals.logfile.write(f"Error while running ares simulation: {e}", level="ERROR")
             return None
 
     def _map_sim_input(self, input_data: dict, num_steps: int) -> dict | None:

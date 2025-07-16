@@ -7,7 +7,7 @@ def parse_requirements(filename):
 requirements = parse_requirements('requirements.txt')
 
 setup(
-    name='ARES',
+    name='ares',
     version='0.1.0',
     description='Automated Rapid Embedded Simulation',
     long_description=open('README.md').read(),

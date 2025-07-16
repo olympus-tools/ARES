@@ -29,7 +29,7 @@ ________________________________________________________________________
 
 import os
 from asammdf import MDF, Signal, Source
-import ares_globals
+from .. import ares_globals
 import numpy as np
 
 class Measurement:
@@ -189,7 +189,7 @@ class Measurement:
                 ares_globals.logfile.write(f"No valid signals found to write for sources {log_sources} to {file_path}.", level="WARNING")
 
             try:
-                new_file.append(all_signals_to_write, comment=f'ARES simulation result')
+                new_file.append(all_signals_to_write, comment=f'ares simulation result')
                 new_file.save(file_path, overwrite=True)
                 ares_globals.logfile.write(f"MF4 file written successfully to {file_path} with sources {log_sources}.")
             except Exception as e:

@@ -11,6 +11,7 @@ launch.json
 **/env/
 *.env/
 **/__pycache__/*
+**/ares.egg-info/*
 **/ARES.egg-info/*
 *.pyc
 *.pyo
