@@ -37,13 +37,6 @@ from .utilities.class_simunit import SimUnit
 
 def ares_pipeline(file_path: str):
 
-    ############## TODO: tmp ##############
-    file_path = "/home/andrae/Dokumente/10_git/20_ARES/example/workflow.json"
-    #datasource_read_path = "/home/andrae/Dokumente/10_git/20_ARES/example/datasource_1.mf4"
-    #datasource_write_path = "/home/andrae/Dokumente/10_git/20_ARES/example/Testoutput.mf4"
-    function1_lib_path = "/home/andrae/Dokumente/10_git/20_ARES/example/function1/wrapper1.so"
-    function1_dd_path =  "/home/andrae/Dokumente/10_git/20_ARES/example/function1/function1_dd.json"
-
     ares_globals.logfile.write("ARES pipeline is starting...")
 
     ares_wf = Workflow(file_path = file_path)
@@ -60,19 +53,19 @@ def ares_pipeline(file_path: str):
 
         if wf_value["type"] == "data_source":
             if wf_value["mode"] == "read":
-                for data_source_file in wf_value["path"]:
-                    data_source_objects[wf_name] = DataSource(file_path = data_source_file)
+                for idx, data_source_file in wf_value["path"]:
+                    data_source_objects[wf_name][idx] = DataSource(file_path = data_source_file)
             elif wf_value["mode"] == "write":
                 for input in wf_value["input"]:
                     data_source_objects[wf_name].write_out(file_path = wf_value["path"], sources = input)
 
-        if wf_value[type] == "parameters":
+        if wf_value["type"] == "parameters":
             pass
 
-        if wf_value[type] == "sim_unit":
+        if wf_value["type"] == "sim_unit":
             pass
 
-        if wf_value[type] == "custom":
+        if wf_value["type"] == "custom":
             pass
 
     # writing out modified workflow json file at the end of the pipeline
