@@ -32,13 +32,13 @@ from asammdf import MDF, Signal, Source
 from .. import ares_globals
 import numpy as np
 
-class Measurement:
+class DataSource:
     def __init__(self, file_path: str, sources_import: list = None, step_size_ms = 10):
         """
-        Initializes the Measurement class with the file path.
+        Initializes the DataSource class with the file path.
 
-        :param file_path: The path to the measurement file (.mf4 or .parquet).
-        :param sources: Specifies which sources in the measurement file should be considered for 'base'.
+        :param file_path: The path to the data source file (.mf4 or .parquet).
+        :param sources: Specifies which sources in the data source file should be considered for 'base'.
                         Pass None (default) for 'all' sources, or a list of source names (list of str).
         :param step_size_ms: The target resampling step size in milliseconds.
         """
@@ -71,9 +71,9 @@ class Measurement:
         Loads an MF4 file, extracts filtered signals, and performs custom resampling.
         """
         try:
-            with MDF(self.file_path) as measurement:
+            with MDF(self.file_path) as datasource:
                 signals_raw = {}
-                for signal in measurement.iter_channels():
+                for signal in datasource.iter_channels():
                     source_name = signal.source.path if hasattr(signal.source, 'path') else None
                     if not source_name and hasattr(signal.source, 'path'):
                          source_name = signal.source.path

@@ -9,17 +9,17 @@
       "required": ["type"],
       "properties": {
         "type": {
-          "enum": ["measurement", "dataset", "sim_unit", "custom"]
+          "enum": ["data_source", "parameters", "sim_unit", "custom"]
         }
       },
     "allOf": [
       {
-        "if": { "properties": { "type": { "const": "measurement" } } },
-        "then": { "$ref": "#/definitions/measurement" }
+        "if": { "properties": { "type": { "const": "data_source" } } },
+        "then": { "$ref": "#/definitions/data_source" }
       },
       {
-        "if": { "properties": { "type": { "const": "dataset" } } },
-        "then": { "$ref": "#/definitions/dataset" }
+        "if": { "properties": { "type": { "const": "parameters" } } },
+        "then": { "$ref": "#/definitions/parameters" }
       },
       {
         "if": { "properties": { "type": { "const": "sim_unit" } } },
@@ -36,10 +36,10 @@
 
   "definitions": {
 
-    "measurement": {
+    "data_source": {
       "type": "object",
       "properties": {
-        "type": { "const": "measurement" },
+        "type": { "const": "data_source" },
         "mode": { "enum": ["read", "write"] },
         "path": {
           "type": "array",
@@ -66,10 +66,10 @@
       }
     },
 
-    "dataset": {
+    "parameters": {
       "type": "object",
       "properties": {
-        "type": { "const": "dataset" },
+        "type": { "const": "parameters" },
         "path": {
           "type": "array",
           "items": { "type": "string" },
@@ -85,7 +85,7 @@
       "properties": {
         "type": { "const": "sim_unit" },
         "path": { "type": "string" },
-        "dataset": {
+        "parameters": {
           "type": "array",
           "items": { "type": "string" },
           "minItems": 1
@@ -119,7 +119,7 @@
           "minItems": 1
         },
         "output": { "type": "string" },
-        "dataset": {
+        "parameters": {
           "type": "array",
           "items": { "type": "string" },
           "minItems": 1

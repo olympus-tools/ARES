@@ -232,7 +232,7 @@ class SimUnit:
         Considers alternative input names and sets missing values to 0.
 
         Args:
-            input_data (dict): The input data from an input (e.g. measurement).
+            input_data (dict): The input data from an input (e.g. data source).
             num_steps (int): Number of simulation steps.
 
         Returns:

@@ -17,7 +17,7 @@ launch.json
 *.pyo
 **/build/*
 
-# measurement
+# datasource
 *.mf4
 *.mat
 *.parquet

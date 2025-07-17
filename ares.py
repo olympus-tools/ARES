@@ -34,8 +34,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="ares.py starts a the ares pipeline")
     parser.add_argument("--workflow", type=str, help="Absolute path to the workflow *.json file.")
-    #parser.add_argument("--mode", choices=["mode1", "mode2", "mode3"], help="Sets the simulation mode.")
     args = parser.parse_args()
+
+    ############## TODO: tmp ##############
+    args.workflow = "/home/andrae/Dokumente/10_git/20_ARES/example/workflow.json"
     
     if args.workflow is not None:
         ares_pipeline(file_path=args.workflow)

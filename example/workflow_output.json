@@ -1,6 +1,6 @@
 {
-    "measurement_1": {
-        "type": "measurement",
+    "datasource_1": {
+        "type": "data_source",
         "path": [
             "C:/path_to_measurment"
         ],
@@ -20,7 +20,7 @@
         ],
         "cycle_time": 10,
         "input": [
-            "measurement_1"
+            "datasource_1"
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
@@ -62,7 +62,7 @@
         ],
         "cycle_time": 10,
         "input": [
-            "measurement_1"
+            "datasource_1"
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
@@ -78,8 +78,8 @@
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
-    "measurement_2": {
-        "type": "measurement",
+    "datasource_2": {
+        "type": "data_source",
         "input": [
             "sw_component_2",
             "sw_component_4"
@@ -108,8 +108,8 @@
         "output": "C:/output_path_of_generated_testreport",
         "spec": "C:/path_to_testspec"
     },
-    "measurement_3": {
-        "type": "measurement",
+    "datasource_3": {
+        "type": "data_source",
         "path": [
             "C:/path_to_measurment"
         ],
@@ -129,7 +129,7 @@
         ],
         "cycle_time": 10,
         "input": [
-            "measurement_3"
+            "datasource_3"
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
@@ -159,8 +159,8 @@
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
-    "measurement_4": {
-        "type": "measurement",
+    "datasource_4": {
+        "type": "data_source",
         "path": [
             "C:/path_to_measurment"
         ],
@@ -182,7 +182,7 @@
             "sw_component_9"
         ],
         "init": [
-            "measurement_4"
+            "datasource_4"
         ],
         "cancel_condition": ""
     },
@@ -210,8 +210,8 @@
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
-    "measurement_5": {
-        "type": "measurement",
+    "datasource_5": {
+        "type": "data_source",
         "path": [
             "C:/path_to_measurment"
         ],
@@ -233,7 +233,7 @@
             "sw_component_10"
         ],
         "init": [
-            "measurement_5"
+            "datasource_5"
         ],
         "cancel_condition": ""
     },
@@ -249,16 +249,16 @@
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
-    "measurement_6": {
-        "type": "measurement",
+    "datasource_6": {
+        "type": "data_source",
         "input": [
             "optimization_3"
         ],
         "mode": "write",
         "output": "C:/output_path_of_generated_mf4"
     },
-    "measurement_7": {
-        "type": "measurement",
+    "datasource_7": {
+        "type": "data_source",
         "path": [
             "C:/path_to_measurment"
         ],
@@ -282,7 +282,7 @@
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component",
         "init": [
-            "measurement_7"
+            "datasource_7"
         ],
         "cancel_condition": ""
     },
@@ -310,16 +310,16 @@
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component"
     },
-    "measurement_8": {
-        "type": "measurement",
+    "datasource_8": {
+        "type": "data_source",
         "input": [
             "sw_component_11"
         ],
         "mode": "write",
         "output": "C:/output_path_of_generated_mf4"
     },
-    "measurement_9": {
-        "type": "measurement",
+    "datasource_9": {
+        "type": "data_source",
         "path": [
             "C:/path_to_measurment"
         ],
@@ -343,7 +343,7 @@
         ],
         "data_dictionary": "C:/path_to_mapping_table_sw_component",
         "init": [
-            "measurement_9"
+            "datasource_9"
         ],
         "cancel_condition": ""
     },
