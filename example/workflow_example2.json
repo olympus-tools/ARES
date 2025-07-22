@@ -1,0 +1,26 @@
+{
+    "datasource_2": {
+        "type": "data_source",
+        "input": ["sw_component_1"],
+        "mode": "write",
+        "output": "/home/andrae/Dokumente/10_git/20_ARES/example/datasource_1.mf4"
+    },
+    "datasource_1": {
+        "type": "data_source",
+        "path": ["/home/andrae/Dokumente/10_git/20_ARES/example/datasource_1.mf4"],
+        "mode": "read"
+    },
+    "sw_component_1": {
+        "type": "sim_unit",
+        "path": "/home/andrae/Dokumente/10_git/20_ARES/example/datasource_1.mf4",
+        "dataset": ["dataset_1"],
+        "cycle_time": 10,
+        "input": ["datasource_1"],
+        "data_dictionary": "/home/andrae/Dokumente/10_git/20_ARES/example/datasource_1.mf4"
+    },
+    "dataset_1": {
+        "type": "parameters",
+        "path": ["/home/andrae/Dokumente/10_git/20_ARES/example/datasource_1.mf4"]
+    }
+}
+  

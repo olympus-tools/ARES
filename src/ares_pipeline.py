@@ -35,11 +35,11 @@ from .utilities.class_workflow import Workflow
 from .utilities.class_simunit import SimUnit
 #from utilities.class_dataset import Parameters
 
-def ares_pipeline(file_path: str):
+def ares_pipeline(wf_path: str):
 
     ares_globals.logfile.write("ARES pipeline is starting...")
 
-    ares_wf = Workflow(file_path = file_path)
+    ares_wf = Workflow(file_path = wf_path)
 
     data_source_objects = {}
     param_objects = {}
@@ -63,17 +63,18 @@ def ares_pipeline(file_path: str):
             pass
 
         if wf_value["type"] == "sim_unit":
+            #TODO: resampling of the dataset should occur here => make the _resample method public visible
             pass
 
         if wf_value["type"] == "custom":
             pass
 
     # writing out modified workflow json file at the end of the pipeline
-    directory, filename = os.path.split(file_path)
+    directory, filename = os.path.split(wf_path)
     name, extension = os.path.splitext(filename)
-    new_filename = f"{name}_out_{datetime.now().strftime("%Y%m%d%H%M%S")}{extension}"
-    file_path_out = os.path.join(directory, new_filename)
-    ares_wf.write_out(file_path = file_path_out)
+    wf_out_name = f"{name}_out_{datetime.now().strftime("%Y%m%d%H%M%S")}{extension}"
+    wf_out_path = os.path.join(directory, wf_out_name)
+    ares_wf.write_out(file_path = wf_out_path)
       
     ares_globals.logfile.write("ARES pipeline successfully finished.")
 

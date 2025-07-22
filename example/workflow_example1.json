@@ -1,0 +1,250 @@
+{
+    "datasource_1": {
+        "type": "data_source",
+        "path": ["/home/andrae/Dokumente/10_git/20_ARES/example/datasource_1.mf4"],
+        "mode": "read"
+    },
+    "dataset_1": {
+        "type": "parameters",
+        "path": ["C:/path_to_dataset"]
+    },
+    "dataset_2": {
+        "type": "parameters",
+        "path": ["C:/path_to_dataset"]
+    },
+    "sw_component_1": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_1"],
+        "cycle_time": 10,
+        "input": ["datasource_1"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "sw_component_2": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_1"],
+        "cycle_time": 20,
+        "input": ["sw_component_1"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+        },
+    "sw_component_3": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_2"],
+        "cycle_time": 10,
+        "input": ["datasource_1"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+        },
+    "sw_component_4": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_2"],
+        "cycle_time": 20,
+        "input": ["sw_component_3"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+        },
+    "sw_component_5": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_2"],
+        "cycle_time": 15,
+        "input": ["sw_component_4"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+        },
+    "datasource_2": {
+        "type": "data_source",
+        "input": ["sw_component_2", "sw_component_4"],
+        "mode": "write",
+        "output": "C:/output_path_of_generated_mf4"
+    },
+    "plotscript_1": {
+        "type": "custom",
+        "path": "C:/path_to_plotscript",
+        "input": ["sw_component_1"],
+        "output": "C:/output_path_of_generated_plot",
+        "plot_config": {"testflag_1": "testflag"}
+    },
+    "testset_1": {
+        "type": "custom",
+        "path": "C:/path_to_testscript",
+        "input": ["sw_component_3", "sw_component_2"],
+        "output": "C:/output_path_of_generated_testreport",
+        "spec": "C:/path_to_testspec"
+    },
+    "dataset_3": {
+        "type": "parameters",
+        "path": ["C:/path_to_dataset"]
+    },
+    "dataset_4": {
+        "type": "parameters",
+        "path": ["C:/path_to_dataset"]
+    },
+    "dataset_5": {
+        "type": "parameters",
+        "path": ["C:/path_to_dataset"]
+    },
+    "sw_component_6": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_3"],
+        "cycle_time": 10,
+        "input": ["datasource_3"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "sw_component_7": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["optimization_1"],
+        "cycle_time": 10,
+        "input": ["optimization_1"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "sw_component_8": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["optimization_2"],
+        "cycle_time": 10,
+        "input": ["optimization_2"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "sw_component_9": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_4"],
+        "cycle_time": 10,
+        "input": ["sw_component_8"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "sw_component_10": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["optimization_3"],
+        "cycle_time": 10,
+        "input": ["optimization_3"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "datasource_3": {
+        "type": "data_source",
+        "path": ["C:/path_to_measurment"],
+        "mode": "read"
+    },
+    "datasource_4": {
+        "type": "data_source",
+        "path": ["C:/path_to_measurment"],
+        "mode": "read"
+    },
+    "datasource_5": {
+        "type": "data_source",
+        "path": ["C:/path_to_measurment"],
+        "mode": "read"
+    },
+    "datasource_6": {
+        "type": "data_source",
+        "input": ["optimization_3"],
+        "mode": "write",
+        "output": "C:/output_path_of_generated_mf4"
+    },
+    "optimization_1": {
+        "type": "custom",
+        "path": "C:/path_to_optimization_script",
+        "dataset": ["dataset_3"],
+        "input": ["sw_component_7"],
+        "init": ["sw_component_6"],
+        "cancel_condition": ""
+    },
+    "optimization_2": {
+        "type": "custom",
+        "path": "C:/path_to_optimization_script",
+        "dataset": ["dataset_4"],
+        "input": ["sw_component_9"],
+        "init": ["datasource_4"],
+        "cancel_condition": ""
+    },
+    "optimization_3": {
+        "type": "custom",
+        "path": "C:/path_to_optimization_script",
+        "dataset": ["dataset_5"],
+        "input": ["sw_component_10"],
+        "init": ["datasource_5"],
+        "cancel_condition": ""
+    },
+    "datasource_7": {
+        "type": "data_source",
+        "path": ["C:/path_to_measurment"],
+        "mode": "read"
+    },
+    "datasource_8": {
+        "type": "data_source",
+        "input": ["sw_component_11"],
+        "mode": "write",
+        "output": "C:/output_path_of_generated_mf4"
+    },
+    "dataset_6": {
+        "type": "parameters",
+        "path": ["C:/path_to_dataset"]
+    },
+    "sw_component_11": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_6"],
+        "cycle_time": 10,
+        "input": ["sw_component_13"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component",
+        "init": ["datasource_7"],
+        "cancel_condition": ""
+    },
+    "sw_component_12": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_6"],
+        "cycle_time": 10,
+        "input": ["sw_component_11"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "sw_component_13": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_6"],
+        "cycle_time": 10,
+        "input": ["sw_component_12"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "datasource_9": {
+        "type": "data_source",
+        "path": ["C:/path_to_measurment"],
+        "mode": "read"
+    },
+    "dataset_7": {
+        "type": "parameters",
+        "path": ["C:/path_to_dataset"]
+    },
+    "sw_component_14": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_7"],
+        "cycle_time": 10,
+        "input": ["sw_component_16"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component",
+        "init": ["datasource_9"],
+        "cancel_condition": ""
+    },
+    "sw_component_15": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_7"],
+        "cycle_time": 10,
+        "input": ["sw_component_14"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    },
+    "sw_component_16": {
+        "type": "sim_unit",
+        "path": "C:/path_to_sw_component",
+        "dataset": ["dataset_7"],
+        "cycle_time": 10,
+        "input": ["sw_component_15"],
+        "data_dictionary": "C:/path_to_mapping_table_sw_component"
+    }
+
+}
+  
