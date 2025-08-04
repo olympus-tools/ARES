@@ -27,8 +27,17 @@ ________________________________________________________________________
 
 """
 
-import os
-from .utilities.class_logfile import Logfile
+import argparse
+from src.ares_pipeline import ares_pipeline
 
-logfile_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'log', 'simulation.log')
-logfile = Logfile(logfile_path)
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="ares.py starts a the ares pipeline")
+    parser.add_argument("--workflow", type=str, help="Absolute path to the workflow *.json file.")
+    args = parser.parse_args()
+
+    ############## TODO: remove the next line ##############
+    args.workflow = "/home/andrae/Dokumente/10_git/20_ARES/example/workflow_example2.json"
+    
+    if args.workflow is not None:
+        ares_pipeline(wf_path = args.workflow)

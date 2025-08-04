@@ -11,12 +11,13 @@ launch.json
 **/env/
 *.env/
 **/__pycache__/*
+**/ares.egg-info/*
 **/ARES.egg-info/*
 *.pyc
 *.pyo
 **/build/*
 
-# measurement
+# datasource
 *.mf4
 *.mat
 *.parquet

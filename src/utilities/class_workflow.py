@@ -27,7 +27,7 @@ ________________________________________________________________________
 
 """
 
-import ares_globals
+from .. import ares_globals
 import os
 import json
 from jsonschema import validate, ValidationError
@@ -35,7 +35,7 @@ from jsonschema import validate, ValidationError
 class Workflow:
     def __init__(self, file_path: str):
         """
-        Reads and evaluates a new ARES workflow.
+        Reads and evaluates a new ares workflow.
 
         :param file_path: Path to the workflow *.json file.
         """
