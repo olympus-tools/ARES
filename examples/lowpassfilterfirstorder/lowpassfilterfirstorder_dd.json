@@ -1,0 +1,36 @@
+{
+    "input_value": {
+        "type": "in",
+        "datatype": "float",
+        "size": [1],
+        "input_alternatives": [
+            1,
+            "test_alternative"
+        ]
+    },
+ 
+    "sample_time": {
+        "type": "in",
+        "datatype": "float",
+        "size": [1],
+        "input_alternatives": [
+            20,
+            "test_alternative"
+        ]
+    },
+   "cutoff_freq": {
+        "type": "in",
+        "datatype": "float",
+        "size": [1],
+        "input_alternatives": [
+            0.032,
+            "test_alternative"
+        ]
+    },
+    "filter_output": {
+        "type": "out",
+        "datatype": "float",
+        "size": [1]
+    }
+    
+}

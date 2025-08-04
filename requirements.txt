@@ -1,4 +1,0 @@
-argparse==1.4.0
-numpy==2.2.4
-asammdf==8.2.9
-jsonschema==4.24.0

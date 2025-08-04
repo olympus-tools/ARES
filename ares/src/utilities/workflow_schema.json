@@ -9,7 +9,7 @@
       "required": ["type"],
       "properties": {
         "type": {
-          "enum": ["data_source", "parameters", "sim_unit", "custom"]
+          "enum": ["data_source", "parameter", "sim_unit", "custom"]
         }
       },
     "allOf": [
@@ -18,8 +18,8 @@
         "then": { "$ref": "#/definitions/data_source" }
       },
       {
-        "if": { "properties": { "type": { "const": "parameters" } } },
-        "then": { "$ref": "#/definitions/parameters" }
+        "if": { "properties": { "type": { "const": "parameter" } } },
+        "then": { "$ref": "#/definitions/parameter" }
       },
       {
         "if": { "properties": { "type": { "const": "sim_unit" } } },
@@ -46,11 +46,17 @@
           "items": { "type": "string" },
           "minItems": 1
         },
+        "source": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 0
+        },
         "input": {
           "type": "array",
           "items": { "type": "string" },
           "minItems": 1
         },
+        "cycle_time": { "type": "integer", "minimum": 1 },
         "output": { "type": "string" },
         "additionalProperties": false
       },
@@ -66,10 +72,10 @@
       }
     },
 
-    "parameters": {
+    "parameter": {
       "type": "object",
       "properties": {
-        "type": { "const": "parameters" },
+        "type": { "const": "parameter" },
         "path": {
           "type": "array",
           "items": { "type": "string" },
@@ -85,7 +91,7 @@
       "properties": {
         "type": { "const": "sim_unit" },
         "path": { "type": "string" },
-        "parameters": {
+        "parameter": {
           "type": "array",
           "items": { "type": "string" },
           "minItems": 1
@@ -119,7 +125,7 @@
           "minItems": 1
         },
         "output": { "type": "string" },
-        "parameters": {
+        "parameter": {
           "type": "array",
           "items": { "type": "string" },
           "minItems": 1

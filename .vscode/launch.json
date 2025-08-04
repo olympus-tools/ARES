@@ -1,0 +1,17 @@
+{
+  "version": "0.1.0",
+  "configurations": [
+      {
+          "name": "Debug ARES example workflow 1",
+          "type": "debugpy",
+          "request": "launch",
+          "program": "${workspaceFolder}/ares/ares.py",
+          "console": "integratedTerminal",
+          "justMyCode": true,
+          "args": [
+              "--workflow",
+              "${workspaceFolder}/examples/workflow_example1.json",
+          ]
+      }
+  ]
+}

@@ -1,38 +1,38 @@
 # ARES
-Automated Rapid Embedded Simulation
+The Automated Rapid Embedded Simulation project is a tool to do open- and closed loop simulations of software components. The primary application area is the development of software components for embedded applications. 
 
-* [Installation](#installation)
-    * [Windows](#windows)
-    * [Linux](#linux)
-* [Bug & Feature Report](#send-us-an-issue)
-    * [Bug Report](#bug-report)
-    * [Feature Request](#feature-request)
-* [Workflows](#workflows)
-    * [General Workflow Rules](#general-workflow-rules)
-    * [Function Blocks](#function-blocks)
-    * [Example Workflows](#example-workflows)
+The ares project is licensed under the MIT License - see the [LICENSE.md](https://github.com/AndraeCarotta/ARES/blob/master/LICENSE) file for details.
 
-## Installation
+* [1. Installation](#1-installation)
+* [2. Bug & Feature Report](#2-send-us-an-issue)
+* [3. Contributing](#3-contribution-to-the-ares-project )
+* [4. Workflows](#4-workflows)
+    * [4.1. General Workflow Rules](#41-general-workflow-rules)
+    * [4.2. Function Blocks](#42-function-blocks)
+    * [4.3. Example Workflows](#43-example-workflows)
+* [5. Examples](#5-examples)
 
-Windows:
-- execute [install.bat](install.bat)
+## 1. Installation
 
-Linux:
-- execute [install.sh](install.sh)
+- Windows: execute [install.bat](install.bat)
+- Linux: execute [install.sh](install.sh)
 
-## Send us an issue
+## 2. Send us an issue
 
-Use this templates to report us your tasks:
-- [Bug_Report](https://github.com/AndraeCarotta/ARES/issues/new?template=bug_report.md)
-- [Feature_Request](https://github.com/AndraeCarotta/ARES/issues/new?template=feature_request.md)
+- [bug report template](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md)
+- [feature request template](https://github.com/AndraeCarotta/ares/issues/new?template=feature_request.md)
 
-## Workflows
+## 3. Contribution to the ares project
 
-### General Workflow Rules
+To contribute on the ares project please see the [CONTRIBUTING.md](https://github.com/AndraeCarotta/ARES/blob/master/CONTRIBUTING.md) file for details.
+
+## 4. Workflows
+
+### 4.1. General Workflow Rules
 
 TODO: Workflows have to be implemented like...
 
-### Workflow Elements
+### 4.2. Workflow Elements
 
 #### data_source
 
@@ -50,7 +50,7 @@ TODO: Simulation unit of some software. Could be a executable, fmu,...
 
 TODO: e.g. Optimization, Plotting, Testing
 
-### Example Workflows
+### 4.3. Example Workflows
 
 #### Open-Loop Simulation
 
@@ -61,16 +61,13 @@ flowchart LR
     PARAM1 --> SWU2(SW Unit 2)
     MEAS1(DataSource 1) --> SWU1
     SWU1 --> SWU2
-    SWU1 --> PL1(Plot 1)
     SWU2 --> MEAS2(DataSource 2)
-    SWU2 --> TS1(Testspecifiaction 1)
 
     PARAM2(Parameters 2) --> SWU3(SW Unit 3)
     PARAM2 --> SWU4(SW Unit 4)
     PARAM2 --> SWU5(SW Unit 5)
     MEAS1(DataSource 1) --> SWU3
     SWU3 --> SWU4
-    SWU3 --> TS1
     SWU4 --> MEAS2
     SWU4 --> SWU5
 
@@ -90,7 +87,8 @@ flowchart LR
     class SWU3 SW_Unit;
     class SWU4 SW_Unit;
     class SWU5 SW_Unit;
-    class TS1 Test;
-    class PL1 Plot;
 
 ```
+## 5. Examples
+
+TODO: how to compile and start an example

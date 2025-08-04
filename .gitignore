@@ -1,7 +1,3 @@
-# vs code
-.vscode/*
-launch.json
-
 # folders
 **/log/*
 
@@ -21,3 +17,8 @@ launch.json
 *.mf4
 *.mat
 *.parquet
+
+# exceptions
+!examples/*.mf4
+!examples/*.mat
+!examples/*.parquet
