@@ -31,10 +31,11 @@ To contribute on the ares project please see the [CONTRIBUTING.md](https://githu
 ### 4.1. General Workflow Rules
 
 TODO: Workflows have to be implemented like...
+- a workflow should never have more than one data element as sink (if you need more => write a feature)
 
 ### 4.2. Workflow Elements
 
-#### data_source
+#### data
 
 TODO: Reading and writing data sources in different file formats (currently only mf4 is implemented)
 
@@ -59,20 +60,20 @@ flowchart LR
 
     PARAM1(Parameters 1) --> SWU1(SW Unit 1)
     PARAM1 --> SWU2(SW Unit 2)
-    MEAS1(DataSource 1) --> SWU1
+    MEAS1(Data 1) --> SWU1
     SWU1 --> SWU2
-    SWU2 --> MEAS2(DataSource 2)
+    SWU2 --> MEAS2(Data 2)
 
     PARAM2(Parameters 2) --> SWU3(SW Unit 3)
     PARAM2 --> SWU4(SW Unit 4)
     PARAM2 --> SWU5(SW Unit 5)
-    MEAS1(DataSource 1) --> SWU3
+    MEAS1(Data 1) --> SWU3
     SWU3 --> SWU4
     SWU4 --> MEAS2
     SWU4 --> SWU5
 
     classDef Parameters        color:#a44300, stroke:#a44300;
-    classDef DataSource        color:#1e9bec, stroke:#1e9bec;
+    classDef Data        color:#1e9bec, stroke:#1e9bec;
     classDef SW_Unit           color:#d30000, stroke:#d30000;
     classDef Test              color:#2eb400, stroke:#2eb400;
     classDef Plot              color:#ad00d0, stroke:#ad00d0;
@@ -80,8 +81,8 @@ flowchart LR
 
     class PARAM1 Parameters;
     class PARAM2 Parameters;
-    class MEAS1 DataSource;
-    class MEAS2 DataSource;
+    class MEAS1 Data;
+    class MEAS2 Data;
     class SWU1 SW_Unit;
     class SWU2 SW_Unit;
     class SWU3 SW_Unit;

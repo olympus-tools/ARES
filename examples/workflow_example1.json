@@ -1,12 +1,12 @@
 {
     "datasource_2": {
-        "type": "data_source",
+        "type": "data",
         "input": ["sw_component_2"],
         "mode": "write",
         "output": "/home/andrae/Dokumente/10_git/20_ARES/examples/datasource_1.mf4"
     },
     "datasource_1": {
-        "type": "data_source",
+        "type": "data",
         "path": [
             "/home/andrae/Dokumente/10_git/20_ARES/examples/datasource_1.mf4",
             "/home/andrae/Dokumente/10_git/20_ARES/examples/datasource_1.mf4"

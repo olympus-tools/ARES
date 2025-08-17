@@ -300,48 +300,47 @@ class Workflow:
 
     def _eval_element_workflow(self, workflow: dict) -> dict | None:
         """
-        Assigns the original data sources to each workflow element. The function
-        iterates through the workflow and determines which `data_source` elements
-        provide the initial input for each element.
+        Assigns the workflow from a data source to each workflow element. The function
+        iterates through the workflow and determines which 'input', 'init' and 'parameter'
+        elements provide the initial input for each element.
 
         :param workflow: The workflow dictionary.
         :return: The updated workflow dictionary, which now includes an
-                `original_data_source` list for each element, or None in case of an error.
+                `element_workflow` list for each element, or None in case of an error.
         """
-        #TODO: searching for the original data sources should work recursive
-        #TODO: also the whole element_workflow should be written out (output from recursive search)
         try:
             for wf_element_name, wf_element in workflow.items():
-                original_data_source = []
                 element_workflow = []
                 if 'init' in wf_element:
                     for init in wf_element["init"]:
-                        if workflow[init]["type"] == "data_source":
-                            original_data_source.append(init)
-                        else:
-                            original_data_source.extend(
-                                workflow[init]["original_data_source"]
-                            )
+                        element_workflow.extend(workflow[init]["element_workflow"])
+                        element_workflow.append(init)
                 elif 'input' in wf_element:
                     for input in wf_element["input"]:
-                        if workflow[input]["type"] == "data_source":
-                            original_data_source.append(input)
-                        else:
-                            original_data_source.extend(
-                                workflow[input]["original_data_source"]
-                            )
+                        element_workflow.extend(workflow[input]["element_workflow"])
+                        element_workflow.append(input)
+                    
+                if 'dataset' in wf_element:
+                    for dataset in wf_element["dataset"]:
+                        element_workflow.extend(workflow[dataset]["element_workflow"])
+                        element_workflow.append(dataset)
+
                 # remove duplicates and store it to workflow
-                workflow[wf_element_name]["original_data_source"] = list(
-                    set(original_data_source)
-                )
+                workflow[wf_element_name]["element_workflow"] = []
+                unique_items = set()
+
+                for item in element_workflow:
+                    if item not in unique_items:
+                        workflow[wf_element_name]["element_workflow"].append(item)
+                        unique_items.add(item)
 
             self.logfile.write(
-                "Original data sources evaluated successfully.", level="INFO"
+                "Workflow for each element evaluated successfully.", level="INFO"
             )
             return workflow
         except Exception as e:
             self.logfile.write(
-                f"Error while evaluating original data sources: {e}", level="ERROR"
+                f"Error while evaluating element workflow: {e}", level="ERROR"
             )
             return None
 

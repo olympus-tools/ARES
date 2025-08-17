@@ -35,7 +35,7 @@ from .class_logfile import Logfile
 import numpy as np
 
 
-class DataSource:
+class Data:
     def __init__(
         self,
         file_path: str,
@@ -44,7 +44,7 @@ class DataSource:
         logfile: Logfile,
     ):
         """
-        Initializes the DataSource class by reading a data source file.
+        Initializes the Data class by reading a data source file.
         The constructor automatically loads and preprocesses the data based on the file extension.
         The processed data is stored in the `self.data` attribute.
 
@@ -126,13 +126,14 @@ class DataSource:
                 f"Error loading .mf4 file {self.file_path}: {e}", level="ERROR"
             )
 
-    def write_out(self, file_path: str, source: list):
+    def write_out(self, file_path: str, element_workflow: list, source: list):
         """
         Writes data from a specified source within `self.data` to an output file.
         The output format is determined by the file extension provided in `file_path`.
         Currently, only .mf4 output is supported.
 
         :param file_path: The path to the output file (e.g., 'results.mf4').
+        :param element_workflow: The workflow elements associated with the data.
         :param source: A list of keys from `self.data` to be written.
                     Use `['all']` to write all available sources.
         :return: None. The method performs a file-writing operation and logs the outcome.
@@ -141,7 +142,7 @@ class DataSource:
             file_format = os.path.splitext(file_path)[1].lower()
 
             if file_format == ".mf4":
-                self._write_out_mf4(file_path, source)
+                self._write_out_mf4(file_path=file_path, element_workflow=element_workflow, source=source)
             elif file_format == ".parquet":
                 self.logfile.write(
                     f"Evaluation of .parquet input/output is not implemented yet",
@@ -163,24 +164,26 @@ class DataSource:
                 level="ERROR",
             )
 
-    def _write_out_mf4(self, file_path: str, source: list = None):
+    def _write_out_mf4(self, file_path: str, element_workflow: list, source: list = None):
         """
         Writes data from the specified sources in `self.data` to an .mf4 file.
         It iterates through the provided `source` keys, creates `asammdf.Signal` objects,
         and appends them to a new `asammdf.MDF` file.
 
         :param file_path: The path to the output .mf4 file.
+        :param element_workflow: The workflow elements associated with the data.
         :param source: A list of keys from `self.data` to export. If `['all']`,
                     all available keys are used.
         :return: None. The method handles file creation and writing, and logs errors.
         """
-        #TODO: only the values that have really been in the element workflow should be written out
         try:
             if "all" in source:
-                source = list(self.data.keys())
-                log_sources = "all available source"
+                all_data_keys = set(self.data.keys())
+                all_element_keys = set(element_workflow)
+                source = list(all_data_keys.intersection(all_element_keys))
+                log_sources = "all available sources present in element_workflow"
             elif isinstance(source, list):
-                source = source
+                source = [wf_element_name for wf_element_name in source if wf_element_name in element_workflow]
                 log_sources = str(source)
 
             file_path = self._eval_output_path(file_path)
@@ -222,7 +225,7 @@ class DataSource:
 
                     else:
                         self.logfile.write(
-                            f"Skipping key '{source_key}' not found in simulation 'data_source' element.",
+                            f"Skipping key '{source_key}' not found in simulation 'data' element.",
                             level="WARNING",
                         )
 

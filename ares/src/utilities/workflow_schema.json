@@ -9,13 +9,13 @@
       "required": ["type"],
       "properties": {
         "type": {
-          "enum": ["data_source", "parameter", "sim_unit", "custom"]
+          "enum": ["data", "parameter", "sim_unit", "custom"]
         }
       },
     "allOf": [
       {
-        "if": { "properties": { "type": { "const": "data_source" } } },
-        "then": { "$ref": "#/definitions/data_source" }
+        "if": { "properties": { "type": { "const": "data" } } },
+        "then": { "$ref": "#/definitions/data" }
       },
       {
         "if": { "properties": { "type": { "const": "parameter" } } },
@@ -36,10 +36,10 @@
 
   "definitions": {
 
-    "data_source": {
+    "data": {
       "type": "object",
       "properties": {
-        "type": { "const": "data_source" },
+        "type": { "const": "data" },
         "mode": { "enum": ["read", "write"] },
         "path": {
           "type": "array",
