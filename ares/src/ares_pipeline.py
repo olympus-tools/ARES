@@ -49,9 +49,6 @@ def ares_pipeline(wf_path: str, logfile: Logfile = None):
 
         for wf_element_name, wf_element_value in ares_wf.workflow.items():
 
-            # TODO: if object not needed anymore
-            # drop opject
-
             # Handle "data" workflow elements
             if wf_element_value["type"] == "data":
 
@@ -113,6 +110,9 @@ def ares_pipeline(wf_path: str, logfile: Logfile = None):
             # Handle "custom" workflow elements
             if wf_element_value["type"] == "custom":
                 custom_objects[wf_element_name] = {}
+
+            # TODO: if object not needed anymore
+            # drop opject
 
         # Write out workflow evaluated workflow
         ares_wf.write_out(file_path=wf_path)
