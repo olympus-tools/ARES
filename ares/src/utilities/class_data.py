@@ -142,7 +142,11 @@ class Data:
             file_format = os.path.splitext(file_path)[1].lower()
 
             if file_format == ".mf4":
-                self._write_out_mf4(file_path=file_path, element_workflow=element_workflow, source=source)
+                self._write_out_mf4(
+                    file_path=file_path,
+                    element_workflow=element_workflow,
+                    source=source,
+                )
             elif file_format == ".parquet":
                 self.logfile.write(
                     f"Evaluation of .parquet input/output is not implemented yet",
@@ -164,7 +168,9 @@ class Data:
                 level="ERROR",
             )
 
-    def _write_out_mf4(self, file_path: str, element_workflow: list, source: list = None):
+    def _write_out_mf4(
+        self, file_path: str, element_workflow: list, source: list = None
+    ):
         """
         Writes data from the specified sources in `self.data` to an .mf4 file.
         It iterates through the provided `source` keys, creates `asammdf.Signal` objects,
@@ -183,7 +189,11 @@ class Data:
                 source = list(all_data_keys.intersection(all_element_keys))
                 log_sources = "all available sources present in element_workflow"
             elif isinstance(source, list):
-                source = [wf_element_name for wf_element_name in source if wf_element_name in element_workflow]
+                source = [
+                    wf_element_name
+                    for wf_element_name in source
+                    if wf_element_name in element_workflow
+                ]
                 log_sources = str(source)
 
             file_path = self._eval_output_path(file_path)

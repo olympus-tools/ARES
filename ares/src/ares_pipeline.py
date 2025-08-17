@@ -63,20 +63,20 @@ def ares_pipeline(wf_path: str, logfile: Logfile = None):
                     for data_source_idx, data_source_path in enumerate(
                         wf_element_value["path"]
                     ):
-                        data_source_objects[wf_element_name][data_source_idx] = (
-                            Data(
-                                file_path=data_source_path,
-                                source=wf_element_value["source"],
-                                step_size_init_ms=wf_element_value["cycle_time"],
-                                logfile=logfile,
-                            )
+                        data_source_objects[wf_element_name][data_source_idx] = Data(
+                            file_path=data_source_path,
+                            source=wf_element_value["source"],
+                            step_size_init_ms=wf_element_value["cycle_time"],
+                            logfile=logfile,
                         )
                 # Write mode: export data from Data objects
                 elif wf_element_value["mode"] == "write":
-                    for data_source_value in data_source_objects[wf_element_value["element_workflow"][0]].values():
+                    for data_source_value in data_source_objects[
+                        wf_element_value["element_workflow"][0]
+                    ].values():
                         data_source_value.write_out(
                             file_path=wf_element_value["output"],
-                            element_workflow=wf_element_value['element_workflow'],
+                            element_workflow=wf_element_value["element_workflow"],
                             source=wf_element_value["source"],
                         )
 
@@ -94,7 +94,9 @@ def ares_pipeline(wf_path: str, logfile: Logfile = None):
                 )
 
                 # Run simulation for each original data source- and parameter variant
-                for data_source_value in data_source_objects[wf_element_value["element_workflow"][0]].values():
+                for data_source_value in data_source_objects[
+                    wf_element_value["element_workflow"][0]
+                ].values():
                     sim_input = data_source_value.get(
                         step_size_ms=wf_element_value["cycle_time"]
                     )

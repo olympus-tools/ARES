@@ -41,7 +41,9 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    logfile_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "log", "simulation.log")
+    logfile_path = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), "log", "simulation.log"
+    )
     logfile = Logfile(logfile_path)
 
     if args.workflow is not None:

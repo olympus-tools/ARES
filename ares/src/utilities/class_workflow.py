@@ -311,16 +311,17 @@ class Workflow:
         try:
             for wf_element_name, wf_element in workflow.items():
                 element_workflow = []
-                if 'init' in wf_element:
+
+                if "init" in wf_element:
                     for init in wf_element["init"]:
                         element_workflow.extend(workflow[init]["element_workflow"])
                         element_workflow.append(init)
-                elif 'input' in wf_element:
+                elif "input" in wf_element:
                     for input in wf_element["input"]:
                         element_workflow.extend(workflow[input]["element_workflow"])
                         element_workflow.append(input)
-                    
-                if 'dataset' in wf_element:
+
+                if "dataset" in wf_element:
                     for dataset in wf_element["dataset"]:
                         element_workflow.extend(workflow[dataset]["element_workflow"])
                         element_workflow.append(dataset)
@@ -328,7 +329,6 @@ class Workflow:
                 # remove duplicates and store it to workflow
                 workflow[wf_element_name]["element_workflow"] = []
                 unique_items = set()
-
                 for item in element_workflow:
                     if item not in unique_items:
                         workflow[wf_element_name]["element_workflow"].append(item)
