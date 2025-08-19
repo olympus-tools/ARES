@@ -28,14 +28,13 @@ ________________________________________________________________________
 
 """
 
-from .class_logfile import Logfile
+from .logfile import Logfile
 import os
 import json
 from jsonschema import validate, ValidationError
 import ctypes
 import numpy as np
 from typing import Union
-
 
 class SimUnit:
     def __init__(
@@ -104,7 +103,7 @@ class SimUnit:
         """
         try:
             dd_schema_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)), "dd_schema.json"
+                os.path.dirname(os.path.dirname(__file__)), "schemas", "data_dictionary.schema.json"
             )
             with open(dd_schema_path, "r", encoding="utf-8") as schema_file:
                 schema = json.load(schema_file)

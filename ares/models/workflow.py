@@ -32,8 +32,7 @@ import os
 import json
 from datetime import datetime
 from jsonschema import validate, ValidationError
-from .class_logfile import Logfile
-
+from .logfile import Logfile
 
 class Workflow:
     def __init__(self, file_path: str = None, logfile: Logfile = None):
@@ -104,7 +103,7 @@ class Workflow:
         """
         try:
             workflow_schema_path = os.path.join(
-                (os.path.dirname(__file__)), "workflow_schema.json"
+                os.path.dirname(os.path.dirname(__file__)), "schemas", "workflow.schema.json"
             )
             with open(workflow_schema_path, "r", encoding="utf-8") as schema_file:
                 schema = json.load(schema_file)

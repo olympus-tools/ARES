@@ -30,8 +30,8 @@ ________________________________________________________________________
 
 import os
 import argparse
-from src.ares_pipeline import ares_pipeline
-from src.utilities.class_logfile import Logfile
+from ..models.pipeline import pipeline
+from ..models.logfile import Logfile
 
 if __name__ == "__main__":
 
@@ -42,9 +42,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     logfile_path = os.path.join(
-        os.path.dirname(os.path.dirname(__file__)), "log", "simulation.log"
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "log", "simulation.log"
     )
     logfile = Logfile(logfile_path)
 
     if args.workflow is not None:
-        ares_pipeline(wf_path=args.workflow, logfile=logfile)
+        pipeline(wf_path=args.workflow, logfile=logfile)

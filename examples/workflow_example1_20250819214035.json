@@ -1,0 +1,74 @@
+{
+    "datasource_1": {
+        "type": "data",
+        "path": [
+            "/home/andrae/Dokumente/10_git/20_ARES/examples/datasource_1.mf4",
+            "/home/andrae/Dokumente/10_git/20_ARES/examples/datasource_1.mf4"
+        ],
+        "source": [
+            "source_1"
+        ],
+        "mode": "read",
+        "element_workflow": [],
+        "cycle_time": 10
+    },
+    "dataset_1": {
+        "type": "parameter",
+        "path": [
+            "/home/andrae/Dokumente/10_git/20_ARES/examples/datasource_1.mf4"
+        ],
+        "element_workflow": []
+    },
+    "sw_component_1": {
+        "type": "sim_unit",
+        "path": "/home/andrae/Dokumente/10_git/20_ARES/examples/lowpassfilterfirstorder/lowpassfilterfirstorder.so",
+        "dataset": [
+            "dataset_1"
+        ],
+        "cycle_time": 20,
+        "input": [
+            "datasource_1"
+        ],
+        "data_dictionary": "/home/andrae/Dokumente/10_git/20_ARES/examples/lowpassfilterfirstorder/lowpassfilterfirstorder_dd.json",
+        "element_workflow": [
+            "datasource_1",
+            "dataset_1"
+        ]
+    },
+    "sw_component_2": {
+        "type": "sim_unit",
+        "path": "/home/andrae/Dokumente/10_git/20_ARES/examples/derivation/derivation.so",
+        "dataset": [
+            "dataset_1"
+        ],
+        "cycle_time": 10,
+        "input": [
+            "sw_component_1",
+            "datasource_1"
+        ],
+        "data_dictionary": "/home/andrae/Dokumente/10_git/20_ARES/examples/derivation/derivation_dd.json",
+        "element_workflow": [
+            "datasource_1",
+            "dataset_1",
+            "sw_component_1"
+        ]
+    },
+    "datasource_2": {
+        "type": "data",
+        "input": [
+            "sw_component_2"
+        ],
+        "mode": "write",
+        "output": "/home/andrae/Dokumente/10_git/20_ARES/examples/datasource_1.mf4",
+        "element_workflow": [
+            "datasource_1",
+            "dataset_1",
+            "sw_component_1",
+            "sw_component_2"
+        ],
+        "source": [
+            "all"
+        ],
+        "cycle_time": 10
+    }
+}

@@ -28,14 +28,13 @@ ________________________________________________________________________
 
 """
 
-from .utilities.class_data import Data
-from .utilities.class_workflow import Workflow
-from .utilities.class_simunit import SimUnit
-from .utilities.class_logfile import Logfile
-from .utilities.class_parameter import Parameter
+from .data import Data
+from .workflow import Workflow
+from .simunit import SimUnit
+from .logfile import Logfile
+from .parameter import Parameter
 
-
-def ares_pipeline(wf_path: str, logfile: Logfile = None):
+def pipeline(wf_path: str, logfile: Logfile = None):
 
     try:
         logfile.write("ARES pipeline is starting...", level="INFO")

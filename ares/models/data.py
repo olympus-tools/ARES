@@ -31,7 +31,7 @@ ________________________________________________________________________
 import os
 from datetime import datetime
 from asammdf import MDF, Signal, Source
-from .class_logfile import Logfile
+from .logfile import Logfile
 import numpy as np
 
 
