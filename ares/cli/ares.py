@@ -30,15 +30,14 @@ ________________________________________________________________________
 
 import os
 import argparse
-from ..models.pipeline import pipeline
-from ..models.logfile import Logfile
+from ares.models.pipeline import pipeline
+from ares.models.logfile import Logfile
 
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="ares.py starts a the ares pipeline")
-    parser.add_argument(
-        "--workflow", type=str, help="Absolute path to the workflow *.json file."
-    )
+    parser.add_argument("--workflow", type=str, help="Absolute path to the workflow *.json file.")
+    parser.add_argument("--output_path", type=str, help="Absolute path to the output directory.", default=None)
     args = parser.parse_args()
 
     logfile_path = os.path.join(
@@ -47,4 +46,4 @@ if __name__ == "__main__":
     logfile = Logfile(logfile_path)
 
     if args.workflow is not None:
-        pipeline(wf_path=args.workflow, logfile=logfile)
+        pipeline(wf_path=args.workflow, output_path=args.output_path, logfile=logfile)

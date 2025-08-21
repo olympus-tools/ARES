@@ -57,6 +57,7 @@
           "minItems": 1
         },
         "cycle_time": { "type": "integer", "minimum": 1 },
+        "output_format": { "type": "string" },
         "additionalProperties": false
       },
       "required": ["type", "mode"],
@@ -67,7 +68,7 @@
         "required": ["path"]
       },
       "else": {
-        "required": ["input"]
+        "required": ["input", "output_format"]
       }
     },
 
