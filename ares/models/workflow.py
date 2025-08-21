@@ -28,11 +28,11 @@ ________________________________________________________________________
 
 """
 
+from ares.models.logfile import Logfile
 import os
 import json
 from datetime import datetime
 from jsonschema import validate, ValidationError
-from .logfile import Logfile
 from typeguard import typechecked
 
 class Workflow:

@@ -28,7 +28,7 @@ ________________________________________________________________________
 
 """
 
-from .logfile import Logfile
+from ares.models.logfile import Logfile
 import os
 import json
 from jsonschema import validate, ValidationError

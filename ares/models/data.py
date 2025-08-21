@@ -28,10 +28,10 @@ ________________________________________________________________________
 
 """
 
+from ares.models.logfile import Logfile
 import os
 from datetime import datetime
 from asammdf import MDF, Signal, Source
-from .logfile import Logfile
 import numpy as np
 from typeguard import typechecked
 
