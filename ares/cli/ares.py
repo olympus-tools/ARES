@@ -29,21 +29,36 @@ ________________________________________________________________________
 """
 
 import os
-import argparse
+import click
 from ares.models.pipeline import pipeline
 from ares.models.logfile import Logfile
 
-if __name__ == "__main__":
+@click.group()
+def cli():
+    """Automated Rapid Embedded Simulation (ARES) CLI"""
+    pass
 
-    parser = argparse.ArgumentParser(description="ares.py starts a the ares pipeline")
-    parser.add_argument("--workflow", type=str, help="Absolute path to the workflow *.json file.")
-    parser.add_argument("--output_path", type=str, help="Absolute path to the output directory.", default=None)
-    args = parser.parse_args()
-
+@cli.command(name="pipeline", help="Starts the ARES simulation pipeline.")
+@click.option(
+    "-wf",
+    "--workflow",
+    required=True,
+    type=click.Path(exists=True, dir_okay=False),
+    help="Absolute file path of to the workflow *.json file.",
+)
+@click.option(
+    "-o",
+    "--output",
+    default=None,
+    type=click.Path(file_okay=False),
+    help="Absolute path to the output directory.",
+)
+def pipeline_command(workflow, output):
     logfile_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "log", "simulation.log"
     )
     logfile = Logfile(logfile_path)
+    pipeline(wf_path=workflow, output_path=output, logfile=logfile)
 
-    if args.workflow is not None:
-        pipeline(wf_path=args.workflow, output_path=args.output_path, logfile=logfile)
+if __name__ == "__main__":
+    cli()
