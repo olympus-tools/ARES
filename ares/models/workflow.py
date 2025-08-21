@@ -46,10 +46,11 @@ class Workflow:
             logfile (Logfile): The logfile object of the current ARES pipeline for logging purposes.
         """
         self.logfile = logfile
-        self.workflow = self._load_wf(file_path=file_path)
+        self._file_path = file_path
+        self.workflow = self._load_wf()
 
     @typechecked
-    def _load_wf(self, file_path: str) -> dict | None:
+    def _load_wf(self) -> dict | None:
         """
         Reads, validates, and processes the workflow JSON file.
 
@@ -57,17 +58,14 @@ class Workflow:
         determines the execution order, and evaluates the original data sources.
         Errors are written to the logfile.
 
-        Args:
-            file_path (str): Path to the workflow JSON file.
-
         Returns:
             dict | None: A dictionary representing the processed and sorted workflow,
                 or `None` in case of an error.
         """
         try:
-            with open(file_path, "r", encoding="utf-8") as file:
+            with open(self._file_path, "r", encoding="utf-8") as file:
                 workflow_raw = json.load(file)
-            self._workflow_validation(workflow=workflow_raw, file_path=file_path)
+            self._workflow_validation(workflow=workflow_raw)
             workflow_sinks = self._find_sinks(workflow=workflow_raw)
             workflow_order = self._eval_workflow_order(
                 workflow=workflow_raw, wf_sinks=workflow_sinks
@@ -76,30 +74,30 @@ class Workflow:
                 workflow_order=workflow_order, workflow=workflow_raw
             )
             workflow = self._eval_element_workflow(workflow=workflow)
-            self.logfile.write(f"Workflow file {file_path} successfully loaded.")
+            self.logfile.write(f"Workflow file {self._file_path} successfully loaded.")
             return workflow
 
         except FileNotFoundError:
             self.logfile.write(
-                f"Workflow file json file not found at '{file_path}'.",
+                f"Workflow file json file not found at '{self._file_path}'.",
                 level="ERROR",
             )
             return None
         except json.JSONDecodeError as e:
             self.logfile.write(
-                f"Error parsing workflow file json file '{file_path}': {e}",
+                f"Error parsing workflow file json file '{self._file_path}': {e}",
                 level="ERROR",
             )
             return None
         except Exception as e:
             self.logfile.write(
-                f"Unexpected error loading workflow file json file '{file_path}': {e}",
+                f"Unexpected error loading workflow file json file '{self._file_path}': {e}",
                 level="ERROR",
             )
             return None
 
     @typechecked
-    def _workflow_validation(self, workflow: dict, file_path: str):
+    def _workflow_validation(self, workflow: dict):
         """
         Checks the syntax and logical rules of the workflow against a JSON schema.
 
@@ -108,7 +106,6 @@ class Workflow:
 
         Args:
             workflow (dict): The workflow dictionary to be validated.
-            file_path (str): Path to the workflow JSON file (used for error messages).
         """
         try:
             workflow_schema_path = os.path.join(
@@ -119,18 +116,18 @@ class Workflow:
 
             validate(instance=workflow, schema=schema)
             self.logfile.write(
-                f"The JSON data in '{file_path}' is valid according to schema '{workflow_schema_path}'.",
+                f"The JSON data in '{self._file_path}' is valid according to schema '{workflow_schema_path}'.",
                 level="INFO",
             )
         except FileNotFoundError:
-            log_message = f"Error: One of the files was not found. Please check the paths. Missing file: '{file_path}' or '{workflow_schema_path}'."
+            log_message = f"Error: One of the files was not found. Please check the paths. Missing file: '{self._file_path}' or '{workflow_schema_path}'."
             self.logfile.write(log_message, level="ERROR")
         except json.JSONDecodeError as e:
-            log_message = f"Error parsing the JSON file '{file_path}': {e}"
+            log_message = f"Error parsing the JSON file '{self._file_path}': {e}"
             self.logfile.write(log_message, level="ERROR")
         except ValidationError as e:
             log_message = (
-                f"Error while syntax validation of the workflow json file '{file_path}': "
+                f"Error while syntax validation of the workflow json file '{self._file_path}': "
                 f"Message: {e.message}. "
                 f"Path: {' -> '.join(map(str, e.path))}. "
                 f"Schema Path: {' -> '.join(map(str, e.schema_path))}. "
@@ -376,7 +373,7 @@ class Workflow:
             return None
 
     @typechecked
-    def write_out(self, file_path: str):
+    def write_out(self, output_path: str):
         """
         Writes the current, processed workflow dictionary to a JSON file.
 
@@ -384,20 +381,16 @@ class Workflow:
         timestamp appended to the filename.
 
         Args:
-            file_path (str): The path where the workflow should be saved.
+            output_path (str): The path where the workflow should be saved.
         """
         try:
-            dir_name, file_name = os.path.split(file_path)
-            file_name, file_extension = os.path.splitext(file_name)
-            file_out_name = (
-                f"{file_name}_{datetime.now().strftime('%Y%m%d%H%M%S')}{file_extension}"
-            )
-            file_path = os.path.join(dir_name, file_out_name)
+            file_name = os.path.splitext(os.path.basename(self._file_path))[0]
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            new_file_name = f"{file_name}_{timestamp}.json"
+            full_path = os.path.join(output_path, new_file_name)
 
-            with open(file_path, "w", encoding="utf-8") as file:
+            with open(full_path, "w", encoding="utf-8") as file:
                 json.dump(self.workflow, file, indent=4, ensure_ascii=False)
-            self.logfile.write(f"Workflow successfully written to {file_path}.")
+            self.logfile.write(f"Workflow successfully written to {full_path}.")
         except Exception as e:
-            self.logfile.write(
-                f"Error writing workflow to {file_path}: {e}", level="ERROR"
-            )
+            self.logfile.write(f"Error writing workflow to {output_path}: {e}", level="ERROR")

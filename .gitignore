@@ -1,5 +1,6 @@
 # folders
 **/log/*
+**/examples/output/*
 
 # python
 **/venv_win/*

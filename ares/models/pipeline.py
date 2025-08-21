@@ -34,7 +34,9 @@ from ares.models.simunit import SimUnit
 from ares.models.logfile import Logfile
 from ares.models.parameter import Parameter
 
-def pipeline(wf_path: str, logfile: Logfile = None):
+import os
+
+def pipeline(wf_path: str, output_path: str, logfile: Logfile):
 
     try:
         logfile.write("ARES pipeline is starting...", level="INFO")
@@ -45,6 +47,9 @@ def pipeline(wf_path: str, logfile: Logfile = None):
         param_objects = {}
         simunit_objects = {}
         custom_objects = {}
+
+        if output_path is None:
+            output_path = os.path.dirname(wf_path)
 
         for wf_element_name, wf_element_value in ares_wf.workflow.items():
 
@@ -70,11 +75,10 @@ def pipeline(wf_path: str, logfile: Logfile = None):
                         )
                 # Write mode: export data from Data objects
                 elif wf_element_value["mode"] == "write":
-                    for data_source_value in data_source_objects[
-                        wf_element_value["element_workflow"][0]
-                    ].values():
+                    for data_source_value in data_source_objects[wf_element_value["element_workflow"][0]].values():
                         data_source_value.write_out(
-                            file_path=wf_element_value["output"],
+                            dir_path=output_path,
+                            output_format=wf_element_value["output_format"],
                             element_workflow=wf_element_value["element_workflow"],
                             source=wf_element_value["source"],
                         )
@@ -113,10 +117,10 @@ def pipeline(wf_path: str, logfile: Logfile = None):
                 custom_objects[wf_element_name] = {}
 
             # TODO: if object not needed anymore
-            # drop opject
+            # drop object
 
         # Write out workflow evaluated workflow
-        ares_wf.write_out(file_path=wf_path)
+        ares_wf.write_out(output_path=output_path)
 
         logfile.write("ARES pipeline successfully finished.", level="INFO")
 

@@ -3,7 +3,7 @@
         "type": "data",
         "input": ["sw_component_2"],
         "mode": "write",
-        "output": "/home/andrae/Dokumente/10_git/20_ARES/examples/data/data_example_1.mf4"
+        "output_format": "mf4"
     },
     "data_example_1": {
         "type": "data",
