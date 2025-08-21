@@ -28,9 +28,13 @@ dependencies = [
     "asammdf==8.2.9",
     "jsonschema==4.24.0",
     "pydantic==2.11.7",
-    "typeguard==4.4.4"
+    "typeguard==4.4.4",
+    "click==8.2.9"
 ]
 dynamic = ["version"]
+
+[project.scripts]
+ares = "ares.cli.ares:cli"
 
 [project.optional-dependencies]
 test = [

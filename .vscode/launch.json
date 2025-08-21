@@ -1,20 +1,20 @@
 {
-  "version": "0.1.0",
-  "configurations": [
-    {
-      "name": "ARES example 1",
-      "type": "debugpy",
-      "request": "launch",
-      "module": "ares.cli.ares",
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal",
-      "justMyCode": true,
-      "args": [
-        "--workflow",
-        "${workspaceFolder}/examples/workflow/workflow_example_1.json",
-        "--output_path",
-        "${workspaceFolder}/examples/output",
-      ]
-    }
-  ]
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Run ARES Command",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/venv_lin/bin/ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/workflow_example_1.json",
+                "--output",
+                "${workspaceFolder}/examples/output/"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
 }
