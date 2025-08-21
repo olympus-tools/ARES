@@ -28,11 +28,11 @@ ________________________________________________________________________
 
 """
 
-from .data import Data
-from .workflow import Workflow
-from .simunit import SimUnit
-from .logfile import Logfile
-from .parameter import Parameter
+from ares.models.data import Data
+from ares.models.workflow import Workflow
+from ares.models.simunit import SimUnit
+from ares.models.logfile import Logfile
+from ares.models.parameter import Parameter
 
 def pipeline(wf_path: str, logfile: Logfile = None):
 
