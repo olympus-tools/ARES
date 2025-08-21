@@ -19,6 +19,6 @@
 *.parquet
 
 # exceptions
-!examples/*.mf4
-!examples/*.mat
-!examples/*.parquet
+!examples/data/*.mf4
+!examples/data/*.mat
+!examples/data/*.parquet
