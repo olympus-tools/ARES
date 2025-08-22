@@ -12,7 +12,7 @@ if %errorlevel% neq 0 (
 
 REM Set path variables
 set SCRIPT_DIR=%~dp0
-set VENV_DIR=%SCRIPT_DIR%\venv_win
+set VENV_DIR=%SCRIPT_DIR%\.venv
 
 REM Check if the virtual environment exists, delete it and recreate it if it does.
 if exist "%VENV_DIR%" (

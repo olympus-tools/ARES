@@ -1,8 +1,9 @@
 # folders
-**/log/*
+**/logs/*
 **/examples/output/*
 
 # python
+**/.venv/*
 **/venv_win/*
 **/venv_lin/*
 **/env/
