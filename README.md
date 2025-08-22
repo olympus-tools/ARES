@@ -40,7 +40,7 @@ TODO: Workflows have to be implemented like...
 
 TODO: Reading and writing data sources in different file formats (currently only mf4 is implemented)
 
-#### parameters
+#### parameter
 
 TODO: Reading and writing datasets in different file formats (currently only dcm is implemented)
 

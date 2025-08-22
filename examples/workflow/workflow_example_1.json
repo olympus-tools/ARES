@@ -1,5 +1,5 @@
 {
-    "datasource_2": {
+    "data_output_1": {
         "type": "data",
         "input": ["sw_component_2"],
         "mode": "write",
@@ -17,7 +17,7 @@
     "sw_component_1": {
         "type": "sim_unit",
         "path": "/home/andrae/Dokumente/10_git/20_ARES/examples/sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.so",
-        "dataset": ["dataset_1"],
+        "parameter": ["dataset_1"],
         "cycle_time": 20,
         "input": ["data_example_1"],
         "data_dictionary": "/home/andrae/Dokumente/10_git/20_ARES/examples/sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder_dd.json"
@@ -25,7 +25,7 @@
     "sw_component_2": {
         "type": "sim_unit",
         "path": "/home/andrae/Dokumente/10_git/20_ARES/examples/sim_unit/derivation/derivation.so",
-        "dataset": ["dataset_1"],
+        "parameter": ["dataset_1"],
         "cycle_time": 10,
         "input": [
             "sw_component_1",

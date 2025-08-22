@@ -29,11 +29,14 @@ ________________________________________________________________________
 """
 
 from ares.models.logfile import Logfile
+from ares.schemas.workflow_model import WorkflowSchema, WorkflowElement
 import os
 import json
 from datetime import datetime
-from jsonschema import validate, ValidationError
+from jsonschema import ValidationError
 from typeguard import typechecked
+from typing import Optional, Dict, List, Any
+
 
 class Workflow:
     @typechecked
@@ -47,101 +50,65 @@ class Workflow:
         """
         self.logfile = logfile
         self._file_path = file_path
-        self.workflow = self._load_wf()
+        self.workflow: Optional[WorkflowSchema] = self._load_and_validate_wf()
 
     @typechecked
-    def _load_wf(self) -> dict | None:
+    def _load_and_validate_wf(self) -> Optional[WorkflowSchema]:
         """
-        Reads, validates, and processes the workflow JSON file.
-
-        The function validates the JSON structure, identifies the endpoints (sinks),
-        determines the execution order, and evaluates the original data sources.
-        Errors are written to the logfile.
+        Reads and validates the workflow JSON file using Pydantic.
+        The function also performs the sorting and element workflow evaluation.
 
         Returns:
-            dict | None: A dictionary representing the processed and sorted workflow,
-                or `None` in case of an error.
+            Optional[WorkflowSchema]: A Pydantic object representing the workflow,
+                                      or None in case of an error.
         """
         try:
             with open(self._file_path, "r", encoding="utf-8") as file:
                 workflow_raw = json.load(file)
-            self._workflow_validation(workflow=workflow_raw)
-            workflow_sinks = self._find_sinks(workflow=workflow_raw)
-            workflow_order = self._eval_workflow_order(
-                workflow=workflow_raw, wf_sinks=workflow_sinks
+
+            # Pydantic-Validierung des rohen Dictionaries
+            workflow_raw_pydantic = WorkflowSchema.model_validate(workflow_raw)
+
+            self.logfile.write(
+                f"Workflow file {self._file_path} successfully loaded and validated with Pydantic.",
+                level="INFO",
             )
-            workflow = self._sort_workflow(
-                workflow_order=workflow_order, workflow=workflow_raw
-            )
-            workflow = self._eval_element_workflow(workflow=workflow)
-            self.logfile.write(f"Workflow file {self._file_path} successfully loaded.")
+
+            # Verarbeitung des Pydantic-Objekts in der richtigen Reihenfolge
+            workflow_sinks = self._find_sinks(workflow=workflow_raw_pydantic)
+            workflow_order = self._eval_workflow_order(workflow=workflow_raw_pydantic, wf_sinks=workflow_sinks)
+            workflow_sorted_pydantic = self._sort_workflow(workflow_order=workflow_order, workflow=workflow_raw_pydantic)
+            workflow = self._eval_element_workflow(workflow=workflow_sorted_pydantic)
+
             return workflow
 
         except FileNotFoundError:
             self.logfile.write(
-                f"Workflow file json file not found at '{self._file_path}'.",
+                f"Workflow file not found at '{self._file_path}'.",
                 level="ERROR",
             )
             return None
         except json.JSONDecodeError as e:
             self.logfile.write(
-                f"Error parsing workflow file json file '{self._file_path}': {e}",
+                f"Error parsing workflow file '{self._file_path}': {e}",
                 level="ERROR",
             )
             return None
-        except Exception as e:
-            self.logfile.write(
-                f"Unexpected error loading workflow file json file '{self._file_path}': {e}",
-                level="ERROR",
-            )
-            return None
-
-    @typechecked
-    def _workflow_validation(self, workflow: dict):
-        """
-        Checks the syntax and logical rules of the workflow against a JSON schema.
-
-        The function writes a success or failure message to the logfile based on the
-        validation result. If validation fails, the error is logged in detail.
-
-        Args:
-            workflow (dict): The workflow dictionary to be validated.
-        """
-        try:
-            workflow_schema_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "schemas", "workflow.schema.json"
-            )
-            with open(workflow_schema_path, "r", encoding="utf-8") as schema_file:
-                schema = json.load(schema_file)
-
-            validate(instance=workflow, schema=schema)
-            self.logfile.write(
-                f"The JSON data in '{self._file_path}' is valid according to schema '{workflow_schema_path}'.",
-                level="INFO",
-            )
-        except FileNotFoundError:
-            log_message = f"Error: One of the files was not found. Please check the paths. Missing file: '{self._file_path}' or '{workflow_schema_path}'."
-            self.logfile.write(log_message, level="ERROR")
-        except json.JSONDecodeError as e:
-            log_message = f"Error parsing the JSON file '{self._file_path}': {e}"
-            self.logfile.write(log_message, level="ERROR")
         except ValidationError as e:
-            log_message = (
-                f"Error while syntax validation of the workflow json file '{self._file_path}': "
-                f"Message: {e.message}. "
-                f"Path: {' -> '.join(map(str, e.path))}. "
-                f"Schema Path: {' -> '.join(map(str, e.schema_path))}. "
-                f"Invalid Data: {json.dumps(e.instance, indent=2)}"
-            )
-            self.logfile.write(log_message, level="ERROR")
-        except Exception as e:
             self.logfile.write(
-                f"Unexpected error during workflow json file validation: {e}",
+                f"Validation error in workflow file '{self._file_path}': {e}",
                 level="ERROR",
             )
+            return None
+        except Exception as e:
+            self.logfile.write(
+                f"Unexpected error loading workflow file '{self._file_path}': {e}",
+                level="ERROR",
+            )
+            return None
 
     @typechecked
-    def _find_sinks(self, workflow: dict) -> list | None:
+    def _find_sinks(self, workflow: Optional[WorkflowSchema]) -> list | None:
         """
         Identifies the endpoints (sinks) of the workflow.
 
@@ -150,7 +117,7 @@ class Workflow:
         analysis of the execution order.
 
         Args:
-            workflow (dict): The workflow dictionary.
+            workflow (WorkflowSchema): The workflow Pydantic object.
 
         Returns:
             list | None: A list of strings containing the names of the endpoint elements,
@@ -159,21 +126,21 @@ class Workflow:
         try:
             wf_sinks = []
 
-            for wf_element_name in workflow.keys():
+            for wf_element_name in workflow.root.keys():
                 call_count = 0
 
-                for wf_element_value in workflow.values():
+                for wf_element_value in workflow.root.values():
                     ref_input_list = []
 
-                    if "dataset" in wf_element_value:
-                        ref_input_list.extend(wf_element_value["dataset"])
+                    if hasattr(wf_element_value, "parameter") and wf_element_value.parameter is not None:
+                        ref_input_list.extend(wf_element_value.parameter)
 
-                    if "cancel_condition" not in wf_element_value:
-                        if "input" in wf_element_value:
-                            ref_input_list.extend(wf_element_value["input"])
+                    if hasattr(wf_element_value, "cancel_condition") and wf_element_value.cancel_condition is not None:
+                        if hasattr(wf_element_value, "init") and wf_element_value.init is not None:
+                            ref_input_list.extend(wf_element_value.init)
                     else:
-                        if "init" in wf_element_value:
-                            ref_input_list.extend(wf_element_value["init"])
+                        if hasattr(wf_element_value, "input") and wf_element_value.input is not None:
+                            ref_input_list.extend(wf_element_value.input)
 
                     if ref_input_list is not None:
                         for ref_input_list_member in ref_input_list:
@@ -198,7 +165,7 @@ class Workflow:
             return None
 
     @typechecked
-    def _eval_workflow_order(self, workflow: dict, wf_sinks: list) -> list | None:
+    def _eval_workflow_order(self, workflow: Optional[WorkflowSchema], wf_sinks: list) -> list | None:
         """
         Determines the correct execution order of the workflow elements.
 
@@ -206,7 +173,7 @@ class Workflow:
         The function logs the determined order.
 
         Args:
-            workflow (dict): The workflow dictionary.
+            workflow (WorkflowSchema): The Pydantic workflow object.
             wf_sinks (list): A list of the workflow's endpoint elements.
 
         Returns:
@@ -217,17 +184,15 @@ class Workflow:
             workflow_order = []
 
             for wf_sink in wf_sinks:
-                path = self._recursive_search(
-                    workflow=workflow, sink=wf_sink, loop=False, element=wf_sink
-                )
+                path = self._recursive_search(workflow=workflow, sink=wf_sink, loop=False, element=wf_sink)
+                if path is None:
+                    return None
                 for step in path:
                     if step not in workflow_order:
                         workflow_order.append(step)
 
             workflow_lin_string = " -> ".join(workflow_order)
-            self.logfile.write(
-                f"Workflow execution order: {workflow_lin_string}", level="INFO"
-            )
+            self.logfile.write(f"Workflow execution order: {workflow_lin_string}", level="INFO")
 
             return workflow_order
 
@@ -240,16 +205,16 @@ class Workflow:
 
     @typechecked
     def _recursive_search(
-        self, workflow: dict, sink: str, loop: bool, element: str
+        self, workflow: Optional[WorkflowSchema], sink: str, loop: bool, element: str
     ) -> list | None:
         """
         Recursively traces the execution path backward from a given element.
 
-        The function follows connections (`input`, `dataset`, `init`) and detects and
+        The function follows connections (`input`, `parameter`, `init`, `parameter`) and detects and
         handles cyclic dependencies (`cancel_condition`).
 
         Args:
-            workflow (dict): The complete workflow dictionary.
+            workflow (WorkflowSchema): The complete workflow Pydantic object.
             sink (str): The initial starting element of the overall search. Used to
                 differentiate between regular and loop inputs for a `cancel_condition`.
             loop (bool): A boolean flag indicating whether the search is currently inside a loop.
@@ -264,26 +229,29 @@ class Workflow:
             path = []
             inputs = []
 
-            elem_data = workflow.get(element, {})
-            if isinstance(elem_data, dict):
-                if "cancel_condition" in elem_data:
-                    if sink in elem_data["input"] or loop:
-                        if "init" in elem_data:
-                            inputs += elem_data["init"]
+            elem_obj = workflow.root.get(element)
+
+            if elem_obj is None:
+                self.logfile.write(f"Workflow element '{element}' not found.", level="WARNING")
+                return []
+
+            if hasattr(elem_obj, "cancel_condition") and elem_obj.cancel_condition is not None:
+                if hasattr(elem_obj, "input") and elem_obj.input is not None:
+                    if sink in elem_obj.input or loop:
+                        if hasattr(elem_obj, "init") and elem_obj.init is not None:
+                            inputs.extend(elem_obj.init)
                     else:
                         loop = True
-                        if "input" in elem_data:
-                            inputs += elem_data["input"]
-                else:
-                    if "input" in elem_data:
-                        inputs += elem_data["input"]
-                if "dataset" in elem_data:
-                    inputs += elem_data["dataset"]
+                        inputs.extend(elem_obj.input)
+            else:
+                if hasattr(elem_obj, "input") and elem_obj.input is not None:
+                    inputs.extend(elem_obj.input)
 
-            for inp in inputs:
-                path += self._recursive_search(
-                    workflow=workflow, sink=sink, loop=loop, element=inp
-                )
+            if hasattr(elem_obj, "parameter") and elem_obj.parameter is not None:
+                inputs.extend(elem_obj.parameter)
+
+            for input in inputs:
+                path.extend(self._recursive_search(workflow=workflow, sink=sink, loop=loop, element=input))
                 if path is None:
                     return None
 
@@ -298,74 +266,72 @@ class Workflow:
             return None
 
     @typechecked
-    def _sort_workflow(self, workflow_order: list, workflow: dict) -> dict | None:
+    def _sort_workflow(self, workflow_order: list, workflow: WorkflowSchema) -> Optional[WorkflowSchema]:
         """
-        Sorts the original workflow dictionary based on the determined execution order.
+        Sorts the workflow Pydantic object based on the determined execution order.
 
         Args:
             workflow_order (list): The list of elements in the correct execution order.
-            workflow (dict): The unsorted workflow dictionary.
+            workflow (WorkflowSchema): The unsorted workflow Pydantic object.
 
         Returns:
-            dict | None: A new, sorted workflow dictionary, or `None` in case of an error.
+            Optional[WorkflowSchema]: A new, sorted workflow Pydantic object, or `None` in case of an error.
         """
         try:
-            workflow_sorted = {}
+            workflow_sorted_dict = {}
             for item in workflow_order:
-                if item in workflow:
-                    workflow_sorted[item] = workflow[item]
+                wf_element_obj = workflow.root.get(item)
+                if wf_element_obj:
+                    workflow_sorted_dict[item] = wf_element_obj
 
-            return workflow_sorted
+            return WorkflowSchema(root=workflow_sorted_dict)
 
         except Exception as e:
             self.logfile.write(f"Error while sorting the workflow: {e}", level="ERROR")
             return None
 
     @typechecked
-    def _eval_element_workflow(self, workflow: dict) -> dict | None:
+    def _eval_element_workflow(self, workflow: Optional[WorkflowSchema]) -> Optional[WorkflowSchema]:
         """
         Assigns the workflow from a data source to each workflow element.
 
-        The function iterates through the workflow and determines which 'input', 'init' and
-        'parameter' elements provide the initial input for each element.
-
         Args:
-            workflow (dict): The workflow dictionary.
+            workflow (WorkflowSchema): The Pydantic workflow object.
 
         Returns:
-            dict | None: The updated workflow dictionary, which now includes an
-                `element_workflow` list for each element, or `None` in case of an error.
+            Optional[WorkflowSchema]: The workflow Pydantic object with the 'element_workflow'
+                field populated, or None in case of an error.
         """
         try:
-            for wf_element_name, wf_element in workflow.items():
+            for wf_element_name, wf_element in workflow.root.items():
                 element_workflow = []
 
-                if "init" in wf_element:
-                    for init in wf_element["init"]:
-                        element_workflow.extend(workflow[init]["element_workflow"])
-                        element_workflow.append(init)
-                elif "input" in wf_element:
-                    for input in wf_element["input"]:
-                        element_workflow.extend(workflow[input]["element_workflow"])
-                        element_workflow.append(input)
+                if hasattr(wf_element, "init") and wf_element.init is not None:
+                    for init in wf_element.init:
+                        init_elem = workflow.root.get(init)
+                        if init_elem is not None:
+                            element_workflow.extend(init_elem.element_workflow)
+                            element_workflow.append(init)
 
-                if "dataset" in wf_element:
-                    for dataset in wf_element["dataset"]:
-                        element_workflow.extend(workflow[dataset]["element_workflow"])
-                        element_workflow.append(dataset)
+                if hasattr(wf_element, "input") and wf_element.input is not None:
+                    for input_name in wf_element.input:
+                        input_elem = workflow.root.get(input_name)
+                        if input_elem is not None:
+                            element_workflow.extend(input_elem.element_workflow)
+                            element_workflow.append(input_name)
 
-                # remove duplicates and store it to workflow
-                workflow[wf_element_name]["element_workflow"] = []
-                unique_items = set()
-                for item in element_workflow:
-                    if item not in unique_items:
-                        workflow[wf_element_name]["element_workflow"].append(item)
-                        unique_items.add(item)
+                if hasattr(wf_element, "parameter") and wf_element.parameter is not None:
+                    for param_name in wf_element.parameter:
+                        param_elem = workflow.root.get(param_name)
+                        if param_elem is not None:
+                            element_workflow.extend(param_elem.element_workflow)
+                            element_workflow.append(param_name)
 
-            self.logfile.write(
-                "Workflow for each element evaluated successfully.", level="INFO"
-            )
+                # remove duplicates and store it to the dictionary
+                workflow.root[wf_element_name].element_workflow = list(dict.fromkeys(element_workflow))
+
             return workflow
+
         except Exception as e:
             self.logfile.write(
                 f"Error while evaluating element workflow: {e}", level="ERROR"
@@ -375,10 +341,7 @@ class Workflow:
     @typechecked
     def write_out(self, output_path: str):
         """
-        Writes the current, processed workflow dictionary to a JSON file.
-
-        The file is saved in the same directory as the original file, with a
-        timestamp appended to the filename.
+        Writes the current, processed workflow object to a JSON file.
 
         Args:
             output_path (str): The path where the workflow should be saved.
@@ -387,10 +350,11 @@ class Workflow:
             file_name = os.path.splitext(os.path.basename(self._file_path))[0]
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             new_file_name = f"{file_name}_{timestamp}.json"
-            full_path = os.path.join(output_path, new_file_name)
+            output_file_path = os.path.join(output_path, new_file_name)
 
-            with open(full_path, "w", encoding="utf-8") as file:
-                json.dump(self.workflow, file, indent=4, ensure_ascii=False)
-            self.logfile.write(f"Workflow successfully written to {full_path}.")
+            with open(output_file_path, "w", encoding="utf-8") as file:
+                file.write(self.workflow.model_dump_json(indent=4, exclude_none=True))
+
+            self.logfile.write(f"Workflow successfully written to {output_file_path}.")
         except Exception as e:
             self.logfile.write(f"Error writing workflow to {output_path}: {e}", level="ERROR")

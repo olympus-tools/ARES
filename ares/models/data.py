@@ -130,7 +130,7 @@ class Data:
             )
 
     @typechecked
-    def write_out(self, dir_path: str, output_format: str, element_workflow: list, source: list):
+    def write_out(self, dir_path: str, output_format: str, element_workflow: list, source: list) -> str | None:
         """
         Writes data from a specified source within `self.data` to an output file.
 
@@ -143,6 +143,9 @@ class Data:
             output_format (str): The desired file extension (e.g., 'mf4').
             element_workflow (list): The workflow elements associated with the data.
             source (list): A list of keys from `self.data` to be written. Use `['all']` to write all available sources.
+
+        Returns:
+            str | None: The full path of the output file, or `None` if an error occurs.
         """
         try:
 
@@ -169,16 +172,17 @@ class Data:
                     f"Unsupported output file format: {output_format}.", level="WARNING"
                 )
 
+            return file_path
+
         except Exception as e:
             self.logfile.write(
                 f"Error writing data to {dir_path} from source '{source}': {e}",
                 level="ERROR",
             )
+            return None
 
     @typechecked
-    def _write_out_mf4(
-        self, file_path: str, element_workflow: list, source: list = None
-    ):
+    def _write_out_mf4(self, file_path: str, element_workflow: list, source: list = None):
         """
         Writes data from the specified sources in `self.data` to an .mf4 file.
 
@@ -253,13 +257,9 @@ class Data:
                         level="WARNING",
                     )
 
-                output_file_mf4.append(
-                    all_signals_to_write, comment=f"ares simulation result"
-                )
+                output_file_mf4.append(all_signals_to_write, comment=f"ares simulation result")
                 output_file_mf4.save(file_path, overwrite=False)
-                self.logfile.write(
-                    f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}."
-                )
+                self.logfile.write(f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}.")
 
         except Exception as e:
             self.logfile.write(
