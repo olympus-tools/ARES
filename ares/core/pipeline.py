@@ -49,11 +49,6 @@ def pipeline(wf_path: str, output_path: str, logfile: Logfile):
         output_path: The absolute path to the output directory. If `None`, results
             are written to the same directory as the workflow file.
         logfile: An instance of the `Logfile` class used for logging the process.
-
-    Raises:
-        Exception: If any error occurs during the pipeline execution, it is caught,
-            logged, and the process is terminated. This ensures robust error
-            handling.
     """
     try:
         logfile.write("ARES pipeline is starting...", level="INFO")
