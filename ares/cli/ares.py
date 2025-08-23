@@ -30,8 +30,8 @@ ________________________________________________________________________
 
 import os
 import click
-from ares.models.pipeline import pipeline
-from ares.models.logfile import Logfile
+from ares.core.pipeline import pipeline
+from ares.core.logfile import Logfile
 
 @click.group()
 def cli():

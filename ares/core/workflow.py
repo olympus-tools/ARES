@@ -28,14 +28,14 @@ ________________________________________________________________________
 
 """
 
-from ares.models.logfile import Logfile
-from ares.schemas.workflow_model import WorkflowSchema, WorkflowElement
+from ares.core.logfile import Logfile
+from ares.models.workflow_model import WorkflowSchema
 import os
 import json
 from datetime import datetime
 from jsonschema import ValidationError
 from typeguard import typechecked
-from typing import Optional, Dict, List, Any
+from typing import Optional
 
 
 class Workflow:

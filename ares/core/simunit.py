@@ -28,7 +28,7 @@ ________________________________________________________________________
 
 """
 
-from ares.models.logfile import Logfile
+from ares.core.logfile import Logfile
 import os
 import json
 from jsonschema import validate, ValidationError
@@ -115,7 +115,7 @@ class SimUnit:
         """
         try:
             dd_schema_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "schemas", "data_dictionary.schema.json"
+                os.path.dirname(os.path.dirname(__file__)), "models", "data_dictionary.schema.json"
             )
             with open(dd_schema_path, "r", encoding="utf-8") as schema_file:
                 schema = json.load(schema_file)

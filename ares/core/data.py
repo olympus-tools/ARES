@@ -28,7 +28,7 @@ ________________________________________________________________________
 
 """
 
-from ares.models.logfile import Logfile
+from ares.core.logfile import Logfile
 import os
 from datetime import datetime
 from asammdf import MDF, Signal, Source

@@ -28,11 +28,11 @@ ________________________________________________________________________
 
 """
 
-from ares.models.data import Data
-from ares.models.workflow import Workflow
-from ares.models.simunit import SimUnit
-from ares.models.logfile import Logfile
-from ares.models.parameter import Parameter
+from ares.core.data import Data
+from ares.core.workflow import Workflow
+from ares.core.simunit import SimUnit
+from ares.core.logfile import Logfile
+from ares.core.parameter import Parameter
 
 import os
 
