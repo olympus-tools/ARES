@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Run ARES Command",
+            "name": "ARES example 1",
             "type": "debugpy",
             "request": "launch",
             "program": "${workspaceFolder}/venv_lin/bin/ares",
