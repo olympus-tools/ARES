@@ -28,10 +28,10 @@ ________________________________________________________________________
 
 """
 
+from ares.core.logfile import Logfile
 import os
 from datetime import datetime
 from asammdf import MDF, Signal, Source
-from .logfile import Logfile
 import numpy as np
 from typeguard import typechecked
 
@@ -64,15 +64,15 @@ class Data:
         self.data["base"] = {}
 
         # get fileformat to trigger the correct loading pipeline
-        file_format = os.path.splitext(self.file_path)[1].lower()
-        if file_format == ".mf4":
+        input_format = os.path.splitext(self.file_path)[1].lower()
+        if input_format == ".mf4":
             self._load_mf4(step_size_init_ms=step_size_init_ms)
-        elif file_format == ".parquet":
+        elif input_format == ".parquet":
             self.logfile.write(
                 f"Evaluation of .parquet input/output is not implemented yet",
                 level="ERROR",
             )  # TODO
-        elif file_format == ".mat":
+        elif input_format == ".mat":
             self.logfile.write(
                 f"Evaluation of .mat input/output is not implemented yet", level="ERROR"
             )  # TODO
@@ -130,53 +130,59 @@ class Data:
             )
 
     @typechecked
-    def write_out(self, file_path: str, element_workflow: list, source: list):
+    def write_out(self, dir_path: str, output_format: str, element_workflow: list, source: list) -> str | None:
         """
         Writes data from a specified source within `self.data` to an output file.
 
-        The output format is determined by the file extension provided in `file_path`.
+        The final file path is constructed by combining `dir_path` with a new filename,
+        which includes a timestamp and the specified `output_format`.
         Currently, only .mf4 output is supported.
 
         Args:
-            file_path (str): The path to the output file (e.g., 'results.mf4').
+            dir_path (str): The path to the output directory.
+            output_format (str): The desired file extension (e.g., 'mf4').
             element_workflow (list): The workflow elements associated with the data.
-            source (list): A list of keys from `self.data` to be written.
-                Use `['all']` to write all available sources.
+            source (list): A list of keys from `self.data` to be written. Use `['all']` to write all available sources.
+
+        Returns:
+            str | None: The full path of the output file, or `None` if an error occurs.
         """
         try:
-            file_format = os.path.splitext(file_path)[1].lower()
 
-            if file_format == ".mf4":
+            file_path = self._eval_output_path(dir_path=dir_path, output_format=output_format)
+
+            if output_format == "mf4":
                 self._write_out_mf4(
                     file_path=file_path,
                     element_workflow=element_workflow,
                     source=source,
                 )
-            elif file_format == ".parquet":
+            elif output_format == "parquet":
                 self.logfile.write(
                     f"Evaluation of .parquet input/output is not implemented yet",
                     level="ERROR",
                 )  # TODO
-            elif file_format == ".mat":
+            elif output_format == "mat":
                 self.logfile.write(
                     f"Evaluation of .mat input/output is not implemented yet",
                     level="ERROR",
                 )  # TODO
             else:
                 self.logfile.write(
-                    f"Unsupported output file format: {file_format}.", level="WARNING"
+                    f"Unsupported output file format: {output_format}.", level="WARNING"
                 )
+
+            return file_path
 
         except Exception as e:
             self.logfile.write(
-                f"Error writing data to {file_path} from source '{source}': {e}",
+                f"Error writing data to {dir_path} from source '{source}': {e}",
                 level="ERROR",
             )
+            return None
 
     @typechecked
-    def _write_out_mf4(
-        self, file_path: str, element_workflow: list, source: list = None
-    ):
+    def _write_out_mf4(self, file_path: str, element_workflow: list, source: list = None):
         """
         Writes data from the specified sources in `self.data` to an .mf4 file.
 
@@ -184,7 +190,7 @@ class Data:
         and appends them to a new `asammdf.MDF` file.
 
         Args:
-            file_path (str): The path to the output .mf4 file.
+            file_path (str): The path to the output file.
             element_workflow (list): The workflow elements associated with the data.
             source (list): A list of keys from `self.data` to export. If `['all']`,
                 all available keys are used.
@@ -203,7 +209,6 @@ class Data:
                 ]
                 log_sources = str(source)
 
-            file_path = self._eval_output_path(file_path)
             all_signals_to_write = []
 
             with MDF() as output_file_mf4:
@@ -252,17 +257,13 @@ class Data:
                         level="WARNING",
                     )
 
-                output_file_mf4.append(
-                    all_signals_to_write, comment=f"ares simulation result"
-                )
+                output_file_mf4.append(all_signals_to_write, comment=f"ares simulation result")
                 output_file_mf4.save(file_path, overwrite=False)
-                self.logfile.write(
-                    f"Output .mf4 file written successfully to {file_path} with source {log_sources}."
-                )
+                self.logfile.write(f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}.")
 
         except Exception as e:
             self.logfile.write(
-                f"Error saving .mf4 file to {file_path} with source {log_sources}: {e}",
+                f"Error saving .mf4 file to {file_path} with source(s) {log_sources}: {e}",
                 level="ERROR",
             )
 
@@ -356,23 +357,25 @@ class Data:
             return None, {}
 
     @typechecked
-    def _eval_output_path(self, file_path: str) -> str | None:
+    def _eval_output_path(self, dir_path: str, output_format: str) -> str | None:
         """
-        Adds a timestamp to the filename in the given file path to prevent overwriting.
+        Adds a timestamp to the filename and returns a complete, absolute file path to prevent overwriting.
 
         The format is `*_YYYYMMDD_HHMMSS*` before the file extension.
 
         Args:
-            file_path (str): The original path to the output file.
+            dir_path (str): The absolute path to the output directory.
+            output_format (str): The desired file extension (e.g., 'mf4'). The leading dot is added automatically.
 
         Returns:
-            str | None: The new file path with a timestamp, or `None` if an error occurs.
+            str | None: The new, complete file path with a timestamp, or `None` if an error occurs.
         """
         try:
-            base, ext = os.path.splitext(file_path)
+            file_name = os.path.splitext(os.path.basename(self.file_path))[0]
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            new_file_path = f"{base}_{timestamp}{ext}"
-            return new_file_path
+            new_file_name = f"{file_name}_{timestamp}.{output_format}"
+            full_path = os.path.join(dir_path, new_file_name)
+            return full_path
 
         except Exception as e:
             self.logfile.write(

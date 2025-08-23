@@ -28,16 +28,31 @@ ________________________________________________________________________
 
 """
 
-from .logfile import Logfile
-import os
+from ares.core.logfile import Logfile
+from ares.models.dd_model import DataDictionary
 import json
-from jsonschema import validate, ValidationError
 import ctypes
 import numpy as np
 from typing import Union
 from typeguard import typechecked
+from pydantic import ValidationError
+
 
 class SimUnit:
+
+    data_types = {
+        "int": [ctypes.c_int, np.int8],
+        "float": [ctypes.c_float, np.float32],
+        "double": [ctypes.c_double, np.float64],
+        "bool": [ctypes.c_bool, np.bool_],
+        "short": [ctypes.c_short, np.int16],
+        "long": [ctypes.c_long, np.int32],
+        "longlong": [ctypes.c_longlong, np.int64],
+        "uint": [ctypes.c_uint, np.uint8],
+        "ulong": [ctypes.c_ulong, np.uint32],
+        "ulonglong": [ctypes.c_ulonglong, np.uint64],
+    }
+
     @typechecked
     def __init__(
         self, file_path: str = None, dd_path: str = None, logfile: Logfile = None
@@ -56,15 +71,15 @@ class SimUnit:
         """
         self.logfile = logfile
 
-        self.dd = self._load_dd(dd_path=dd_path)
+        self.dd = self._load_and_validate_dd(dd_path=dd_path)
         self.library = self._load_library(file_path=file_path)
         self.dll_interface = self._setup_c_interface()
         self.sim_function = self._setup_sim_function()
 
     @typechecked
-    def _load_dd(self, dd_path: str) -> dict | None:
+    def _load_and_validate_dd(self, dd_path: str) -> Union[DataDictionary, None]:
         """
-        Loads the Data Dictionary from a JSON file and validates its structure.
+        Loads the Data Dictionary from a JSON file and validates its structure using Pydantic.
 
         If the file cannot be found or parsed, or if validation fails, an error is
         logged and `None` is returned.
@@ -73,14 +88,16 @@ class SimUnit:
             dd_path (str): The path to the Data Dictionary JSON file.
 
         Returns:
-            dict | None: The loaded Data Dictionary as a dictionary, or `None` if an error occurs.
+            DataDictionary | None: The loaded and validated Data Dictionary as a Pydantic
+                object, or `None` if an error occurs.
         """
         try:
             with open(dd_path, "r", encoding="utf-8") as file:
-                dd = json.load(file)
-            self._dd_validation(dd=dd, dd_path=dd_path)
+                dd_data = json.load(file)
+
+            dd = DataDictionary.model_validate(dd_data)
             self.logfile.write(
-                f"Data dictionary '{dd_path}' successfully loaded.", level="INFO"
+                f"Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.", level="INFO"
             )
             return dd
         except FileNotFoundError:
@@ -94,57 +111,18 @@ class SimUnit:
                 level="ERROR",
             )
             return None
+        except ValidationError as e:
+            self.logfile.write(
+                f"Validation error for data dictionary '{dd_path}': {e}",
+                level="ERROR",
+            )
+            return None
         except Exception as e:
             self.logfile.write(
                 f"Unexpected error loading data dictionary file '{dd_path}': {e}",
                 level="ERROR",
             )
             return None
-
-    @typechecked
-    def _dd_validation(self, dd: dict, dd_path: str):
-        """
-        Validates the structure and content of the Data Dictionary JSON file against a
-        predefined JSON schema.
-
-        The function logs success or detailed error messages.
-
-        Args:
-            dd (dict): The Data Dictionary dictionary to be validated.
-            dd_path (str): The file path of the Data Dictionary for logging purposes.
-        """
-        try:
-            dd_schema_path = os.path.join(
-                os.path.dirname(os.path.dirname(__file__)), "schemas", "data_dictionary.schema.json"
-            )
-            with open(dd_schema_path, "r", encoding="utf-8") as schema_file:
-                schema = json.load(schema_file)
-
-            validate(instance=dd, schema=schema)
-            self.logfile.write(
-                f"The JSON data in '{dd_path}' is valid according to schema '{dd_schema_path}'.",
-                level="INFO",
-            )
-        except FileNotFoundError:
-            log_message = f"Error: One of the files was not found. Please check the paths. Missing file: '{dd_path}' or '{dd_schema_path}'."
-            self.logfile.write(log_message, level="ERROR")
-        except json.JSONDecodeError as e:
-            log_message = f"Error parsing the JSON file '{dd_path}': {e}"
-            self.logfile.write(log_message, level="ERROR")
-        except ValidationError as e:
-            log_message = (
-                f"Error while syntax validation of the workflow json file '{dd_path}': "
-                f"Message: {e.message}. "
-                f"Path: {' -> '.join(map(str, e.path))}. "
-                f"Schema Path: {' -> '.join(map(str, e.schema_path))}. "
-                f"Invalid Data: {json.dumps(e.instance, indent=2)}"
-            )
-            self.logfile.write(log_message, level="ERROR")
-        except Exception as e:
-            self.logfile.write(
-                f"Unexpected error during data dictionary json file validation: {e}",
-                level="ERROR",
-            )
 
     @typechecked
     def _load_library(self, file_path: str) -> ctypes.CDLL | None:
@@ -190,32 +168,14 @@ class SimUnit:
                 are the `ctypes` objects mapped to the DLL's global variables. Returns `None`
                 if an error occurs during mapping (e.g., symbol not found).
         """
-        c_types_map = {
-            "int": ctypes.c_int,
-            "float": ctypes.c_float,
-            "double": ctypes.c_double,
-            "char_p": ctypes.c_char_p,
-            "void_p": ctypes.c_void_p,
-            "bool": ctypes.c_bool,
-            "short": ctypes.c_short,
-            "long": ctypes.c_long,
-            "longlong": ctypes.c_longlong,
-            "ubyte": ctypes.c_ubyte,
-            "ushort": ctypes.c_ushort,
-            "uint": ctypes.c_uint,
-            "ulong": ctypes.c_ulong,
-            "ulonglong": ctypes.c_ulonglong,
-        }
-
         dll_interface = {}
 
         for dd_element_name, dd_element_value in self.dd.items():
             try:
-                datatype = dd_element_value["datatype"]
-                size = dd_element_value["size"]
-                base_ctypes_type = c_types_map.get(datatype)
+                datatype = dd_element_value.datatype
+                size = dd_element_value.size
+                base_ctypes_type = SimUnit.data_types[datatype][0]
 
-                # Check if datatype exists
                 if not base_ctypes_type:
                     self.logfile.write(
                         f"Invalid datatype '{datatype}' in variable '{dd_element_name}'.",
@@ -224,31 +184,24 @@ class SimUnit:
                     continue
 
                 if len(size) == 1:
-                    if size[0] == 1:  # Scalar or pointer to a single element
+                    if size[0] == 1:
                         ctypes_type = base_ctypes_type
-                    elif size[0] > 1:  # 1D array
+                    elif size[0] > 1:
                         ctypes_type = base_ctypes_type * size[0]
                     else:
-                        self.logfile.write(
-                            f"Invalid size '{size[0]}' for datatype '{datatype}' in variable '{dd_element_name}'. Expected > 0.",
-                            level="ERROR",
-                        )
+                        self.logfile.write(f"Invalid size '{size[0]}' for '{dd_element_name}'. Expected > 0.",level="ERROR")
                         continue
-                elif len(size) == 2:  # 2D array
+                elif len(size) == 2:
                     ctypes_type = (base_ctypes_type * size[1]) * size[0]
                 else:
-                    self.logfile.write(
-                        f"Invalid size '{size}' for datatype '{datatype}' in variable '{dd_element_name}'. Expected 1 or 2 dimensions.",
-                        level="ERROR",
-                    )
+                    self.logfile.write(f"Invalid size '{size}' for '{dd_element_name}'. Expected 1 or 2 dimensions.",level="ERROR",)
                     continue
 
                 dll_interface[dd_element_name] = ctypes_type.in_dll(
                     self.library, dd_element_name
                 )
-
                 self.logfile.write(
-                    f"Global simulation variable '{dd_element_name}' defined with datatype '{dd_element_value['datatype']}' and size '{dd_element_value['size']}'.",
+                    f"Global simulation variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}'.",
                     level="INFO",
                 )
             except AttributeError as e:
@@ -330,7 +283,9 @@ class SimUnit:
             sim_result = {}
             time_steps = len(data["timestamp"])
             self.logfile.write(
-                f"The simulation starts at timestamp {data["timestamp"][0]} seconds and ends at timestamp {data["timestamp"][-1]} seconds - duration: {data["timestamp"][-1]-data["timestamp"][0]}seconds",
+                f"The simulation starts at timestamp {data['timestamp'][0]} seconds "
+                f"and ends at timestamp {data['timestamp'][-1]} seconds - duration: "
+                f"{data['timestamp'][-1]-data['timestamp'][0]} seconds",
                 level="INFO",
             )
 
@@ -348,16 +303,21 @@ class SimUnit:
                         level="ERROR",
                     )
                     return None
-                step_result["timestamp"] = data["timestamp"][time_step_idx]
+
+                # converting timestamp value from np to std value and write it to step result
+                step_result["timestamp"] = data["timestamp"][time_step_idx].item()
 
                 for output_signal in step_result.keys():
                     if output_signal not in sim_result:
-                        sim_result[output_signal] = np.array(
-                            []
-                        )  # TODO: set correct datatype to np.array
-                    sim_result[output_signal] = np.append(
-                        sim_result[output_signal], step_result[output_signal]
-                    )
+                        if output_signal != 'timestamp':
+                            dd_element_value = self.dd[output_signal]
+                            np_dtype = SimUnit.data_types[dd_element_value.datatype][1]
+                            sim_result[output_signal] = np.empty(0, dtype=np_dtype)
+                        else:
+                            np_dtype = SimUnit.data_types['float'][1]
+                        sim_result[output_signal] = np.empty(0, dtype=np_dtype)
+
+                    sim_result[output_signal] = np.append(sim_result[output_signal], step_result[output_signal])
 
             self.logfile.write(f"ares simulation successfully finished.", level="INFO")
             return sim_result
@@ -382,77 +342,50 @@ class SimUnit:
         Returns:
             dict | None: A dictionary of mapped input values, or `None` if a mapping error occurs.
         """
+    def _map_sim_input(self, input_data: dict, time_steps: int) -> dict | None:
         try:
             mapped_input = {}
-            for dll_interface_key in self.dll_interface.keys():
-                if dll_interface_key in input_data:
-                    mapped_input[dll_interface_key] = input_data[dll_interface_key]
-                    self.logfile.write(
-                        f"Simulation signal '{dll_interface_key}' could be mapped to the original signal.",
-                        level="INFO",
-                    )
+            for dd_element_name, dd_element_value in self.dd.items():
+                if dd_element_name in input_data:
+                    mapped_input[dd_element_name] = input_data[dd_element_name]
+                    self.logfile.write(f"Simulation signal '{dd_element_name}' could be mapped to the original signal.", level="INFO")
                 else:
-                    size = self.dd[dll_interface_key]["size"]
-                    if "input_alternatives" in self.dd[dll_interface_key]:
-                        for alternative_value in self.dd[dll_interface_key][
-                            "input_alternatives"
-                        ]:
+                    mapped = False
+                    if hasattr(dd_element_value, 'input_alternatives') and dd_element_value.input_alternatives:
+                        for alternative_value in dd_element_value.input_alternatives:
                             if isinstance(alternative_value, str):
                                 if alternative_value in input_data:
-                                    mapped_input[dll_interface_key] = input_data[
-                                        alternative_value
-                                    ]
-                                    self.logfile.write(
-                                        f"Simulation signal '{dll_interface_key}' has been mapped to alternative '{alternative_value}'.",
-                                        level="INFO",
-                                    )
+                                    mapped_input[dd_element_name] = input_data[alternative_value]
+                                    self.logfile.write(f"Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.", level="INFO")
+                                    mapped = True
                                     break
                             else:
-                                mapped_input[dll_interface_key] = (
-                                    self._map_sim_input_static(
-                                        time_steps=time_steps,
-                                        datatype=self.dd[dll_interface_key]["datatype"],
-                                        size=size,
-                                        value=alternative_value,
-                                    )
-                                )
-                                self.logfile.write(
-                                    f"Simulation signal '{dll_interface_key}' has been mapped to constant value {alternative_value}.",
-                                    level="INFO",
-                                )
-                                break
-                        if dll_interface_key not in mapped_input:
-                            value = 0
-                            mapped_input[dll_interface_key] = (
-                                self._map_sim_input_static(
+                                mapped_input[dd_element_name] = self._map_sim_input_static(
                                     time_steps=time_steps,
-                                    datatype=self.dd[dll_interface_key]["datatype"],
-                                    size=size,
-                                    value=value,
+                                    datatype=dd_element_value.datatype,
+                                    size=dd_element_value.size,
+                                    value=alternative_value,
                                 )
-                            )
-                            self.logfile.write(
-                                f"Simulation signal '{dll_interface_key}' has been mapped to constant value {value}.",
-                                level="INFO",
-                            )
-                    else:
+                                self.logfile.write(f"Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.", level="INFO")
+                                mapped = True
+                                break
+                    if not mapped:
+                        # Fallback to default value 0
                         value = 0
-                        mapped_input[dll_interface_key] = self._map_sim_input_static(
+                        mapped_input[dd_element_name] = self._map_sim_input_static(
                             time_steps=time_steps,
-                            datatype=self.dd[dll_interface_key]["datatype"],
-                            size=size,
+                            datatype=dd_element_value.datatype,
+                            size=dd_element_value.size,
                             value=value,
                         )
                         self.logfile.write(
-                            f"Simulation signal '{dll_interface_key}' has been mapped to constant value {value}.",
+                            f"Simulation signal '{dd_element_name}' has been mapped to default constant value {value}.",
                             level="INFO",
                         )
             self.logfile.write("Mapping is successfully finished.", level="INFO")
             return mapped_input
         except Exception as e:
-            self.logfile.write(
-                f"Error during mapping of simulation input signals: {e}", level="ERROR"
-            )
+            self.logfile.write(f"Error during mapping of simulation input signals: {e}", level="ERROR")
             return None
 
     @typechecked
@@ -463,6 +396,7 @@ class SimUnit:
         Creates a NumPy array of a specified size and datatype, filled with a constant value.
 
         This is used to handle simulation variables that have a static value instead of a signal.
+        The function supports scalar, 1D, and 2D arrays as static values.
 
         Args:
             time_steps (int): The total number of simulation steps.
@@ -476,16 +410,25 @@ class SimUnit:
         """
         try:
             if len(size) == 1:
-                out = np.empty((time_steps, size[0]), dtype=datatype)
-                for time_step_idx in range(time_steps):
-                    out[time_step_idx] = value
-                return out
+                if isinstance(value, list):
+                    out = np.empty((time_steps, size[0]), dtype=datatype)
+                    for time_step_idx in range(time_steps):
+                        out[time_step_idx] = value
+                    return out
+                else:
+                    out = np.full((time_steps, size[0]), value, dtype=datatype)
+                    return out
             elif len(size) == 2:
-                # TODO: Impelement vairant for 2D array
-                self.logfile.write(
-                    f"Static mapping for 2D array is not yet implemented. Skipping.",
-                    level="WARNING",
-                )
+                out = np.empty((time_steps, size[0], size[1]), dtype=datatype)
+                if isinstance(value, list):
+                    if np.array(value).shape != (size[0], size[1]):
+                        raise ValueError(f"Shape of static 2D array value {np.array(value).shape} does not match DD size {size}.")
+                    for time_step_idx in range(time_steps):
+                        out[time_step_idx] = value
+                    return out
+                else:
+                    out = np.full((time_steps, size[0], size[1]), value, dtype=datatype)
+                    return out
         except Exception as e:
             self.logfile.write(
                 f"Error during mapping static value {value} : {e}", level="ERROR"
@@ -504,35 +447,32 @@ class SimUnit:
             input (dict): A dictionary with variable names and their values for the current time step.
             time_step_idx (int): The index of the current time step.
         """
-        for dll_interface_key in self.dll_interface.keys():
+        for dd_element_name, dd_element_value in self.dd.items():
             try:
-                sim_var = self.dll_interface[dll_interface_key]
-                sim_var_info = self.dd.get(dll_interface_key)
-
-                if sim_var_info and sim_var_info.get("type") not in ["in", "inout"]:
+                if dd_element_value.type not in ["in", "inout"]:
                     continue
 
-                if isinstance(sim_var, ctypes._SimpleCData):
-                    sim_var.value = input[dll_interface_key][time_step_idx]
-                elif isinstance(sim_var, ctypes.Array):
-                    if len(sim_var_info["size"]) == 1:
-                        for i in range(sim_var_info["size"][0]):
-                            sim_var[i] = input[dll_interface_key][time_step_idx][i]
-                    elif len(sim_var_info["size"]) == 2:
-                        # TODO: Impelement vairant for 2D array
-                        self.logfile.write(
-                            f"Writing to 2D array '{dll_interface_key}' is not yet implemented. Skipping.",
-                            level="WARNING",
-                        )
-                        continue
+                sim_var = self.dll_interface[dd_element_name]
+                size = dd_element_value.size
+
+                if len(size) == 1:
+                    if size[0] == 1:
+                         sim_var.value = input[dd_element_name][time_step_idx]
+                    else:
+                        for i in range(size[0]):
+                            sim_var[i] = input[dd_element_name][time_step_idx][i]
+                elif len(size) == 2:
+                    for i in range(size[0]):
+                        for j in range(size[1]):
+                            sim_var[i][j] = input[dd_element_name][time_step_idx][i][j]
                 else:
                     self.logfile.write(
-                        f"Unhandled ctypes type for '{dll_interface_key}': '{type(sim_var)}'. Cannot set values.",
+                        f"Unsupported size '{size}' for '{dd_element_name}'. Cannot write values.",
                         level="ERROR",
                     )
             except Exception as e:
                 self.logfile.write(
-                    f"Error writing input value '{dll_interface_key}' of to 'ares_simunit' fucntion: {e}",
+                    f"Error writing input value '{dd_element_name}' to 'ares_simunit' function: {e}",
                     level="ERROR",
                 )
 
@@ -548,36 +488,34 @@ class SimUnit:
                 values read from the C library for the current time step. Returns `None` if an error occurs.
         """
         current_values = {}
-        for dll_interface_key in self.dll_interface.keys():
+        for dd_element_name, dd_element_value in self.dd.items():
             try:
-                sim_var = self.dll_interface[dll_interface_key]
-                sim_var_info = self.dd.get(dll_interface_key)
-
-                if sim_var_info and sim_var_info.get("type") not in ["out", "inout"]:
+                if dd_element_value.type not in ["out", "inout"]:
                     continue
 
-                if isinstance(sim_var, ctypes._SimpleCData):
-                    current_values[dll_interface_key] = sim_var.value
-                elif isinstance(sim_var, ctypes.Array):
-                    if len(sim_var_info["size"]) == 1:
-                        current_values[dll_interface_key] = [
-                            sim_var[i] for i in range(sim_var_info["size"][0])
+                sim_var = self.dll_interface[dd_element_name]
+                size = dd_element_value.size
+
+                if len(size) == 1:
+                    if size[0] == 1:
+                        current_values[dd_element_name] = sim_var.value
+                    else:
+                        current_values[dd_element_name] = [
+                            sim_var[i] for i in range(size[0])
                         ]
-                    elif len(sim_var_info["size"]) == 2:
-                        # TODO: Impelement vairant for 2D array
-                        self.logfile.write(
-                            f"Reading 2D array '{dll_interface_key}' is not yet implemented. Skipping.",
-                            level="WARNING",
-                        )
-                        continue
+                elif len(size) == 2:
+                    current_values[dd_element_name] = [
+                        [sim_var[i][j] for j in range(size[1])]
+                        for i in range(size[0])
+                    ]
                 else:
                     self.logfile.write(
-                        f"Unhandled ctypes type for '{dll_interface_key}'. Cannot get value.",
+                        f"Unsupported size '{size}' for '{dd_element_name}'. Cannot read values.",
                         level="ERROR",
                     )
             except Exception as e:
                 self.logfile.write(
-                    f"Error writing output value '{dll_interface_key}' of to 'ares_simunit' fucntion: {e}",
+                    f"Error reading output value '{dd_element_name}' from 'ares_simunit' function: {e}",
                     level="ERROR",
                 )
 

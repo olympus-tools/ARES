@@ -40,7 +40,7 @@ TODO: Workflows have to be implemented like...
 
 TODO: Reading and writing data sources in different file formats (currently only mf4 is implemented)
 
-#### parameters
+#### parameter
 
 TODO: Reading and writing datasets in different file formats (currently only dcm is implemented)
 
@@ -90,6 +90,7 @@ flowchart LR
     class SWU4 SW_Unit;
     class SWU5 SW_Unit;
 ```
+
 ## 5. Examples
 
-TODO: how to compile and start an example
+For a detailed explanation of the example applications, please refer to [README.md](https://github.com/AndraeCarotta/ARES/blob/master/examples/README.md).

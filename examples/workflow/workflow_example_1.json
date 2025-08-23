@@ -1,0 +1,40 @@
+{
+    "data_output_1": {
+        "type": "data",
+        "input": ["sw_component_2"],
+        "mode": "write",
+        "output_format": "mf4"
+    },
+    "data_example_1": {
+        "type": "data",
+        "path": [
+            "/home/andrae/Dokumente/10_git/20_ARES/examples/data/data_example_1.mf4",
+            "/home/andrae/Dokumente/10_git/20_ARES/examples/data/data_example_1.mf4"
+        ],
+        "source": ["source_1"],
+        "mode": "read"
+    },
+    "sw_component_1": {
+        "type": "sim_unit",
+        "path": "/home/andrae/Dokumente/10_git/20_ARES/examples/sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.so",
+        "parameter": ["dataset_1"],
+        "cycle_time": 20,
+        "input": ["data_example_1"],
+        "data_dictionary": "/home/andrae/Dokumente/10_git/20_ARES/examples/sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder_dd.json"
+    },
+    "sw_component_2": {
+        "type": "sim_unit",
+        "path": "/home/andrae/Dokumente/10_git/20_ARES/examples/sim_unit/derivation/derivation.so",
+        "parameter": ["dataset_1"],
+        "cycle_time": 10,
+        "input": [
+            "sw_component_1",
+            "data_example_1"
+        ],
+        "data_dictionary": "/home/andrae/Dokumente/10_git/20_ARES/examples/sim_unit/derivation/derivation_dd.json"
+    },
+    "dataset_1": {
+        "type": "parameter",
+        "path": ["/home/andrae/Dokumente/10_git/20_ARES/examples/data/data_example_1.mf4"]
+    }
+}
