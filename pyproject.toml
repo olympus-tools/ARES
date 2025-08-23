@@ -56,4 +56,4 @@ dev = [
 packages = ["ares"]
 
 [tool.setuptools_scm]
-write_to = "ares/version.py"
+write_to = "version.py"
