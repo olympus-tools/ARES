@@ -63,7 +63,7 @@ def pipeline(wf_path: str, output_path: str, logfile: Logfile):
         if output_path is None:
             output_path = os.path.dirname(wf_path)
 
-        for wf_element_name, wf_element_value in ares_wf.workflow.root.items():
+        for wf_element_name, wf_element_value in ares_wf.workflow.items():
 
             # Handle "data" workflow elements
             if wf_element_value.type == "data":

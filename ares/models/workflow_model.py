@@ -28,90 +28,93 @@ ________________________________________________________________________
 
 """
 
-from pydantic import BaseModel, RootModel, Field, model_validator
-from typing import List, Dict, Optional, Any, Union, Literal
+from typing import List, Dict, Optional, Union, Any
+from pydantic import BaseModel, RootModel, Field
+from typing_extensions import Literal
 
 
 class BaseElement(BaseModel):
-    """Base model for all workflow elements to share common fields."""
+    """Base model for all workflow elements."""
     type: str
-    element_workflow: List[str] = Field(default_factory=list, description="A list of workflow elements that this element depends on, in execution order.")
+    element_workflow: List[str] = Field(default_factory=list)
 
 
 class DataElement(BaseElement):
-    """Model for workflow elements of type 'data'."""
     type: Literal["data"] = "data"
-    mode: str
-    path: Optional[List[str]] = Field(None, min_items=1)
-    source: List[str] = Field(default_factory=lambda: ["all"], min_items=0)
-    input: Optional[List[str]] = Field(None, min_items=1)
-    cycle_time: int = Field(10, ge=1)
+    mode: Literal["read", "write"]
+    path: Optional[List[str]] = None
+    input: Optional[List[str]] = None
     output_format: Optional[str] = None
-    element_workflow: List[str] = Field(default_factory=list)
+    source: Optional[List[str]] = None
+    cycle_time: Optional[int] = None
 
     class Config:
-        """Pydantic model configuration."""
-        extra = 'forbid'
+        extra = "forbid"
 
-    @model_validator(mode='after')
-    def check_mode_requirements(self):
-        """Validate required fields based on 'mode'."""
-        if self.mode == 'read' and not self.path:
-            raise ValueError("Field 'path' is required when mode is 'read'.")
-        if self.mode == 'write' and (not self.input or not self.output_format):
-            raise ValueError("Fields 'input' and 'output_format' are required when mode is 'write'.")
-
-        return self
+    def validate_mode_requirements(self):
+        if self.mode == "read" and not self.path:
+            raise ValueError("Field 'path' is required for mode='read'.")
+        if self.mode == "write" and (not self.input or not self.output_format):
+            raise ValueError("Fields 'input' and 'output_format' are required for mode='write'.")
 
 
 class ParameterElement(BaseElement):
-    """Model for workflow elements of type 'parameter'."""
     type: Literal["parameter"] = "parameter"
-    path: List[str] = Field(min_items=1)
-    element_workflow: List[str] = Field(default_factory=list)
+    path: List[str]
 
     class Config:
-        """Pydantic model configuration."""
-        extra = 'forbid'
+        extra = "forbid"
 
 
 class SimUnitElement(BaseElement):
-    """Model for workflow elements of type 'sim_unit'."""
     type: Literal["sim_unit"] = "sim_unit"
     path: str
-    parameter: Optional[List[str]] = Field(None, min_items=1)
-    cycle_time: int = Field(..., ge=1)
-    input: List[str] = Field(min_items=1)
+    parameter: Optional[List[str]] = None
+    cycle_time: int
+    input: List[str]
     data_dictionary: str
-    init: Optional[List[str]] = Field(None, min_items=1)
+    init: Optional[List[str]] = None
     cancel_condition: Optional[str] = None
-    element_workflow: List[str] = Field(default_factory=list)
 
     class Config:
-        """Pydantic model configuration."""
-        extra = 'forbid'
+        extra = "forbid"
 
 
 class CustomElement(BaseElement):
-    """Model for workflow elements of type 'custom'."""
     type: Literal["custom"] = "custom"
     path: str
-    input: Optional[List[str]] = Field(None, min_items=1)
+    input: Optional[List[str]] = None
     output: Optional[str] = None
-    parameter: Optional[List[str]] = Field(None, min_items=1)
-    init: Optional[List[str]] = Field(None, min_items=1)
+    parameter: Optional[List[str]] = None
+    init: Optional[List[str]] = None
     cancel_condition: Optional[str] = None
     plot_config: Optional[Dict[str, Any]] = None
     spec: Optional[str] = None
-    element_workflow: List[str] = Field(default_factory=list)
+
+    class Config:
+        extra = "forbid"
 
 
 WorkflowElement = Union[DataElement, ParameterElement, SimUnitElement, CustomElement]
-
 class WorkflowSchema(RootModel):
-    """The root model for the entire workflow JSON."""
     root: Dict[str, WorkflowElement]
 
-    def model_dump_json(self, **kwargs: Any) -> str:
-        """Dump the model to a JSON string."""
+    def __getitem__(self, key: str) -> WorkflowElement:
+        return self.root[key]
+
+    def items(self):
+        return self.root.items()
+
+    def values(self):
+        return self.root.values()
+
+    def keys(self):
+        return self.root.keys()
+
+    def get(self, key: str, default: Any = None):
+        return self.root.get(key, default)
+
+
+    def model_dump_json(self, **kwargs) -> str:
+        """Dump workflow JSON as string."""
         return super().model_dump_json(**kwargs)

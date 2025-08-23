@@ -76,10 +76,17 @@ class Workflow:
 
             # Verarbeitung des Pydantic-Objekts in der richtigen Reihenfolge
             workflow_sinks = self._find_sinks(workflow=workflow_raw_pydantic)
+            if workflow_sinks is None:
+                return None
             workflow_order = self._eval_workflow_order(workflow=workflow_raw_pydantic, wf_sinks=workflow_sinks)
-            workflow_sorted_pydantic = self._sort_workflow(workflow_order=workflow_order, workflow=workflow_raw_pydantic)
-            workflow = self._eval_element_workflow(workflow=workflow_sorted_pydantic)
+            if workflow_order is None:
+                return None
 
+            workflow_sorted_pydantic = self._sort_workflow(workflow_order=workflow_order, workflow=workflow_raw_pydantic)
+            if workflow_sorted_pydantic is None:
+                return None
+
+            workflow = self._eval_element_workflow(workflow=workflow_sorted_pydantic)
             return workflow
 
         except FileNotFoundError:
@@ -126,10 +133,10 @@ class Workflow:
         try:
             wf_sinks = []
 
-            for wf_element_name in workflow.root.keys():
+            for wf_element_name in workflow.keys():
                 call_count = 0
 
-                for wf_element_value in workflow.root.values():
+                for wf_element_value in workflow.values():
                     ref_input_list = []
 
                     if hasattr(wf_element_value, "parameter") and wf_element_value.parameter is not None:
@@ -229,7 +236,7 @@ class Workflow:
             path = []
             inputs = []
 
-            elem_obj = workflow.root.get(element)
+            elem_obj = workflow.get(element)
 
             if elem_obj is None:
                 self.logfile.write(f"Workflow element '{element}' not found.", level="WARNING")
@@ -280,7 +287,7 @@ class Workflow:
         try:
             workflow_sorted_dict = {}
             for item in workflow_order:
-                wf_element_obj = workflow.root.get(item)
+                wf_element_obj = workflow.get(item)
                 if wf_element_obj:
                     workflow_sorted_dict[item] = wf_element_obj
 
@@ -303,26 +310,26 @@ class Workflow:
                 field populated, or None in case of an error.
         """
         try:
-            for wf_element_name, wf_element in workflow.root.items():
+            for wf_element_name, wf_element in workflow.items():
                 element_workflow = []
 
                 if hasattr(wf_element, "init") and wf_element.init is not None:
                     for init in wf_element.init:
-                        init_elem = workflow.root.get(init)
+                        init_elem = workflow.get(init)
                         if init_elem is not None:
                             element_workflow.extend(init_elem.element_workflow)
                             element_workflow.append(init)
 
                 if hasattr(wf_element, "input") and wf_element.input is not None:
                     for input_name in wf_element.input:
-                        input_elem = workflow.root.get(input_name)
+                        input_elem = workflow.get(input_name)
                         if input_elem is not None:
                             element_workflow.extend(input_elem.element_workflow)
                             element_workflow.append(input_name)
 
                 if hasattr(wf_element, "parameter") and wf_element.parameter is not None:
                     for param_name in wf_element.parameter:
-                        param_elem = workflow.root.get(param_name)
+                        param_elem = workflow.get(param_name)
                         if param_elem is not None:
                             element_workflow.extend(param_elem.element_workflow)
                             element_workflow.append(param_name)
