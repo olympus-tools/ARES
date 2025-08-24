@@ -102,6 +102,18 @@ class WorkflowSchema(RootModel):
     def __getitem__(self, key: str) -> WorkflowElement:
         return self.root[key]
 
+    def __setitem__(self, key: str, value: WorkflowElement) -> None:
+        self.root[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        del self.root[key]
+
+    def __iter__(self):
+        return iter(self.root)
+
+    def __len__(self) -> int:
+        return len(self.root)
+
     def items(self):
         return self.root.items()
 

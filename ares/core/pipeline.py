@@ -85,7 +85,7 @@ def pipeline(wf_path: str, output_path: str, logfile: Logfile):
                         )
                 # Write mode: export data from Data objects
                 elif wf_element_value.mode == "write":
-                    ares_wf.workflow.root[wf_element_name].path = []
+                    ares_wf.workflow[wf_element_name].path = []
                     for data_source_value in data_source_objects[wf_element_value.element_workflow[0]].values():
                         output_file_path = data_source_value.write_out(
                             dir_path=output_path,
@@ -93,7 +93,7 @@ def pipeline(wf_path: str, output_path: str, logfile: Logfile):
                             element_workflow=wf_element_value.element_workflow,
                             source=wf_element_value.source,
                         )
-                        ares_wf.workflow.root[wf_element_name].path.append(output_file_path)
+                        ares_wf.workflow[wf_element_name].path.append(output_file_path)
 
             # Handle "parameter" workflow elements
             if wf_element_value.type == "parameter":
