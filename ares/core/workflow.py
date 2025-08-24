@@ -31,6 +31,7 @@ ________________________________________________________________________
 from ares.core.logfile import Logfile
 from ares.models.workflow_model import WorkflowSchema
 import os
+import re
 import json
 from datetime import datetime
 from jsonschema import ValidationError
@@ -51,6 +52,11 @@ class Workflow:
         self.logfile = logfile
         self._file_path = file_path
         self.workflow: Optional[WorkflowSchema] = self._load_and_validate_wf()
+        self._evaluate_relative_paths()
+        workflow_sinks = self._find_sinks()
+        workflow_order = self._eval_workflow_order(wf_sinks=workflow_sinks)
+        self._sort_workflow(workflow_order=workflow_order)
+        self._eval_element_workflow()
 
     @typechecked
     def _load_and_validate_wf(self) -> Optional[WorkflowSchema]:
@@ -73,21 +79,7 @@ class Workflow:
                 f"Workflow file {self._file_path} successfully loaded and validated with Pydantic.",
                 level="INFO",
             )
-
-            # Verarbeitung des Pydantic-Objekts in der richtigen Reihenfolge
-            workflow_sinks = self._find_sinks(workflow=workflow_raw_pydantic)
-            if workflow_sinks is None:
-                return None
-            workflow_order = self._eval_workflow_order(workflow=workflow_raw_pydantic, wf_sinks=workflow_sinks)
-            if workflow_order is None:
-                return None
-
-            workflow_sorted_pydantic = self._sort_workflow(workflow_order=workflow_order, workflow=workflow_raw_pydantic)
-            if workflow_sorted_pydantic is None:
-                return None
-
-            workflow = self._eval_element_workflow(workflow=workflow_sorted_pydantic)
-            return workflow
+            return workflow_raw_pydantic
 
         except FileNotFoundError:
             self.logfile.write(
@@ -115,16 +107,71 @@ class Workflow:
             return None
 
     @typechecked
-    def _find_sinks(self, workflow: Optional[WorkflowSchema]) -> list | None:
+    def _evaluate_relative_paths(self):
+        """Convert all relative file paths in workflow elements to absolute paths.
+
+        This method iterates over all workflow elements and inspects each of their fields.
+        If a field contains a string or a list of strings that appear to be file paths,
+        it converts any relative paths into absolute paths based on the directory of the
+        workflow JSON file (`self._file_path`). Absolute paths are left unchanged.
+        """
+        try:
+            base_dir = os.path.dirname(os.path.abspath(self._file_path))
+            path_eval_pattern = r"\.[a-zA-Z0-9]+$"
+
+            for wf_element_name, wf_element_value in self.workflow.items():
+                for field_name, field_value in wf_element_value.__dict__.items():
+                    if field_value is None:
+                        continue
+
+                    # Case 1: single string
+                    if isinstance(field_value, str):
+                        if (("/" in field_value or "\\" in field_value or
+                            re.search(path_eval_pattern, field_value) is not None)):
+                            if not os.path.isabs(field_value):
+                                abs_path = os.path.abspath(os.path.join(base_dir, field_value))
+                                setattr(wf_element_value, field_name, abs_path)
+                                self.logfile.write(
+                                    f"Resolved relative path for '{wf_element_name}.{field_name}': {abs_path}",
+                                    level="INFO",
+                                )
+
+                    # Case 2: list of strings
+                    elif isinstance(field_value, list) and all(isinstance(x, str) for x in field_value):
+                        abs_paths = []
+                        changed = False
+                        for path in field_value:
+                            if ("/" in path or "\\" in path or
+                                re.search(path_eval_pattern, path) is not None):
+                                if not os.path.isabs(path):
+                                    abs_paths.append(os.path.abspath(os.path.join(base_dir, path)))
+                                    changed = True
+                                else:
+                                    abs_paths.append(path)
+                            else:
+                                abs_paths.append(path)
+
+                        if changed:
+                            setattr(wf_element_value, field_name, abs_paths)
+                            self.logfile.write(
+                                f"Resolved relative paths for '{wf_element_name}.{field_name}': {abs_paths}",
+                                level="INFO",
+                            )
+
+        except Exception as e:
+            self.logfile.write(
+                f"Error evaluating relative paths: {e}",
+                level="ERROR",
+            )
+
+    @typechecked
+    def _find_sinks(self) -> list | None:
         """
         Identifies the endpoints (sinks) of the workflow.
 
         These are elements that are not referenced as `input`, `dataset`, or `init`
         in any other element. They serve as the starting points for the backward
         analysis of the execution order.
-
-        Args:
-            workflow (WorkflowSchema): The workflow Pydantic object.
 
         Returns:
             list | None: A list of strings containing the names of the endpoint elements,
@@ -133,10 +180,10 @@ class Workflow:
         try:
             wf_sinks = []
 
-            for wf_element_name in workflow.keys():
+            for wf_element_name in self.workflow.keys():
                 call_count = 0
 
-                for wf_element_value in workflow.values():
+                for wf_element_value in self.workflow.values():
                     ref_input_list = []
 
                     if hasattr(wf_element_value, "parameter") and wf_element_value.parameter is not None:
@@ -172,7 +219,7 @@ class Workflow:
             return None
 
     @typechecked
-    def _eval_workflow_order(self, workflow: Optional[WorkflowSchema], wf_sinks: list) -> list | None:
+    def _eval_workflow_order(self, wf_sinks: list) -> list | None:
         """
         Determines the correct execution order of the workflow elements.
 
@@ -180,7 +227,6 @@ class Workflow:
         The function logs the determined order.
 
         Args:
-            workflow (WorkflowSchema): The Pydantic workflow object.
             wf_sinks (list): A list of the workflow's endpoint elements.
 
         Returns:
@@ -191,7 +237,7 @@ class Workflow:
             workflow_order = []
 
             for wf_sink in wf_sinks:
-                path = self._recursive_search(workflow=workflow, sink=wf_sink, loop=False, element=wf_sink)
+                path = self._recursive_search(sink=wf_sink, loop=False, element=wf_sink)
                 if path is None:
                     return None
                 for step in path:
@@ -211,9 +257,7 @@ class Workflow:
             return None
 
     @typechecked
-    def _recursive_search(
-        self, workflow: Optional[WorkflowSchema], sink: str, loop: bool, element: str
-    ) -> list | None:
+    def _recursive_search(self, sink: str, loop: bool, element: str) -> list | None:
         """
         Recursively traces the execution path backward from a given element.
 
@@ -221,7 +265,6 @@ class Workflow:
         handles cyclic dependencies (`cancel_condition`).
 
         Args:
-            workflow (WorkflowSchema): The complete workflow Pydantic object.
             sink (str): The initial starting element of the overall search. Used to
                 differentiate between regular and loop inputs for a `cancel_condition`.
             loop (bool): A boolean flag indicating whether the search is currently inside a loop.
@@ -236,7 +279,7 @@ class Workflow:
             path = []
             inputs = []
 
-            elem_obj = workflow.get(element)
+            elem_obj = self.workflow.get(element)
 
             if elem_obj is None:
                 self.logfile.write(f"Workflow element '{element}' not found.", level="WARNING")
@@ -258,7 +301,7 @@ class Workflow:
                 inputs.extend(elem_obj.parameter)
 
             for input in inputs:
-                path.extend(self._recursive_search(workflow=workflow, sink=sink, loop=loop, element=input))
+                path.extend(self._recursive_search(sink=sink, loop=loop, element=input))
                 if path is None:
                     return None
 
@@ -273,77 +316,62 @@ class Workflow:
             return None
 
     @typechecked
-    def _sort_workflow(self, workflow_order: list, workflow: WorkflowSchema) -> Optional[WorkflowSchema]:
+    def _sort_workflow(self, workflow_order: list):
         """
         Sorts the workflow Pydantic object based on the determined execution order.
 
         Args:
             workflow_order (list): The list of elements in the correct execution order.
-            workflow (WorkflowSchema): The unsorted workflow Pydantic object.
-
-        Returns:
-            Optional[WorkflowSchema]: A new, sorted workflow Pydantic object, or `None` in case of an error.
         """
         try:
             workflow_sorted_dict = {}
             for item in workflow_order:
-                wf_element_obj = workflow.get(item)
+                wf_element_obj = self.workflow.get(item)
                 if wf_element_obj:
                     workflow_sorted_dict[item] = wf_element_obj
 
-            return WorkflowSchema(root=workflow_sorted_dict)
+            self.workflow = WorkflowSchema(root=workflow_sorted_dict)
 
         except Exception as e:
             self.logfile.write(f"Error while sorting the workflow: {e}", level="ERROR")
-            return None
 
     @typechecked
-    def _eval_element_workflow(self, workflow: Optional[WorkflowSchema]) -> Optional[WorkflowSchema]:
+    def _eval_element_workflow(self):
         """
         Assigns the workflow from a data source to each workflow element.
-
-        Args:
-            workflow (WorkflowSchema): The Pydantic workflow object.
-
-        Returns:
-            Optional[WorkflowSchema]: The workflow Pydantic object with the 'element_workflow'
-                field populated, or None in case of an error.
         """
         try:
-            for wf_element_name, wf_element in workflow.items():
+            for wf_element_name, wf_element in self.workflow.items():
                 element_workflow = []
 
                 if hasattr(wf_element, "init") and wf_element.init is not None:
                     for init in wf_element.init:
-                        init_elem = workflow.get(init)
+                        init_elem = self.workflow.get(init)
                         if init_elem is not None:
                             element_workflow.extend(init_elem.element_workflow)
                             element_workflow.append(init)
 
                 if hasattr(wf_element, "input") and wf_element.input is not None:
                     for input_name in wf_element.input:
-                        input_elem = workflow.get(input_name)
+                        input_elem = self.workflow.get(input_name)
                         if input_elem is not None:
                             element_workflow.extend(input_elem.element_workflow)
                             element_workflow.append(input_name)
 
                 if hasattr(wf_element, "parameter") and wf_element.parameter is not None:
                     for param_name in wf_element.parameter:
-                        param_elem = workflow.get(param_name)
+                        param_elem = self.workflow.get(param_name)
                         if param_elem is not None:
                             element_workflow.extend(param_elem.element_workflow)
                             element_workflow.append(param_name)
 
                 # remove duplicates and store it to the dictionary
-                workflow.root[wf_element_name].element_workflow = list(dict.fromkeys(element_workflow))
-
-            return workflow
+                self.workflow[wf_element_name].element_workflow = list(dict.fromkeys(element_workflow))
 
         except Exception as e:
             self.logfile.write(
                 f"Error while evaluating element workflow: {e}", level="ERROR"
             )
-            return None
 
     @typechecked
     def write_out(self, output_path: str):
