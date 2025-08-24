@@ -37,13 +37,7 @@ from typeguard import typechecked
 
 class Data:
     @typechecked
-    def __init__(
-        self,
-        file_path: str,
-        source: list,
-        step_size_init_ms: int,
-        logfile: Logfile,
-    ):
+    def __init__(self, file_path: str, source: list, step_size_init_ms: int, logfile: Logfile):
         """
         Initializes the Data class by reading a data source file.
 
@@ -57,28 +51,28 @@ class Data:
             step_size_init_ms (int): The target resampling step size in milliseconds for the initial loading.
             logfile (Logfile): The logfile object of the current ARES pipeline.
         """
-        self.file_path = file_path
-        self.logfile = logfile
+        self._file_path = file_path
+        self._logfile_path = logfile
         self.source = set(source)
         self.data = {}
         self.data["base"] = {}
 
         # get fileformat to trigger the correct loading pipeline
-        input_format = os.path.splitext(self.file_path)[1].lower()
+        input_format = os.path.splitext(self._file_path)[1].lower()
         if input_format == ".mf4":
             self._load_mf4(step_size_init_ms=step_size_init_ms)
         elif input_format == ".parquet":
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Evaluation of .parquet input/output is not implemented yet",
                 level="ERROR",
             )  # TODO
         elif input_format == ".mat":
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Evaluation of .mat input/output is not implemented yet", level="ERROR"
             )  # TODO
         else:
-            self.logfile.write(
-                f"Unknown file format for {self.file_path}.", level="WARNING"
+            self._logfile_path.write(
+                f"Unknown file format for {self._file_path}.", level="ERROR"
             )
 
     @typechecked
@@ -93,7 +87,7 @@ class Data:
             step_size_init_ms (float): The target resampling step size in milliseconds.
         """
         try:
-            with MDF(self.file_path) as datasource:
+            with MDF(self._file_path) as datasource:
                 data_raw = {}
                 for signal in datasource.iter_channels():
                     signal_source_name = (
@@ -109,8 +103,8 @@ class Data:
                         data_raw[signal.name] = (signal.timestamps, signal.samples)
 
                 if not data_raw:
-                    self.logfile.write(
-                        f"No signals found matching the specified source {self.source} in {self.file_path}.",
+                    self._logfile_path.write(
+                        f"No signals found matching the specified source {self.source} in {self._file_path}.",
                         level="WARNING",
                     )
 
@@ -120,13 +114,13 @@ class Data:
                 self.data["base"]["timestamp"] = time_vector
                 self.data["base"].update(data_resampled)
 
-                self.logfile.write(
-                    f"Source '{self.source}' from .mf4 file {self.file_path} loaded successfully (nested data under source 'base')."
+                self._logfile_path.write(
+                    f"Source '{self.source}' from .mf4 file {self._file_path} loaded successfully (nested data under source 'base')."
                 )
 
         except Exception as e:
-            self.logfile.write(
-                f"Error loading .mf4 file {self.file_path}: {e}", level="ERROR"
+            self._logfile_path.write(
+                f"Error loading .mf4 file {self._file_path}: {e}", level="ERROR"
             )
 
     @typechecked
@@ -158,24 +152,24 @@ class Data:
                     source=source,
                 )
             elif output_format == "parquet":
-                self.logfile.write(
+                self._logfile_path.write(
                     f"Evaluation of .parquet input/output is not implemented yet",
                     level="ERROR",
                 )  # TODO
             elif output_format == "mat":
-                self.logfile.write(
+                self._logfile_path.write(
                     f"Evaluation of .mat input/output is not implemented yet",
                     level="ERROR",
                 )  # TODO
             else:
-                self.logfile.write(
+                self._logfile_path.write(
                     f"Unsupported output file format: {output_format}.", level="WARNING"
                 )
 
             return file_path
 
         except Exception as e:
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Error writing data to {dir_path} from source '{source}': {e}",
                 level="ERROR",
             )
@@ -230,7 +224,7 @@ class Data:
                             try:
                                 samples = samples.astype(np.float64)
                             except ValueError:
-                                self.logfile.write(
+                                self._logfile_path.write(
                                     f"Error: Signal '{signal_name}' in source '{source_key}' could not be converted to float64. Skipping.",
                                     level="WARNING",
                                 )
@@ -246,23 +240,23 @@ class Data:
                             all_signals_to_write.append(signal)
 
                     else:
-                        self.logfile.write(
+                        self._logfile_path.write(
                             f"Skipping key '{source_key}' not found in simulation 'data' element.",
                             level="WARNING",
                         )
 
                 if not all_signals_to_write:
-                    self.logfile.write(
+                    self._logfile_path.write(
                         f"No valid signals found to write for source {log_sources} to {file_path}.",
                         level="WARNING",
                     )
 
                 output_file_mf4.append(all_signals_to_write, comment=f"ares simulation result")
                 output_file_mf4.save(file_path, overwrite=False)
-                self.logfile.write(f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}.")
+                self._logfile_path.write(f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}.")
 
         except Exception as e:
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Error saving .mf4 file to {file_path} with source(s) {log_sources}: {e}",
                 level="ERROR",
             )
@@ -340,18 +334,18 @@ class Data:
                     )
                     none_array = np.array([None] * num_samples)
                     data_resampled[signal_name] = none_array
-                    self.logfile.write(
+                    self._logfile_path.write(
                         f"Signal '{signal_name}' could not be read from measurement file.",
                         level="INFO",
                     )
 
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Data source file successfully resampled.", level="INFO"
             )
             return global_time_vector, data_resampled
 
         except Exception as e:
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Error during preprocessing mf4 data source file: {e}", level="ERROR"
             )
             return None, {}
@@ -371,14 +365,14 @@ class Data:
             str | None: The new, complete file path with a timestamp, or `None` if an error occurs.
         """
         try:
-            file_name = os.path.splitext(os.path.basename(self.file_path))[0]
+            file_name = os.path.splitext(os.path.basename(self._file_path))[0]
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             new_file_name = f"{file_name}_{timestamp}.{output_format}"
             full_path = os.path.join(dir_path, new_file_name)
             return full_path
 
         except Exception as e:
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Evaluation of data output name failed: {e}", level="ERROR"
             )
             return None
@@ -414,14 +408,14 @@ class Data:
                 source.append(data_source_name)
 
             source_string = " <- ".join(source)
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Simulation input data got merged from sources: {source_string}",
                 level="INFO",
             )
             return out_data
 
         except Exception as e:
-            self.logfile.write(
+            self._logfile_path.write(
                 f"Error occurred while merging simulation input data from sources {source_string}: {e}",
                 level="ERROR",
             )
@@ -459,9 +453,9 @@ class Data:
                     resampled = np.interp(timestamp_resampled, timestamp, signal_value)
                     data_resampled[signal_name] = resampled
 
-            self.logfile.write(f"Resampling successfully finished.", level="INFO")
+            self._logfile_path.write(f"Resampling successfully finished.", level="INFO")
             return data_resampled
 
         except Exception as e:
-            self.logfile.write(f"Error during resampling: {e}", level="ERROR")
+            self._logfile_path.write(f"Error during resampling: {e}", level="ERROR")
             return None
