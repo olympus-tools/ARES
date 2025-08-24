@@ -18,10 +18,11 @@ We are committed to a welcoming and inclusive community. Please read our [Code o
 - Windows: [install.bat](install.bat)
 - Linux: [install.sh](install.sh)
 
-## 2. Send us an issue
+## 2. Get in touch with us
 
-- [Bug Report Template](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md)
-- [Feature Request Template](https://github.com/AndraeCarotta/ares/issues/new?template=feature_request.md)
+- [Support Request](https://github.com/AndraeCarotta/ares/issues/new?template=support_request.md)
+- [Bug Report](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md)
+- [Feature Request](https://github.com/AndraeCarotta/ares/issues/new?template=feature_request.md)
 
 ## 3. Contribution to the ares project
 
