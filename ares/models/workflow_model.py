@@ -60,6 +60,7 @@ class DataElement(BaseElement):
 
 class ParameterElement(BaseElement):
     type: Literal["parameter"] = "parameter"
+    mode: Literal["read", "write"]
     path: List[str]
 
     class Config:
@@ -96,7 +97,7 @@ class CustomElement(BaseElement):
 
 
 WorkflowElement = Union[DataElement, ParameterElement, SimUnitElement, CustomElement]
-class WorkflowSchema(RootModel):
+class WorkflowModel(RootModel):
     root: Dict[str, WorkflowElement]
 
     def __getitem__(self, key: str) -> WorkflowElement:

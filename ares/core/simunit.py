@@ -29,18 +29,18 @@ ________________________________________________________________________
 """
 
 from ares.core.logfile import Logfile
-from ares.models.dd_model import DataDictionary
+from ares.models.datadictionary_model import DataDictionaryModel
 import json
 import ctypes
 import numpy as np
-from typing import Union
 from typeguard import typechecked
 from pydantic import ValidationError
+from typing import Union
 
 
 class SimUnit:
 
-    data_types = {
+    DATATYPES = {
         "int": [ctypes.c_int, np.int8],
         "float": [ctypes.c_float, np.float32],
         "double": [ctypes.c_double, np.float64],
@@ -77,7 +77,7 @@ class SimUnit:
         self._sim_function = self._setup_sim_function()
 
     @typechecked
-    def _load_and_validate_dd(self, dd_path: str) -> Union[DataDictionary, None]:
+    def _load_and_validate_dd(self, dd_path: str) -> DataDictionaryModel | None:
         """
         Loads the Data Dictionary from a JSON file and validates its structure using Pydantic.
 
@@ -88,14 +88,14 @@ class SimUnit:
             dd_path (str): The path to the Data Dictionary JSON file.
 
         Returns:
-            DataDictionary | None: The loaded and validated Data Dictionary as a Pydantic
+            DataDictionaryModel | None: The loaded and validated Data Dictionary as a Pydantic
                 object, or `None` if an error occurs.
         """
         try:
             with open(dd_path, "r", encoding="utf-8") as file:
                 dd_data = json.load(file)
 
-            dd = DataDictionary.model_validate(dd_data)
+            dd = DataDictionaryModel.model_validate(dd_data)
             self._logfile_path.write(
                 f"Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.", level="INFO"
             )
@@ -174,7 +174,7 @@ class SimUnit:
             try:
                 datatype = dd_element_value.datatype
                 size = dd_element_value.size
-                base_ctypes_type = SimUnit.data_types[datatype][0]
+                base_ctypes_type = SimUnit.DATATYPES[datatype][0]
 
                 if not base_ctypes_type:
                     self._logfile_path.write(
@@ -233,7 +233,7 @@ class SimUnit:
         correct function calls via `ctypes`.
 
         Returns:
-            ctypes.CFUNCTYPE | None: The `ctypes` function object for `ares_simunit`, or `None` if the
+            Union[ctypes.CFUNCTYPE, None]: The `ctypes` function object for `ares_simunit`, or `None` if the
                 function cannot be found in the library.
         """
         try:
@@ -311,10 +311,10 @@ class SimUnit:
                     if output_signal not in sim_result:
                         if output_signal != 'timestamp':
                             dd_element_value = self._dd[output_signal]
-                            np_dtype = SimUnit.data_types[dd_element_value.datatype][1]
+                            np_dtype = SimUnit.DATATYPES[dd_element_value.datatype][1]
                             sim_result[output_signal] = np.empty(0, dtype=np_dtype)
                         else:
-                            np_dtype = SimUnit.data_types['float'][1]
+                            np_dtype = SimUnit.DATATYPES['float'][1]
                         sim_result[output_signal] = np.empty(0, dtype=np_dtype)
 
                     sim_result[output_signal] = np.append(sim_result[output_signal], step_result[output_signal])
@@ -389,9 +389,7 @@ class SimUnit:
             return None
 
     @typechecked
-    def _map_sim_input_static(
-        self, time_steps: int, datatype: str, size: list, value
-    ) -> np.ndarray | None:
+    def _map_sim_input_static(self, time_steps: int, datatype: str, size: list, value) -> np.ndarray | None:
         """
         Creates a NumPy array of a specified size and datatype, filled with a constant value.
 

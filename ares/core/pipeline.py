@@ -36,7 +36,7 @@ from ares.core.parameter import Parameter
 
 import os
 
-def pipeline(wf_path: str, output_path: str, logfile: Logfile):
+def pipeline(wf_path: str, output_path: str):
     """Executes the ARES simulation pipeline based on a defined workflow.
 
     This function orchestrates the entire simulation process, from data acquisition and
@@ -48,9 +48,13 @@ def pipeline(wf_path: str, output_path: str, logfile: Logfile):
         wf_path: The absolute path to the workflow's JSON file.
         output_path: The absolute path to the output directory. If `None`, results
             are written to the same directory as the workflow file.
-        logfile: An instance of the `Logfile` class used for logging the process.
     """
     try:
+        logfile_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "log", "simulation.log"
+        )
+        logfile = Logfile(logfile_path)
+
         logfile.write("ARES pipeline is starting...", level="INFO")
 
         ares_wf = Workflow(file_path=wf_path, logfile=logfile)

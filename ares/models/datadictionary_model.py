@@ -41,7 +41,7 @@ class OutModel(BaseDDModel):
 
 
 DDElement = Union[InModel, InoutModel, OutModel]
-class DataDictionary(RootModel):
+class DataDictionaryModel(RootModel):
     root: Dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], DDElement]
 
     def __getitem__(self, key: str) -> DDElement:

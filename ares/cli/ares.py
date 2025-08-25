@@ -31,7 +31,6 @@ ________________________________________________________________________
 import os
 import click
 from ares.core.pipeline import pipeline
-from ares.core.logfile import Logfile
 
 @click.group()
 def cli():
@@ -54,11 +53,7 @@ def cli():
     help="Absolute path to the output directory.",
 )
 def pipeline_command(workflow, output):
-    logfile_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "log", "simulation.log"
-    )
-    logfile = Logfile(logfile_path)
-    pipeline(wf_path=workflow, output_path=output, logfile=logfile)
+    pipeline(wf_path=workflow, output_path=output)
 
 if __name__ == "__main__":
     cli()
