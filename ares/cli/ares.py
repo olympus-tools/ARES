@@ -29,14 +29,18 @@ ________________________________________________________________________
 """
 
 import os
+
 import click
-from ares.core.pipeline import pipeline
+
 from ares.core.logfile import Logfile
+from ares.core.pipeline import pipeline
+
 
 @click.group()
 def cli():
     """Automated Rapid Embedded Simulation (ARES) CLI"""
     pass
+
 
 @cli.command(name="pipeline", help="Starts the ARES simulation pipeline.")
 @click.option(
@@ -55,10 +59,13 @@ def cli():
 )
 def pipeline_command(workflow, output):
     logfile_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "log", "simulation.log"
+        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+        "logs",
+        "simulation.log",
     )
     logfile = Logfile(logfile_path)
     pipeline(wf_path=workflow, output_path=output, logfile=logfile)
+
 
 if __name__ == "__main__":
     cli()
