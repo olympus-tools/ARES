@@ -4,8 +4,6 @@
 
 # python
 **/.venv/*
-**/venv_win/*
-**/venv_lin/*
 **/env/
 *.env/
 **/__pycache__/*
