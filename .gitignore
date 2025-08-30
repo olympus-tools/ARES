@@ -1,10 +1,9 @@
 # folders
-**/log/*
+**/logs/*
 **/examples/output/*
 
 # python
-**/venv_win/*
-**/venv_lin/*
+**/.venv/*
 **/env/
 *.env/
 **/__pycache__/*
