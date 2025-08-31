@@ -35,6 +35,19 @@
     },
     "dataset_1": {
         "type": "parameter",
-        "path": ["../data/data_example_1.mf4"]
+        "path": ["../parameter/dataset_example_1.dcm"],
+        "mode": "read"
+    },
+    "dataset_2": {
+        "type": "parameter",
+        "parameter": ["dataset_1"],
+        "mode": "write",
+        "output_format": "dcm"
+    },
+    "dataset_3": {
+        "type": "parameter",
+        "parameter": ["dataset_1"],
+        "mode": "write",
+        "output_format": "json"
     }
 }
