@@ -28,9 +28,15 @@ ________________________________________________________________________
 
 """
 
-import os
+import getpass
 import click
+from ares.version import __version__
 from ares.core.pipeline import pipeline
+
+meta_data = {
+    "username": getpass.getuser(),
+    "version": __version__
+}
 
 @click.group()
 def cli():
@@ -53,7 +59,7 @@ def cli():
     help="Absolute path to the output directory.",
 )
 def pipeline_command(workflow, output):
-    pipeline(wf_path=workflow, output_path=output)
+    pipeline(wf_path=workflow, output_path=output, meta_data=meta_data)
 
 if __name__ == "__main__":
     cli()
