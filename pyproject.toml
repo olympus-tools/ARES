@@ -43,7 +43,6 @@ test = [
     "coverage>=7.5.1",
 ]
 dev = [
-    "black==25.1.0",
     "ruff==0.4.1",
     "ares[test]",
 ]

@@ -29,7 +29,6 @@ ________________________________________________________________________
 """
 
 import os
-
 import click
 
 from ares.core.logfile import Logfile
@@ -61,7 +60,7 @@ def pipeline_command(workflow, output):
     logfile_path = os.path.join(
         os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
         "logs",
-        "simulation.log",
+        "pipeline.log",
     )
     logfile = Logfile(logfile_path)
     pipeline(wf_path=workflow, output_path=output, logfile=logfile)
