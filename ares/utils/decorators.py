@@ -28,9 +28,15 @@ ________________________________________________________________________
 
 """
 
+# standard includes
+from functools import wraps
+
+# ares includes
+from ares.utils.logger import create_logger
+
 
 def safely_run(
-    default_return=None, message: str = None, log_level: str = None, cb=None, log=None
+    default_return=None, message: str = None, log_level: str = None, log=None
 ):
     """provides try/except functionality via decorator
 
@@ -38,65 +44,24 @@ def safely_run(
         default_return : default return value in case of failure -> depends on function
         message[str] : logger message to display in case of failure
         log_level[str] : log level to use
+        log: specific logger to use, defaults to ares logger
     """
-    logger_ = logger if log is None else log
+    logger = create_logger() if log is None else log
 
-    def wrap(fcn):
-        @wraps(fcn)
-        def wrapped_f(*args, **kwargs):
-            logger_.trace(
-                'Safley running function "%s" triggerd from file %s',
-                fcn.__name__,
-                inspect.getfile(fcn),
-            )
+    def wrap(func):
+        @wraps(func)  # preserve original func metadata
+        def wrapper(*args, **kwargs):
+            logger.debug(f"Safely running function {func.__name__} triggered.")
             try:
-                ret = fcn(*args, **kwargs)
-                logger_.trace('Successfully run function "%s"', fcn.__name__)
+                ret = func(*args, **kwargs)
+                logger.debug(f"Successfully run function {func.__name__}.")
             except Exception as e:
-                lvl = (
-                    log_level
-                    if log_level is not None and getattr(logger_, log_level.lower())
-                    else "ERROR"
-                )
-                msg = (
-                    message
-                    if message is not None
-                    else f"Error while running function {fcn.__name__}: {e}"
-                )
-                log_func = getattr(logger_, lvl.lower())
-                log_func("%s (log: %s)", msg, uuid.uuid4())
-                logger_.debug(
-                    "Error while running function %s from file %s",
-                    fcn.__name__,
-                    inspect.getfile(fcn),
-                    exc_info=e,
-                )
-                if cb is not None:
-                    cb(e)
+                # INFO: execution of func failed -> collect debug information
+                logger.error(f"Error while running function {func.__name__}: {e}")
+
+                # set default return
                 ret = default_return
             return ret
 
-        return wrapped_f
-
+        return wrapper
     return wrap
-
-
-def wrap(fcn):
-    @wraps(fcn)
-    def wrapped_f(*args, **kwargs):
-        th = PrintJob(interval, fcn, callback)
-        signal.signal(signal.SIGTERM, th.signal_handler)
-        signal.signal(signal.SIGINT, th.signal_handler)
-        th.start()
-        try:
-            res = fcn(*args, **kwargs)
-        except Exception as e:
-            th.stop()
-            raise e
-        th.stop()
-        return res
-
-    return wrapped_f
-
-
-return wrap
