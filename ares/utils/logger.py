@@ -68,7 +68,7 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
     file_handler.setLevel(logging.DEBUG)
 
-    # set color formatter
+    # set color formatter for stdout/stderr and formatter for files -> no color support
     color_formatter = colorlog.ColoredFormatter(
         "%(log_color)s%(levelname)s | %(asctime)s | %(filename)s%(lineno)s >> %(message)s",
         datefmt="%H:%M:%S",
@@ -83,8 +83,15 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
         secondary_log_colors={},
         style="%",
     )
+
+    # formatter for files
+    file_formatter = logging.Formatter(
+        fmt="%(levelname)s | %(asctime)s | %(filename)s%(lineno)s >> %(message)s",
+        datefmt="%H:%M:%S",
+    )
+
     stdout_handler.setFormatter(color_formatter)
-    file_handler.setFormatter(color_formatter)
+    file_handler.setFormatter(file_formatter)
     # set handler
     logger.addHandler(stdout_handler)
     logger.addHandler(file_handler)
