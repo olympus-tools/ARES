@@ -32,9 +32,9 @@ from ares.core.data import Data
 from ares.core.workflow import Workflow
 from ares.core.simunit import SimUnit
 from ares.core.logfile import Logfile
-from ares.core.parameter import Parameter
 
 import os
+
 
 def pipeline(wf_path: str, output_path: str, meta_data: dict):
     """Executes the ARES simulation pipeline based on a defined workflow.
@@ -52,7 +52,9 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
     """
     try:
         logfile_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "log", "simulation.log"
+            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
+            "log",
+            "simulation.log",
         )
         logfile = Logfile(logfile_path)
 
@@ -69,10 +71,8 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
             output_path = os.path.dirname(wf_path)
 
         for wf_element_name, wf_element_value in ares_wf.workflow.items():
-
             # Handle "data" workflow elements
             if wf_element_value.type == "data":
-
                 if "source" not in wf_element_value:
                     wf_element_value.source = ["all"]
                 if "cycle_time" not in wf_element_value:
@@ -81,7 +81,9 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                 # Read mode: create Data objects for each path in the workflow element
                 if wf_element_value.mode == "read":
                     data_source_objects[wf_element_name] = {}
-                    for data_source_idx, data_source_path in enumerate(wf_element_value.path):
+                    for data_source_idx, data_source_path in enumerate(
+                        wf_element_value.path
+                    ):
                         data_source_objects[wf_element_name][data_source_idx] = Data(
                             file_path=data_source_path,
                             source=wf_element_value.source,
@@ -91,7 +93,9 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                 # Write mode: export data from Data objects
                 elif wf_element_value.mode == "write":
                     ares_wf.workflow[wf_element_name].path = []
-                    for data_source_value in data_source_objects[wf_element_value.element_workflow[0]].values():
+                    for data_source_value in data_source_objects[
+                        wf_element_value.element_workflow[0]
+                    ].values():
                         output_file_path = data_source_value.write_out(
                             dir_path=output_path,
                             output_format=wf_element_value.output_format,
@@ -106,7 +110,6 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
 
             # Handle "sim_unit" workflow elements
             if wf_element_value.type == "sim_unit":
-
                 simunit_objects[wf_element_name] = SimUnit(
                     file_path=wf_element_value.path,
                     dd_path=wf_element_value.data_dictionary,
@@ -114,11 +117,17 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                 )
 
                 # Run simulation for each original data source- and parameter variant
-                for data_source_value in data_source_objects[wf_element_value.element_workflow[0]].values():
-                    sim_input = data_source_value.get(step_size_ms=wf_element_value.cycle_time)
+                for data_source_value in data_source_objects[
+                    wf_element_value.element_workflow[0]
+                ].values():
+                    sim_input = data_source_value.get(
+                        step_size_ms=wf_element_value.cycle_time
+                    )
 
                     for parameter_name in wf_element_value.parameter:
-                        simulation_result = simunit_objects[wf_element_name].run_simulation(
+                        simulation_result = simunit_objects[
+                            wf_element_name
+                        ].run_simulation(
                             data=sim_input,
                             parameter=param_objects[parameter_name],
                         )

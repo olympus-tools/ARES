@@ -35,9 +35,12 @@ from asammdf import MDF, Signal, Source
 import numpy as np
 from typeguard import typechecked
 
+
 class Data:
     @typechecked
-    def __init__(self, file_path: str, source: list, step_size_init_ms: int, logfile: Logfile):
+    def __init__(
+        self, file_path: str, source: list, step_size_init_ms: int, logfile: Logfile
+    ):
         """
         Initializes the Data class by reading a data source file.
 
@@ -63,12 +66,12 @@ class Data:
             self._load_mf4(step_size_init_ms=step_size_init_ms)
         elif input_format == ".parquet":
             self._logfile.write(
-                f"Evaluation of .parquet input/output is not implemented yet",
+                "Evaluation of .parquet input/output is not implemented yet",
                 level="ERROR",
             )  # TODO
         elif input_format == ".mat":
             self._logfile.write(
-                f"Evaluation of .mat input/output is not implemented yet", level="ERROR"
+                "Evaluation of .mat input/output is not implemented yet", level="ERROR"
             )  # TODO
         else:
             self._logfile.write(
@@ -124,7 +127,9 @@ class Data:
             )
 
     @typechecked
-    def write_out(self, dir_path: str, output_format: str, element_workflow: list, source: list) -> str | None:
+    def write_out(
+        self, dir_path: str, output_format: str, element_workflow: list, source: list
+    ) -> str | None:
         """
         Writes data from a specified source within `self.data` to an output file.
 
@@ -141,7 +146,9 @@ class Data:
         Returns:
             str | None: The full path of the output file, or `None` if an error occurs.
         """
-        file_path = self._eval_output_path(dir_path=dir_path, output_format=output_format)
+        file_path = self._eval_output_path(
+            dir_path=dir_path, output_format=output_format
+        )
 
         if output_format == "mf4":
             self._write_out_mf4(
@@ -151,23 +158,26 @@ class Data:
             )
         elif output_format == "parquet":
             self._logfile.write(
-                f"Evaluation of .parquet input/output is not implemented yet",
+                "Evaluation of .parquet input/output is not implemented yet",
                 level="ERROR",
             )  # TODO
         elif output_format == "mat":
             self._logfile.write(
-                f"Evaluation of .mat input/output is not implemented yet",
+                "Evaluation of .mat input/output is not implemented yet",
                 level="ERROR",
             )  # TODO
         else:
             self._logfile.write(
-                f"Unsupported data output file format: {output_format}.", level="WARNING"
+                f"Unsupported data output file format: {output_format}.",
+                level="WARNING",
             )
 
         return file_path
 
     @typechecked
-    def _write_out_mf4(self, file_path: str, element_workflow: list, source: list = None):
+    def _write_out_mf4(
+        self, file_path: str, element_workflow: list, source: list = None
+    ):
         """
         Writes data from the specified sources in `self.data` to an .mf4 file.
 
@@ -211,7 +221,6 @@ class Data:
                         )
 
                         for signal_name, samples in data_to_write.items():
-
                             try:
                                 samples = samples.astype(np.float64)
                             except ValueError:
@@ -242,9 +251,13 @@ class Data:
                         level="WARNING",
                     )
 
-                output_file_mf4.append(all_signals_to_write, comment=f"ares simulation result")
+                output_file_mf4.append(
+                    all_signals_to_write, comment="ares simulation result"
+                )
                 output_file_mf4.save(file_path, overwrite=False)
-                self._logfile.write(f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}.")
+                self._logfile.write(
+                    f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}."
+                )
 
         except Exception as e:
             self._logfile.write(
@@ -253,7 +266,9 @@ class Data:
             )
 
     @typechecked
-    def _preprocessing_mf4(self, data_raw: dict, step_size_init_ms: float) -> tuple[np.ndarray | None, dict]:
+    def _preprocessing_mf4(
+        self, data_raw: dict, step_size_init_ms: float
+    ) -> tuple[np.ndarray | None, dict]:
         """
         Resamples loaded signals from an MF4 file to a uniform time basis.
 
@@ -329,7 +344,7 @@ class Data:
                     )
 
             self._logfile.write(
-                f"Data source file successfully resampled.", level="INFO"
+                "Data source file successfully resampled.", level="INFO"
             )
             return global_time_vector, data_resampled
 
@@ -389,7 +404,6 @@ class Data:
             source_string = ""
 
             for data_source_name, data_source_value in self.data.items():
-
                 data_source_value = self._resample(
                     data_raw=data_source_value, step_size_ms=step_size_ms
                 )
@@ -443,7 +457,7 @@ class Data:
                     resampled = np.interp(timestamp_resampled, timestamp, signal_value)
                     data_resampled[signal_name] = resampled
 
-            self._logfile.write(f"Resampling successfully finished.", level="INFO")
+            self._logfile.write("Resampling successfully finished.", level="INFO")
             return data_resampled
 
         except Exception as e:

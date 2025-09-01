@@ -33,15 +33,14 @@ import click
 from ares.version import __version__
 from ares.core.pipeline import pipeline
 
-meta_data = {
-    "username": getpass.getuser(),
-    "version": __version__
-}
+meta_data = {"username": getpass.getuser(), "version": __version__}
+
 
 @click.group()
 def cli():
     """Automated Rapid Embedded Simulation (ARES) CLI"""
     pass
+
 
 @cli.command(name="pipeline", help="Starts the ARES simulation pipeline.")
 @click.option(
@@ -60,6 +59,7 @@ def cli():
 )
 def pipeline_command(workflow, output):
     pipeline(wf_path=workflow, output_path=output, meta_data=meta_data)
+
 
 if __name__ == "__main__":
     cli()

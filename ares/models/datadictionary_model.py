@@ -15,8 +15,10 @@ class Datatype(str, Enum):
     ulong = "ulong"
     ulonglong = "ulonglong"
 
+
 Size = List[int]
 InputAlternatives: TypeAlias = List[Union[str, float, List[float]]]
+
 
 class BaseDDModel(BaseModel):
     datatype: Datatype
@@ -41,6 +43,8 @@ class OutModel(BaseDDModel):
 
 
 DDElement = Union[InModel, InoutModel, OutModel]
+
+
 class DataDictionaryModel(RootModel):
     root: Dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], DDElement]
 

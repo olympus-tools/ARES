@@ -35,6 +35,7 @@ from typing_extensions import Literal
 
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
+
     type: str
     element_workflow: List[str] = Field(default_factory=list)
 
@@ -55,7 +56,9 @@ class DataElement(BaseElement):
         if self.mode == "read" and not self.path:
             raise ValueError("Field 'path' is required for mode='read'.")
         if self.mode == "write" and (not self.input or not self.output_format):
-            raise ValueError("Fields 'input' and 'output_format' are required for mode='write'.")
+            raise ValueError(
+                "Fields 'input' and 'output_format' are required for mode='write'."
+            )
 
 
 class ParameterElement(BaseElement):
@@ -97,6 +100,8 @@ class CustomElement(BaseElement):
 
 
 WorkflowElement = Union[DataElement, ParameterElement, SimUnitElement, CustomElement]
+
+
 class WorkflowModel(RootModel):
     root: Dict[str, WorkflowElement]
 
@@ -126,7 +131,6 @@ class WorkflowModel(RootModel):
 
     def get(self, key: str, default: Any = None):
         return self.root.get(key, default)
-
 
     def model_dump_json(self, **kwargs) -> str:
         """Dump workflow JSON as string."""
