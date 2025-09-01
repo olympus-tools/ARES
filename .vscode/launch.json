@@ -5,7 +5,7 @@
             "name": "ARES example 1",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/venv_lin/bin/ares",
+            "program": "${workspaceFolder}/.venv/bin/ares",
             "args": [
                 "pipeline",
                 "--workflow",

@@ -42,7 +42,7 @@ fi
 
 # Set path variables
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-VENV_DIR="$SCRIPT_DIR/venv_lin"
+VENV_DIR="$SCRIPT_DIR/.venv"
 
 # Check if the virtual environment exists, delete and recreate it
 if [ -d "$VENV_DIR" ]; then

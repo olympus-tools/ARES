@@ -29,7 +29,8 @@ dependencies = [
     "jsonschema==4.24.0",
     "pydantic==2.11.7",
     "typeguard==4.4.4",
-    "click==8.2.1"
+    "click==8.2.1",
+    "colorlog==6.9.0",
 ]
 dynamic = ["version"]
 
@@ -42,7 +43,6 @@ test = [
     "coverage>=7.5.1",
 ]
 dev = [
-    "black==25.1.0",
     "ruff==0.4.1",
     "ares[test]",
 ]
