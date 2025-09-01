@@ -28,18 +28,20 @@ ________________________________________________________________________
 
 """
 
-import os
+import getpass
 import click
-
-from ares.core.logfile import Logfile
+from ares.version import __version__
 from ares.core.pipeline import pipeline
 
+meta_data = {
+    "username": getpass.getuser(),
+    "version": __version__
+}
 
 @click.group()
 def cli():
     """Automated Rapid Embedded Simulation (ARES) CLI"""
     pass
-
 
 @cli.command(name="pipeline", help="Starts the ARES simulation pipeline.")
 @click.option(
@@ -57,14 +59,7 @@ def cli():
     help="Absolute path to the output directory.",
 )
 def pipeline_command(workflow, output):
-    logfile_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-        "logs",
-        "pipeline.log",
-    )
-    logfile = Logfile(logfile_path)
-    pipeline(wf_path=workflow, output_path=output, logfile=logfile)
-
+    pipeline(wf_path=workflow, output_path=output, meta_data=meta_data)
 
 if __name__ == "__main__":
     cli()
