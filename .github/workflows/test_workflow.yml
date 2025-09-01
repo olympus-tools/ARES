@@ -28,9 +28,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install -e .[test]
+          source ./install.sh
 
       - name: Run pytest
         run: |
