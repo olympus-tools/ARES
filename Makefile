@@ -9,7 +9,7 @@ test:
 
 .PHONY: format
 format:
-	ruff format .
+	ruff format . --exclude ares/core/version.py --exclude .venv
 
 .PHONY: clean
 clean: 
