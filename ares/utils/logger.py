@@ -97,12 +97,3 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
     logger.addHandler(file_handler)
 
     return logger
-
-
-if __name__ == "__main__":
-    # default testing in development
-    logger = create_logger("dev_test")
-    logger.debug("Debug Message.")
-    logger.info("Info Message.")
-    logger.warning("Warning Message.")
-    logger.critical("Critical Warning")
