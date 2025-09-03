@@ -125,10 +125,15 @@ class Workflow:
 
                     # Case 1: single string
                     if isinstance(field_value, str):
-                        if (("/" in field_value or "\\" in field_value or
-                            re.search(path_eval_pattern, field_value) is not None)):
+                        if (
+                            "/" in field_value
+                            or "\\" in field_value
+                            or re.search(path_eval_pattern, field_value) is not None
+                        ):
                             if not os.path.isabs(field_value):
-                                abs_path = os.path.abspath(os.path.join(base_dir, field_value))
+                                abs_path = os.path.abspath(
+                                    os.path.join(base_dir, field_value)
+                                )
                                 setattr(wf_element_value, field_name, abs_path)
                                 self._logfile.write(
                                     f"Resolved relative path for '{wf_element_name}.{field_name}': {abs_path}",
@@ -136,14 +141,21 @@ class Workflow:
                                 )
 
                     # Case 2: list of strings
-                    elif isinstance(field_value, list) and all(isinstance(x, str) for x in field_value):
+                    elif isinstance(field_value, list) and all(
+                        isinstance(x, str) for x in field_value
+                    ):
                         abs_paths = []
                         changed = False
                         for path in field_value:
-                            if ("/" in path or "\\" in path or
-                                re.search(path_eval_pattern, path) is not None):
+                            if (
+                                "/" in path
+                                or "\\" in path
+                                or re.search(path_eval_pattern, path) is not None
+                            ):
                                 if not os.path.isabs(path):
-                                    abs_paths.append(os.path.abspath(os.path.join(base_dir, path)))
+                                    abs_paths.append(
+                                        os.path.abspath(os.path.join(base_dir, path))
+                                    )
                                     changed = True
                                 else:
                                     abs_paths.append(path)
@@ -185,14 +197,26 @@ class Workflow:
                 for wf_element_value in self.workflow.values():
                     ref_input_list = []
 
-                    if hasattr(wf_element_value, "parameter") and wf_element_value.parameter is not None:
+                    if (
+                        hasattr(wf_element_value, "parameter")
+                        and wf_element_value.parameter is not None
+                    ):
                         ref_input_list.extend(wf_element_value.parameter)
 
-                    if hasattr(wf_element_value, "cancel_condition") and wf_element_value.cancel_condition is not None:
-                        if hasattr(wf_element_value, "init") and wf_element_value.init is not None:
+                    if (
+                        hasattr(wf_element_value, "cancel_condition")
+                        and wf_element_value.cancel_condition is not None
+                    ):
+                        if (
+                            hasattr(wf_element_value, "init")
+                            and wf_element_value.init is not None
+                        ):
                             ref_input_list.extend(wf_element_value.init)
                     else:
-                        if hasattr(wf_element_value, "input") and wf_element_value.input is not None:
+                        if (
+                            hasattr(wf_element_value, "input")
+                            and wf_element_value.input is not None
+                        ):
                             ref_input_list.extend(wf_element_value.input)
 
                     if ref_input_list is not None:
@@ -244,7 +268,9 @@ class Workflow:
                         workflow_order.append(step)
 
             workflow_lin_string = " -> ".join(workflow_order)
-            self._logfile.write(f"Workflow execution order: {workflow_lin_string}", level="INFO")
+            self._logfile.write(
+                f"Workflow execution order: {workflow_lin_string}", level="INFO"
+            )
 
             return workflow_order
 
@@ -281,10 +307,15 @@ class Workflow:
             elem_obj = self.workflow.get(element)
 
             if elem_obj is None:
-                self._logfile.write(f"Workflow element '{element}' not found.", level="WARNING")
+                self._logfile.write(
+                    f"Workflow element '{element}' not found.", level="WARNING"
+                )
                 return []
 
-            if hasattr(elem_obj, "cancel_condition") and elem_obj.cancel_condition is not None:
+            if (
+                hasattr(elem_obj, "cancel_condition")
+                and elem_obj.cancel_condition is not None
+            ):
                 if hasattr(elem_obj, "input") and elem_obj.input is not None:
                     if sink in elem_obj.input or loop:
                         if hasattr(elem_obj, "init") and elem_obj.init is not None:
@@ -357,7 +388,10 @@ class Workflow:
                             element_workflow.extend(input_elem.element_workflow)
                             element_workflow.append(input_name)
 
-                if hasattr(wf_element, "parameter") and wf_element.parameter is not None:
+                if (
+                    hasattr(wf_element, "parameter")
+                    and wf_element.parameter is not None
+                ):
                     for param_name in wf_element.parameter:
                         param_elem = self.workflow.get(param_name)
                         if param_elem is not None:
@@ -365,7 +399,9 @@ class Workflow:
                             element_workflow.append(param_name)
 
                 # remove duplicates and store it to the dictionary
-                self.workflow[wf_element_name].element_workflow = list(dict.fromkeys(element_workflow))
+                self.workflow[wf_element_name].element_workflow = list(
+                    dict.fromkeys(element_workflow)
+                )
 
         except Exception as e:
             self._logfile.write(
@@ -381,14 +417,18 @@ class Workflow:
             output_path (str): The path where the workflow should be saved.
         """
         try:
-            output_file_path = self._eval_output_path(dir_path=output_path, output_format='json')
+            output_file_path = self._eval_output_path(
+                dir_path=output_path, output_format="json"
+            )
 
             with open(output_file_path, "w", encoding="utf-8") as file:
                 file.write(self.workflow.model_dump_json(indent=4, exclude_none=True))
 
             self._logfile.write(f"File successfully written to {output_file_path}.")
         except Exception as e:
-            self._logfile.write(f"Error writing workflow to {output_file_path}: {e}", level="ERROR")
+            self._logfile.write(
+                f"Error writing workflow to {output_file_path}: {e}", level="ERROR"
+            )
 
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> str | None:

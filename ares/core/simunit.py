@@ -28,18 +28,19 @@ ________________________________________________________________________
 
 """
 
+import ctypes
+import json
+from typing import Union
+
+import numpy as np
+from pydantic import ValidationError
+from typeguard import typechecked
+
 from ares.core.logfile import Logfile
 from ares.models.datadictionary_model import DataDictionaryModel
-import json
-import ctypes
-import numpy as np
-from typeguard import typechecked
-from pydantic import ValidationError
-from typing import Union
 
 
 class SimUnit:
-
     DATATYPES = {
         "int": [ctypes.c_int, np.int8],
         "float": [ctypes.c_float, np.float32],
@@ -97,7 +98,8 @@ class SimUnit:
 
             dd = DataDictionaryModel.model_validate(dd_data)
             self._logfile_path.write(
-                f"Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.", level="INFO"
+                f"Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.",
+                level="INFO",
             )
             return dd
         except FileNotFoundError:
@@ -189,12 +191,18 @@ class SimUnit:
                     elif size[0] > 1:
                         ctypes_type = base_ctypes_type * size[0]
                     else:
-                        self._logfile_path.write(f"Invalid size '{size[0]}' for '{dd_element_name}'. Expected > 0.",level="ERROR")
+                        self._logfile_path.write(
+                            f"Invalid size '{size[0]}' for '{dd_element_name}'. Expected > 0.",
+                            level="ERROR",
+                        )
                         continue
                 elif len(size) == 2:
                     ctypes_type = (base_ctypes_type * size[1]) * size[0]
                 else:
-                    self._logfile_path.write(f"Invalid size '{size}' for '{dd_element_name}'. Expected 1 or 2 dimensions.",level="ERROR",)
+                    self._logfile_path.write(
+                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 1 or 2 dimensions.",
+                        level="ERROR",
+                    )
                     continue
 
                 dll_interface[dd_element_name] = ctypes_type.in_dll(
@@ -241,7 +249,7 @@ class SimUnit:
             sim_function.argtypes = []
             sim_function.restype = None
             self._logfile_path.write(
-                f"Ares simulation function 'ares_simunit' successfully set up.",
+                "Ares simulation function 'ares_simunit' successfully set up.",
                 level="INFO",
             )
             return sim_function
@@ -285,7 +293,7 @@ class SimUnit:
             self._logfile_path.write(
                 f"The simulation starts at timestamp {data['timestamp'][0]} seconds "
                 f"and ends at timestamp {data['timestamp'][-1]} seconds - duration: "
-                f"{data['timestamp'][-1]-data['timestamp'][0]} seconds",
+                f"{data['timestamp'][-1] - data['timestamp'][0]} seconds",
                 level="INFO",
             )
 
@@ -309,17 +317,21 @@ class SimUnit:
 
                 for output_signal in step_result.keys():
                     if output_signal not in sim_result:
-                        if output_signal != 'timestamp':
+                        if output_signal != "timestamp":
                             dd_element_value = self._dd[output_signal]
                             np_dtype = SimUnit.DATATYPES[dd_element_value.datatype][1]
                             sim_result[output_signal] = np.empty(0, dtype=np_dtype)
                         else:
-                            np_dtype = SimUnit.DATATYPES['float'][1]
+                            np_dtype = SimUnit.DATATYPES["float"][1]
                         sim_result[output_signal] = np.empty(0, dtype=np_dtype)
 
-                    sim_result[output_signal] = np.append(sim_result[output_signal], step_result[output_signal])
+                    sim_result[output_signal] = np.append(
+                        sim_result[output_signal], step_result[output_signal]
+                    )
 
-            self._logfile_path.write(f"ares simulation successfully finished.", level="INFO")
+            self._logfile_path.write(
+                "ares simulation successfully finished.", level="INFO"
+            )
             return sim_result
         except Exception as e:
             self._logfile_path.write(
@@ -342,31 +354,48 @@ class SimUnit:
         Returns:
             dict | None: A dictionary of mapped input values, or `None` if a mapping error occurs.
         """
+
     def _map_sim_input(self, input_data: dict, time_steps: int) -> dict | None:
         try:
             mapped_input = {}
             for dd_element_name, dd_element_value in self._dd.items():
                 if dd_element_name in input_data:
                     mapped_input[dd_element_name] = input_data[dd_element_name]
-                    self._logfile_path.write(f"Simulation signal '{dd_element_name}' could be mapped to the original signal.", level="INFO")
+                    self._logfile_path.write(
+                        f"Simulation signal '{dd_element_name}' could be mapped to the original signal.",
+                        level="INFO",
+                    )
                 else:
                     mapped = False
-                    if hasattr(dd_element_value, 'input_alternatives') and dd_element_value.input_alternatives:
+                    if (
+                        hasattr(dd_element_value, "input_alternatives")
+                        and dd_element_value.input_alternatives
+                    ):
                         for alternative_value in dd_element_value.input_alternatives:
                             if isinstance(alternative_value, str):
                                 if alternative_value in input_data:
-                                    mapped_input[dd_element_name] = input_data[alternative_value]
-                                    self._logfile_path.write(f"Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.", level="INFO")
+                                    mapped_input[dd_element_name] = input_data[
+                                        alternative_value
+                                    ]
+                                    self._logfile_path.write(
+                                        f"Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.",
+                                        level="INFO",
+                                    )
                                     mapped = True
                                     break
                             else:
-                                mapped_input[dd_element_name] = self._map_sim_input_static(
-                                    time_steps=time_steps,
-                                    datatype=dd_element_value.datatype,
-                                    size=dd_element_value.size,
-                                    value=alternative_value,
+                                mapped_input[dd_element_name] = (
+                                    self._map_sim_input_static(
+                                        time_steps=time_steps,
+                                        datatype=dd_element_value.datatype,
+                                        size=dd_element_value.size,
+                                        value=alternative_value,
+                                    )
                                 )
-                                self._logfile_path.write(f"Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.", level="INFO")
+                                self._logfile_path.write(
+                                    f"Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
+                                    level="INFO",
+                                )
                                 mapped = True
                                 break
                     if not mapped:
@@ -385,11 +414,15 @@ class SimUnit:
             self._logfile_path.write("Mapping is successfully finished.", level="INFO")
             return mapped_input
         except Exception as e:
-            self._logfile_path.write(f"Error during mapping of simulation input signals: {e}", level="ERROR")
+            self._logfile_path.write(
+                f"Error during mapping of simulation input signals: {e}", level="ERROR"
+            )
             return None
 
     @typechecked
-    def _map_sim_input_static(self, time_steps: int, datatype: str, size: list, value) -> np.ndarray | None:
+    def _map_sim_input_static(
+        self, time_steps: int, datatype: str, size: list, value
+    ) -> np.ndarray | None:
         """
         Creates a NumPy array of a specified size and datatype, filled with a constant value.
 
@@ -420,7 +453,9 @@ class SimUnit:
                 out = np.empty((time_steps, size[0], size[1]), dtype=datatype)
                 if isinstance(value, list):
                     if np.array(value).shape != (size[0], size[1]):
-                        raise ValueError(f"Shape of static 2D array value {np.array(value).shape} does not match DD size {size}.")
+                        raise ValueError(
+                            f"Shape of static 2D array value {np.array(value).shape} does not match DD size {size}."
+                        )
                     for time_step_idx in range(time_steps):
                         out[time_step_idx] = value
                     return out
@@ -455,7 +490,7 @@ class SimUnit:
 
                 if len(size) == 1:
                     if size[0] == 1:
-                         sim_var.value = input[dd_element_name][time_step_idx]
+                        sim_var.value = input[dd_element_name][time_step_idx]
                     else:
                         for i in range(size[0]):
                             sim_var[i] = input[dd_element_name][time_step_idx][i]
@@ -503,8 +538,7 @@ class SimUnit:
                         ]
                 elif len(size) == 2:
                     current_values[dd_element_name] = [
-                        [sim_var[i][j] for j in range(size[1])]
-                        for i in range(size[0])
+                        [sim_var[i][j] for j in range(size[1])] for i in range(size[0])
                     ]
                 else:
                     self._logfile_path.write(
@@ -516,7 +550,6 @@ class SimUnit:
                     f"Error reading output value '{dd_element_name}' from 'ares_simunit' function: {e}",
                     level="ERROR",
                 )
-
         if not current_values:
             self._logfile_path.write(
                 "No variables could be read successfully.", level="ERROR"

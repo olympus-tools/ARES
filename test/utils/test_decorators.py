@@ -95,4 +95,3 @@ def test_safely_run_with_args_exception():
 
     assert safely_run_with_args_exception("a", "b") == "error"
     assert safely_run_with_args_exception("a", "b", c="e") == "error"
-

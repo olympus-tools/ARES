@@ -64,4 +64,5 @@ def safely_run(
             return ret
 
         return wrapper
+
     return wrap

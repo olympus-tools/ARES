@@ -34,6 +34,7 @@ from typeguard import typechecked
 
 debugging = False
 
+
 class Logfile:
     @typechecked
     def __init__(self, file_path: str):

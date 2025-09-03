@@ -58,3 +58,15 @@ packages = ["ares"]
 
 [tool.setuptools_scm]
 write_to = "ares/core/version.py"
+
+[tool.ruff]
+# The maximum line length.
+line-length = 88
+# The target Python version.
+target-version = "py312"
+
+[tool.ruff.format]
+# The preferred quote style.
+quote-style = "double"
+# The preferred indentation style.
+indent-style = "space"

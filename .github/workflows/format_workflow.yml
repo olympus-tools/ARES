@@ -1,4 +1,4 @@
-name: Test Pipeline
+name: Format Check Pipeline
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
           source .venv/bin/activate
           pip install -e .[test,dev]
 
-      - name: Run pytest
+      - name: Run ruff for format checking
         run: |
           source .venv/bin/activate
-          pytest
+          ruff format --check . --exclude ares/core/version.py --exclude .venv
