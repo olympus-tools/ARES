@@ -29,14 +29,29 @@ ________________________________________________________________________
 """
 
 import getpass
+
 import click
-from ares.version import __version__
+
 from ares.core.pipeline import pipeline
+from ares.version import __version__
 
 meta_data = {"username": getpass.getuser(), "version": __version__}
 
 
 @click.group()
+@click.option(
+    "-v",
+    "--version",
+    is_flag=True,
+    is_eager=True,
+    expose_value=False,
+    callback=lambda ctx, param, value: (
+        click.echo(f"ARES version {__version__}") or ctx.exit()
+    )
+    if value
+    else None,
+    help="Show the installed ARES version.",
+)
 def cli():
     """Automated Rapid Embedded Simulation (ARES) CLI"""
     pass
