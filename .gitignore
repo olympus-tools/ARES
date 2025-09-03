@@ -1,5 +1,4 @@
 # folders
-**/logs/*
 **/examples/output/*
 
 # python
@@ -17,6 +16,9 @@
 *.mf4
 *.mat
 *.parquet
+
+# others
+*.log
 
 # exceptions
 !examples/data/*.mf4

@@ -28,8 +28,9 @@ ________________________________________________________________________
 
 """
 
-from typing import List, Dict, Optional, Union, Any
-from pydantic import BaseModel, RootModel, Field
+from typing import Annotated, Any, Dict, List, Optional, Union
+
+from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Literal
 
 
@@ -64,10 +65,20 @@ class DataElement(BaseElement):
 class ParameterElement(BaseElement):
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
-    path: List[str]
+    path: Optional[List[str]] = None
+    parameter: Optional[List[str]] = None
+    output_format: Optional[str] = None
 
     class Config:
         extra = "forbid"
+
+    def validate_mode_requirements(self):
+        if self.mode == "read" and not self.path:
+            raise ValueError("Field 'path' is required for mode='read'.")
+        if self.mode == "write" and (not self.parameter or not self.output_format):
+            raise ValueError(
+                "Fields 'input' and 'output_format' are required for mode='write'."
+            )
 
 
 class SimUnitElement(BaseElement):
@@ -99,7 +110,10 @@ class CustomElement(BaseElement):
         extra = "forbid"
 
 
-WorkflowElement = Union[DataElement, ParameterElement, SimUnitElement, CustomElement]
+WorkflowElement = Annotated[
+    Union[DataElement, ParameterElement, SimUnitElement, CustomElement],
+    Field(discriminator="type"),
+]
 
 
 class WorkflowModel(RootModel):
