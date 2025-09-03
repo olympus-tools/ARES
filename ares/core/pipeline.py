@@ -28,12 +28,12 @@ ________________________________________________________________________
 
 """
 
-from ares.core.data import Data
-from ares.core.workflow import Workflow
-from ares.core.simunit import SimUnit
-from ares.core.logfile import Logfile
-
 import os
+
+from ares.core.data import Data
+from ares.core.logfile import Logfile
+from ares.core.simunit import SimUnit
+from ares.core.workflow import Workflow
 
 
 def pipeline(wf_path: str, output_path: str, meta_data: dict):
@@ -54,7 +54,7 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
         logfile_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
             "log",
-            "simulation.log",
+            "pipeline.log",
         )
         logfile = Logfile(logfile_path)
 
