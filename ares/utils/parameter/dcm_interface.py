@@ -30,7 +30,7 @@ ________________________________________________________________________
 
 import re
 from datetime import datetime
-from typing import List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from pydantic import ValidationError
 from typeguard import typechecked
@@ -48,15 +48,18 @@ class ParamDCMinterface:
 
     @staticmethod
     @typechecked
-    def load(file_path, logfile: Logfile) -> ParameterModel | None:
-        """
-        Parses a DCM file and converts it to a validated ParameterModel object.
+    def load(file_path: str, logfile: Logfile) -> Optional[ParameterModel]:
+        """Parses a DCM file and converts it to a validated ParameterModel object.
 
         DAMOS DCM format is defined on:
         https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
+        Args:
+            file_path (str): The path to the DCM file to be parsed.
+            logfile (Logfile): The logfile object for writing messages.
+
         Returns:
-            ParameterModel | None: Validated parameter object, or None if parsing fails.
+            ParameterModel or None: Validated parameter object, or None if parsing fails.
         """
         try:
             keywords = [
@@ -75,7 +78,7 @@ class ParamDCMinterface:
                 r"(?:" + "|".join(map(re.escape, keywords)) + r")[\s\S]*?^END\b"
             )
 
-            parameter = {}
+            parameter: Dict[str, Any] = {}
 
             with open(file_path, "r", encoding="utf-8") as dcm_file:
                 dcm_content = dcm_file.read()
@@ -290,7 +293,7 @@ class ParamDCMinterface:
     def write_out(
         parameter: ParameterModel,
         output_path: str,
-        meta_data: dict,
+        meta_data: Dict[str, str],
         logfile: Logfile,
     ):
         """Writes a ParameterModel object to a DCM file.
@@ -308,9 +311,7 @@ class ParamDCMinterface:
             output_path (str): The full path to the output DCM file.
             meta_data (dict): A dictionary containing metadata such as the ARES
                 version and the current username.
-
-        Returns:
-            None: The function writes to a file and does not return a value.
+            logfile (Logfile): The logfile object for writing messages.
         """
         try:
             encoding_type = "utf-8"
@@ -334,11 +335,12 @@ class ParamDCMinterface:
                         parameter_value=parameter_value,
                         logfile=logfile,
                     )
+
                     param_str = []
                     dim_str = None
-                    unit_str = []
-                    axisname_str = []
-                    value_str = []
+                    unit_str: List[str] = []
+                    axisname_str: List[str] = []
+                    value_str: List[str] = []
 
                     match parameter_keyword:
                         case "FESTWERT":
@@ -517,9 +519,8 @@ class ParamDCMinterface:
             [str(n) for n in input_array[i : i + ParamDCMinterface.DCMValueLength]]
             for i in range(0, len(input_array), ParamDCMinterface.DCMValueLength)
         ]
-        output_array = [["\t" + s for s in sublist] for sublist in output_array]
         output_array = [[f"\t{title}"] + sublist for sublist in output_array]
-        output_array = ["".join(sublist) for sublist in output_array]
+        output_array = ["\t" + " ".join(sublist) for sublist in output_array]
 
         return output_array
 
@@ -553,15 +554,17 @@ class ParamDCMinterface:
     @typechecked
     def _eval_dcm_keyword(
         parameter_name: str, parameter_value: ParameterElement, logfile: Logfile
-    ) -> str | None:
-        """
-        Evaluate the DCM keyword from a parameter dictionary.
+    ) -> Optional[str]:
+        """Evaluates the DCM keyword from a ParameterElement object.
 
         Args:
-            parameter_value (dict): Dictionary containing parameter metadata.
+            parameter_name (str): The name of the parameter.
+            parameter_value (ParameterElement): The Pydantic object containing parameter
+                metadata.
+            logfile (Logfile): The logfile object for writing messages.
 
         Returns:
-            str | None: The DCM keyword if found, otherwise None.
+            str or None: The DCM keyword if found, otherwise None.
         """
         try:
             keyword = parameter_value.dcm_keyword
