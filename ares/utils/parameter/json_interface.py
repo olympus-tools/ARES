@@ -29,6 +29,7 @@ ________________________________________________________________________
 """
 
 import json
+from typing import Optional
 
 from pydantic import ValidationError
 from typeguard import typechecked
@@ -38,15 +39,20 @@ from ares.models.parameter_model import ParameterModel
 
 
 class ParamJSONinterface:
+    """Interface for loading and writing JSON parameter files."""
+
     @staticmethod
     @typechecked
-    def load(file_path, logfile: Logfile) -> ParameterModel | None:
-        """
-        Reads and validates the parameters JSON file using Pydantic.
+    def load(file_path: str, logfile: Logfile) -> Optional[ParameterModel]:
+        """Reads and validates the parameters JSON file using Pydantic.
+
+        Args:
+            file_path (str): The path to the JSON file to be loaded.
+            logfile (Logfile): The logfile object for writing messages.
 
         Returns:
-            ParameterModel | None: A Pydantic object representing the parameters,
-                                      or None in case of an error.
+            ParameterModel or None: A Pydantic object representing the parameters,
+                or None in case of an error.
         """
         try:
             with open(file_path, "r", encoding="utf-8") as file:
@@ -101,11 +107,12 @@ class ParamJSONinterface:
     @staticmethod
     @typechecked
     def write_out(parameter: ParameterModel, output_path: str, logfile: Logfile):
-        """
-        Writes the current, processed parameter object to a JSON file.
+        """Writes the current, processed parameter object to a JSON file.
 
         Args:
+            parameter (ParameterModel): The Pydantic object to be saved.
             output_path (str): The path where the parameter should be saved.
+            logfile (Logfile): The logfile object for writing messages.
         """
         try:
             with open(output_path, "w", encoding="utf-8") as file:
