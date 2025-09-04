@@ -3,16 +3,22 @@
 # 	- make test
 # 	- make format
 # 	- make clean
+# 	- meke venv    | doesn't activate afterwards
+
+.PHONY: venv
+venv: 
+	./setup_venv.sh
+
 .PHONY: test
-test: 
-	pytest test/
+test:
+	source ./setup_venv.sh true && pytest test/
 
 .PHONY: format
 format:
-	ruff format . --exclude ares/core/version.py --exclude .venv
+	source ./setup_venv.sh true && ruff format . --exclude ares/core/version.py --exclude .venv
 
 .PHONY: clean
-clean: 
+clean:
 	find . -type f -name "*.pyc" | xargs rm -fr
 	find . -type d -name __pycache__ | xargs rm -fr
 	find . -type d -name log | xargs rm -fr
