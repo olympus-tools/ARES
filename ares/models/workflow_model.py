@@ -38,7 +38,8 @@ class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
     type: str
-    element_workflow: List[str] = Field(default_factory=list)
+    element_input_workflow: List[str] = Field(default_factory=list)
+    element_parameter_workflow: List[str] = Field(default_factory=list)
 
 
 class DataElement(BaseElement):
@@ -66,6 +67,7 @@ class ParameterElement(BaseElement):
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
     path: Optional[List[str]] = None
+    source: Optional[List[str]] = None
     parameter: Optional[List[str]] = None
     output_format: Optional[str] = None
 

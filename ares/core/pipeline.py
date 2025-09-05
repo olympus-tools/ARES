@@ -32,6 +32,7 @@ import os
 
 from ares.core.data import Data
 from ares.core.logfile import Logfile
+from ares.core.parameter import Parameter
 from ares.core.simunit import SimUnit
 from ares.core.workflow import Workflow
 
@@ -62,8 +63,8 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
 
         ares_wf = Workflow(file_path=wf_path, logfile=logfile)
 
-        data_source_objects = {}
-        param_objects = {}
+        data_objects = {}
+        parameter_objects = {}
         simunit_objects = {}
         custom_objects = {}
 
@@ -71,44 +72,75 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
             output_path = os.path.dirname(wf_path)
 
         for wf_element_name, wf_element_value in ares_wf.workflow.items():
-            # Handle "data" workflow elements
+            # handle "data" workflow elements
             if wf_element_value.type == "data":
                 if "source" not in wf_element_value:
                     wf_element_value.source = ["all"]
                 if "cycle_time" not in wf_element_value:
                     wf_element_value.cycle_time = 10
 
-                # Read mode: create Data objects for each path in the workflow element
+                # read mode: create data objectsfor each path in the workflow element
                 if wf_element_value.mode == "read":
-                    data_source_objects[wf_element_name] = {}
-                    for data_source_idx, data_source_path in enumerate(
-                        wf_element_value.path
-                    ):
-                        data_source_objects[wf_element_name][data_source_idx] = Data(
-                            file_path=data_source_path,
-                            source=wf_element_value.source,
-                            step_size_init_ms=wf_element_value.cycle_time,
-                            logfile=logfile,
+                    data_objects[wf_element_name] = []
+                    for data_path in wf_element_value.path:
+                        data_objects[wf_element_name].append(
+                            Data(
+                                file_path=data_path,
+                                base_wf_element_name=wf_element_name,
+                                source=wf_element_value.source,
+                                step_size_init_ms=wf_element_value.cycle_time,
+                                logfile=logfile,
+                            )
                         )
-                # Write mode: export data from Data objects
+                # write mode: export data from data objects
                 elif wf_element_value.mode == "write":
                     ares_wf.workflow[wf_element_name].path = []
-                    for data_source_value in data_source_objects[
-                        wf_element_value.element_workflow[0]
-                    ].values():
-                        output_file_path = data_source_value.write_out(
+                    for data_value in data_objects[
+                        wf_element_value.element_input_workflow[0]
+                    ]:
+                        output_file_path = data_value.write_out(
                             dir_path=output_path,
                             output_format=wf_element_value.output_format,
-                            element_workflow=wf_element_value.element_workflow,
+                            meta_data=meta_data,
+                            element_input_workflow=wf_element_value.element_input_workflow,
                             source=wf_element_value.source,
                         )
                         ares_wf.workflow[wf_element_name].path.append(output_file_path)
 
-            # Handle "parameter" workflow elements
+            # handle "parameter" workflow elements
             if wf_element_value.type == "parameter":
-                param_objects[wf_element_name] = {}
+                if "source" not in wf_element_value:
+                    wf_element_value.source = ["all"]
+                # read mode: create parameter object for each path in the workflow element
+                if wf_element_value.mode == "read":
+                    parameter_objects[wf_element_name] = []
+                    for parameter_idx, parameter_path in enumerate(
+                        wf_element_value.path
+                    ):
+                        parameter_objects[wf_element_name].append(
+                            Parameter(
+                                file_path=parameter_path,
+                                base_wf_element_name=wf_element_name,
+                                logfile=logfile,
+                            )
+                        )
 
-            # Handle "sim_unit" workflow elements
+                # write mode: export parameter from parameter objects
+                elif wf_element_value.mode == "write":
+                    ares_wf.workflow[wf_element_name].path = []
+                    for parameter_value in parameter_objects[
+                        wf_element_value.element_parameter_workflow[0]
+                    ]:
+                        output_file_path = parameter_value.write_out(
+                            dir_path=output_path,
+                            output_format=wf_element_value.output_format,
+                            meta_data=meta_data,
+                            element_parameter_workflow=wf_element_value.element_parameter_workflow,
+                            source=wf_element_value.source,
+                        )
+                        ares_wf.workflow[wf_element_name].path.append(output_file_path)
+
+            # handle "sim_unit" workflow elements
             if wf_element_value.type == "sim_unit":
                 simunit_objects[wf_element_name] = SimUnit(
                     file_path=wf_element_value.path,
@@ -116,29 +148,32 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                     logfile=logfile,
                 )
 
-                # Run simulation for each original data source- and parameter variant
-                for data_source_value in data_source_objects[
-                    wf_element_value.element_workflow[0]
-                ].values():
-                    sim_input = data_source_value.get(
-                        step_size_ms=wf_element_value.cycle_time
-                    )
+                # run simulation for each original data source- and parameter variant
+                for data_value in data_objects[
+                    wf_element_value.element_input_workflow[0]
+                ]:
+                    for parameter_value in parameter_objects[
+                        wf_element_value.element_parameter_workflow[0]
+                    ]:
+                        sim_input = data_value.get(
+                            step_size_ms=wf_element_value.cycle_time
+                        )
+                        sim_parameter = parameter_value.get()
 
-                    for parameter_name in wf_element_value.parameter:
                         simulation_result = simunit_objects[
                             wf_element_name
                         ].run_simulation(
                             data=sim_input,
-                            parameter=param_objects[parameter_name],
+                            parameter=sim_parameter,
                         )
-                        data_source_value.data[wf_element_name] = simulation_result
+                        data_value.data[wf_element_name] = simulation_result
 
-            # Handle "custom" workflow elements
+            # handle "custom" workflow elements
             if wf_element_value.type == "custom":
                 custom_objects[wf_element_name] = {}
 
             # TODO: if object not needed anymore
-            # drop object
+            # drop it
 
         ares_wf.write_out(output_path=output_path)
 
