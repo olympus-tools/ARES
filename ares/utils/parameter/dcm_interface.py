@@ -78,7 +78,7 @@ class ParamDCMinterface:
                 r"(?:" + "|".join(map(re.escape, keywords)) + r")[\s\S]*?^END\b"
             )
 
-            parameter: Dict[str, Any] = {}
+            parameter_tmp: Dict[str, Any] = {}
 
             with open(file_path, "r", encoding="utf-8") as dcm_file:
                 dcm_content = dcm_file.read()
@@ -96,7 +96,7 @@ class ParamDCMinterface:
                             parameter_keyword = line.split()[0]
                             parameter_name = line.split()[1]
                             dim_str = line.split()[2:]
-                            parameter[parameter_name] = {}
+                            parameter_tmp[parameter_name] = {}
                             value = []
                             breakpoints_1 = []
                             breakpoints_2 = []
@@ -163,107 +163,107 @@ class ParamDCMinterface:
                             value_tmp = [x.replace('"', "") for x in value_tmp]
                             value.extend(value_tmp)
 
-                    parameter[parameter_name]["description"] = description
-                    parameter[parameter_name]["dcm_keyword"] = parameter_keyword
+                    parameter_tmp[parameter_name]["description"] = description
+                    parameter_tmp[parameter_name]["dcm_keyword"] = parameter_keyword
                     if parameter_keyword in ["FESTWERT"]:
-                        parameter[parameter_name]["unit"] = unit_value
-                        parameter[parameter_name]["value"] = value[0]
-                        parameter[parameter_name]["type"] = "scalar"
+                        parameter_tmp[parameter_name]["unit"] = unit_value
+                        parameter_tmp[parameter_name]["value"] = value[0]
+                        parameter_tmp[parameter_name]["type"] = "scalar"
                     elif parameter_keyword in ["TEXTSTRING"]:
-                        parameter[parameter_name]["value"] = value[0]
-                        parameter[parameter_name]["type"] = "scalar"
+                        parameter_tmp[parameter_name]["value"] = value[0]
+                        parameter_tmp[parameter_name]["type"] = "scalar"
                     elif parameter_keyword in ["FESTWERTEBLOCK"]:
-                        parameter[parameter_name]["unit"] = unit_value
+                        parameter_tmp[parameter_name]["unit"] = unit_value
                         dim_str = [x for x in dim_str if "@" not in x]
                         dim = [int(x) for x in dim_str]
                         if len(dim) <= 1:
-                            parameter[parameter_name]["value"] = value
-                            parameter[parameter_name]["type"] = "array1d"
+                            parameter_tmp[parameter_name]["value"] = value
+                            parameter_tmp[parameter_name]["type"] = "array1d"
                         else:
-                            parameter[parameter_name]["value"] = [
+                            parameter_tmp[parameter_name]["value"] = [
                                 value[i : i + dim[0]]
                                 for i in range(0, len(value), dim[0])
                             ]
-                            parameter[parameter_name]["type"] = "array2d"
+                            parameter_tmp[parameter_name]["type"] = "array2d"
                     elif parameter_keyword in ["FESTKENNLINIE", "KENNLINIE"]:
-                        parameter[parameter_name]["unit"] = unit_value
+                        parameter_tmp[parameter_name]["unit"] = unit_value
                         name_breakpoints_1 = f"{parameter_name}_static_breakpoints_1"
-                        parameter[parameter_name]["name_breakpoints_1"] = (
+                        parameter_tmp[parameter_name]["name_breakpoints_1"] = (
                             name_breakpoints_1
                         )
-                        parameter[parameter_name]["value"] = value
-                        parameter[name_breakpoints_1] = {}
-                        parameter[name_breakpoints_1]["value"] = breakpoints_1
-                        parameter[name_breakpoints_1]["unit"] = unit_breakpoints_1
-                        parameter[name_breakpoints_1]["description"] = (
+                        parameter_tmp[parameter_name]["value"] = value
+                        parameter_tmp[name_breakpoints_1] = {}
+                        parameter_tmp[name_breakpoints_1]["value"] = breakpoints_1
+                        parameter_tmp[name_breakpoints_1]["unit"] = unit_breakpoints_1
+                        parameter_tmp[name_breakpoints_1]["description"] = (
                             f"breakpoints 1 to static axis {parameter_name}"
                         )
-                        parameter[name_breakpoints_1]["type"] = "array1d"
-                        parameter[name_breakpoints_1]["dcm_keyword"] = (
+                        parameter_tmp[name_breakpoints_1]["type"] = "array1d"
+                        parameter_tmp[name_breakpoints_1]["dcm_keyword"] = (
                             "STUETZSTELLENVERTEILUNG"
                         )
-                        parameter[parameter_name]["type"] = "array1d"
+                        parameter_tmp[parameter_name]["type"] = "array1d"
                     elif parameter_keyword in ["FESTKENNFELD", "KENNFELD"]:
-                        parameter[parameter_name]["unit"] = unit_value
+                        parameter_tmp[parameter_name]["unit"] = unit_value
                         name_breakpoints_1 = f"{parameter_name}_static_breakpoints_1"
                         name_breakpoints_2 = f"{parameter_name}_static_breakpoints_2"
-                        parameter[parameter_name]["name_breakpoints_1"] = (
+                        parameter_tmp[parameter_name]["name_breakpoints_1"] = (
                             name_breakpoints_1
                         )
-                        parameter[parameter_name]["name_breakpoints_2"] = (
+                        parameter_tmp[parameter_name]["name_breakpoints_2"] = (
                             name_breakpoints_2
                         )
-                        parameter[parameter_name]["value"] = [
+                        parameter_tmp[parameter_name]["value"] = [
                             value[i : i + len(breakpoints_1)]
                             for i in range(0, len(value), len(breakpoints_1))
                         ]
-                        parameter[name_breakpoints_1] = {}
-                        parameter[name_breakpoints_1]["value"] = breakpoints_1
-                        parameter[name_breakpoints_1]["unit"] = unit_breakpoints_1
-                        parameter[name_breakpoints_1]["description"] = (
+                        parameter_tmp[name_breakpoints_1] = {}
+                        parameter_tmp[name_breakpoints_1]["value"] = breakpoints_1
+                        parameter_tmp[name_breakpoints_1]["unit"] = unit_breakpoints_1
+                        parameter_tmp[name_breakpoints_1]["description"] = (
                             f"breakpoints 1 to static axis {parameter_name}"
                         )
-                        parameter[name_breakpoints_1]["type"] = "array1d"
-                        parameter[name_breakpoints_1]["dcm_keyword"] = (
+                        parameter_tmp[name_breakpoints_1]["type"] = "array1d"
+                        parameter_tmp[name_breakpoints_1]["dcm_keyword"] = (
                             "STUETZSTELLENVERTEILUNG"
                         )
-                        parameter[name_breakpoints_2] = {}
-                        parameter[name_breakpoints_2]["value"] = breakpoints_2
-                        parameter[name_breakpoints_2]["unit"] = unit_breakpoints_2
-                        parameter[name_breakpoints_2]["description"] = (
+                        parameter_tmp[name_breakpoints_2] = {}
+                        parameter_tmp[name_breakpoints_2]["value"] = breakpoints_2
+                        parameter_tmp[name_breakpoints_2]["unit"] = unit_breakpoints_2
+                        parameter_tmp[name_breakpoints_2]["description"] = (
                             f"breakpoints 2 to static axis {parameter_name}"
                         )
-                        parameter[name_breakpoints_2]["type"] = "array1d"
-                        parameter[name_breakpoints_2]["dcm_keyword"] = (
+                        parameter_tmp[name_breakpoints_2]["type"] = "array1d"
+                        parameter_tmp[name_breakpoints_2]["dcm_keyword"] = (
                             "STUETZSTELLENVERTEILUNG"
                         )
-                        parameter[parameter_name]["type"] = "array2d"
+                        parameter_tmp[parameter_name]["type"] = "array2d"
                     elif parameter_keyword in ["GRUPPENKENNLINIE"]:
-                        parameter[parameter_name]["unit"] = unit_value
-                        parameter[parameter_name]["name_breakpoints_1"] = (
+                        parameter_tmp[parameter_name]["unit"] = unit_value
+                        parameter_tmp[parameter_name]["name_breakpoints_1"] = (
                             name_breakpoints_1
                         )
-                        parameter[parameter_name]["value"] = value
-                        parameter[parameter_name]["type"] = "array1d"
+                        parameter_tmp[parameter_name]["value"] = value
+                        parameter_tmp[parameter_name]["type"] = "array1d"
                     elif parameter_keyword in ["GRUPPENKENNFELD"]:
-                        parameter[parameter_name]["unit"] = unit_value
-                        parameter[parameter_name]["name_breakpoints_1"] = (
+                        parameter_tmp[parameter_name]["unit"] = unit_value
+                        parameter_tmp[parameter_name]["name_breakpoints_1"] = (
                             name_breakpoints_1
                         )
-                        parameter[parameter_name]["name_breakpoints_2"] = (
+                        parameter_tmp[parameter_name]["name_breakpoints_2"] = (
                             name_breakpoints_2
                         )
-                        parameter[parameter_name]["value"] = [
+                        parameter_tmp[parameter_name]["value"] = [
                             value[i : i + len(breakpoints_1)]
                             for i in range(0, len(value), len(breakpoints_1))
                         ]
-                        parameter[parameter_name]["type"] = "array2d"
+                        parameter_tmp[parameter_name]["type"] = "array2d"
                     elif parameter_keyword in ["STUETZSTELLENVERTEILUNG"]:
-                        parameter[parameter_name]["unit"] = unit_breakpoints_1
-                        parameter[parameter_name]["value"] = breakpoints_1
-                        parameter[parameter_name]["type"] = "array1d"
+                        parameter_tmp[parameter_name]["unit"] = unit_breakpoints_1
+                        parameter_tmp[parameter_name]["value"] = breakpoints_1
+                        parameter_tmp[parameter_name]["type"] = "array1d"
 
-            parameter = ParameterModel.model_validate(parameter)
+            parameter = ParameterModel.model_validate(parameter_tmp)
 
             return parameter
 
