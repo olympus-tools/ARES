@@ -31,12 +31,16 @@ ________________________________________________________________________
 import os
 
 from ares.core.data import Data
-from ares.core.logfile import Logfile
 from ares.core.parameter import Parameter
 from ares.core.simunit import SimUnit
 from ares.core.workflow import Workflow
+from ares.utils.logger import create_logger
+
+# initialize logger
+logger = create_logger("pipeline")
 
 
+# TODO: use meta_data from files like e.g. mf4,mat,???
 def pipeline(wf_path: str, output_path: str, meta_data: dict):
     """Executes the ARES simulation pipeline based on a defined workflow.
 
@@ -52,16 +56,9 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
         meta_data: Current ARES and workstation meta data.
     """
     try:
-        logfile_path = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-            "log",
-            "pipeline.log",
-        )
-        logfile = Logfile(logfile_path)
+        logger.info("ARES pipeline is starting...")
 
-        logfile.write("ARES pipeline is starting...", level="INFO")
-
-        ares_wf = Workflow(file_path=wf_path, logfile=logfile)
+        ares_wf = Workflow(file_path=wf_path)
 
         data_objects = {}
         parameter_objects = {}
@@ -89,7 +86,6 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                                 base_wf_element_name=wf_element_name,
                                 source=wf_element_value.source,
                                 step_size_init_ms=wf_element_value.cycle_time,
-                                logfile=logfile,
                             )
                         )
                 # write mode: export data from data objects
@@ -120,7 +116,6 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                             Parameter(
                                 file_path=parameter_path,
                                 base_wf_element_name=wf_element_name,
-                                logfile=logfile,
                             )
                         )
 
@@ -144,7 +139,6 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                 simunit_objects[wf_element_name] = SimUnit(
                     file_path=wf_element_value.path,
                     dd_path=wf_element_value.data_dictionary,
-                    logfile=logfile,
                 )
 
                 # Run simulation for each original data source- and parameter variant
@@ -175,7 +169,7 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
 
         ares_wf.write_out(output_path=output_path)
 
-        logfile.write("ARES pipeline successfully finished.", level="INFO")
+        logger.info("ARES pipeline successfully finished.")
 
     except Exception as e:
-        logfile.write(f"Error while executing ARES pipeline: {e}", level="ERROR")
+        logger.error(f"Error while executing ARES pipeline: {e}")
