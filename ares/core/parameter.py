@@ -34,15 +34,18 @@ from typing import Any, Dict, List, Optional
 
 from typeguard import typechecked
 
-from ares.core.logfile import Logfile
 from ares.models.parameter_model import ParameterModel
+from ares.utils.logger import create_logger
 from ares.utils.parameter.dcm_interface import ParamDCMinterface
 from ares.utils.parameter.json_interface import ParamJSONinterface
+
+# initialize logger
+logger = create_logger("parameter")
 
 
 class Parameter:
     @typechecked
-    def __init__(self, file_path: str, base_wf_element_name: str, logfile: Logfile):
+    def __init__(self, file_path: str, base_wf_element_name: str):
         """Initializes the Parameter class by loading and validating a parameter file.
 
         The constructor automatically loads the parameter data based on the file
@@ -53,10 +56,8 @@ class Parameter:
             file_path (str): The path to the parameter file (.json or .dcm).
             base_wf_element_name (str): The base name of the workflow element associated
                 with this data source.
-            logfile (Logfile): The logfile object of the current ARES pipeline.
         """
         self._file_path = file_path
-        self._logfile = logfile
         self.parameter: Dict[str, ParameterModel] = {
             base_wf_element_name: ParameterModel(root={})
         }
@@ -64,16 +65,14 @@ class Parameter:
         input_format = os.path.splitext(self._file_path)[1].lower()
         if input_format == ".json":
             self.parameter[base_wf_element_name] = ParamJSONinterface.load(
-                file_path=self._file_path, logfile=self._logfile
+                file_path=self._file_path
             )
         elif input_format == ".dcm":
             self.parameter[base_wf_element_name] = ParamDCMinterface.load(
-                file_path=self._file_path, logfile=self._logfile
+                file_path=self._file_path
             )
         else:
-            self._logfile.write(
-                f"Unknown file format for {self._file_path}.", level="ERROR"
-            )
+            logger.error(f"Unknown file format for {self._file_path}.")
 
     @typechecked
     def write_out(
@@ -110,7 +109,6 @@ class Parameter:
             ParamJSONinterface.write_out(
                 parameter=merged_parameter,
                 output_path=output_path,
-                logfile=self._logfile,
             )
             pass
         elif output_format == "dcm":
@@ -118,13 +116,11 @@ class Parameter:
                 parameter=merged_parameter,
                 output_path=output_path,
                 meta_data=meta_data,
-                logfile=self._logfile,
             )
             pass
         else:
-            self._logfile.write(
+            logger.warning(
                 f"Unsupported parameter output file format: {output_format}.",
-                level="WARNING",
             )
             return None
 
@@ -202,9 +198,7 @@ class Parameter:
             return full_path
 
         except Exception as e:
-            self._logfile.write(
-                f"Evaluation of data output name failed: {e}", level="ERROR"
-            )
+            logger.error(f"Evaluation of data output name failed: {e}")
             return None
 
     @typechecked

@@ -34,8 +34,11 @@ from typing import Optional
 from pydantic import ValidationError
 from typeguard import typechecked
 
-from ares.core.logfile import Logfile
 from ares.models.parameter_model import ParameterModel
+from ares.utils.logger import create_logger
+
+# initialize logger
+logger = create_logger("ares_data")
 
 
 class ParamJSONinterface:
@@ -43,12 +46,11 @@ class ParamJSONinterface:
 
     @staticmethod
     @typechecked
-    def load(file_path: str, logfile: Logfile) -> Optional[ParameterModel]:
+    def load(file_path: str) -> Optional[ParameterModel]:
         """Reads and validates the parameters JSON file using Pydantic.
 
         Args:
             file_path (str): The path to the JSON file to be loaded.
-            logfile (Logfile): The logfile object for writing messages.
 
         Returns:
             ParameterModel or None: A Pydantic object representing the parameters,
@@ -73,62 +75,53 @@ class ParamJSONinterface:
 
             parameter = ParameterModel.model_validate(parameter_raw)
 
-            logfile.write(
+            logger.info(
                 f"Parameter file {file_path} successfully loaded and validated with Pydantic.",
-                level="INFO",
             )
             return parameter
 
         except FileNotFoundError:
-            logfile.write(
+            logger.error(
                 f"Parameter file not found at '{file_path}'.",
-                level="ERROR",
             )
             return None
         except json.JSONDecodeError as e:
-            logfile.write(
+            logger.error(
                 f"Error parsing parameter file '{file_path}': {e}",
-                level="ERROR",
             )
             return None
         except ValidationError as e:
-            logfile.write(
+            logger.error(
                 f"Validation error in parameter file '{file_path}': {e}",
-                level="ERROR",
             )
             return None
         except Exception as e:
-            logfile.write(
+            logger.error(
                 f"Unexpected error loading parameter file '{file_path}': {e}",
-                level="ERROR",
             )
             return None
 
     @staticmethod
     @typechecked
-    def write_out(parameter: ParameterModel, output_path: str, logfile: Logfile):
+    def write_out(parameter: ParameterModel, output_path: str):
         """Writes the current, processed parameter object to a JSON file.
 
         Args:
             parameter (ParameterModel): The Pydantic object to be saved.
             output_path (str): The path where the parameter should be saved.
-            logfile (Logfile): The logfile object for writing messages.
         """
         try:
             with open(output_path, "w", encoding="utf-8") as file:
                 file.write(parameter.model_dump_json(indent=4, exclude_none=True))
 
-            logfile.write(
+            logger.info(
                 f"File successfully written to {output_path}.",
-                level="INFO",
             )
         except OSError as e:
-            logfile.write(
+            logger.error(
                 f"Failed to write parameter file to '{output_path}'. Check permissions or path: {e}",
-                level="ERROR",
             )
         except Exception as e:
-            logfile.write(
+            logger.error(
                 f"An unexpected error occurred while writing to '{output_path}': {e}",
-                level="ERROR",
             )
