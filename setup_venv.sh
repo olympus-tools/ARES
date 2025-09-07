@@ -14,9 +14,9 @@ function install_venv() {
         echo "Installing dependencies from '$PRJ_FILE'..."
 
         if [ -f ".git" ]; then
-            pip install -e .
+            pip install -e ".[dev,test]"
         else
-            SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES="0.0.1" pip install -e .
+            SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES="0.0.1" pip install -e ".[dev,test]"
         fi
 
         if [ $? -ne 0 ]; then
@@ -51,5 +51,3 @@ if [[ $SKIP_VENV_SETUP != "true" ]]; then
 fi
 
 echo "Setup complete. The virtual environment is now active."
-
-
