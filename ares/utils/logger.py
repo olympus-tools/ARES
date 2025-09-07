@@ -36,6 +36,9 @@ from pathlib import Path
 
 import colorlog
 
+# TODO: create in ares/cli global logger that gets all messages
+ARES_GENERALLOGGING = "ares_pipeline.log"
+
 
 def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logger:
     """
@@ -55,6 +58,7 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
     logdir = Path(__file__).parent / "../../logs"
     logdir.mkdir(parents=True, exist_ok=True)
     logfile = Path(logdir, f"{name}.log")
+    global_logfile = Path(logdir, ARES_GENERALLOGGING)
 
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True
@@ -67,6 +71,10 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
     file_handler.setLevel(logging.DEBUG)
+    globalfile_handler = RotatingFileHandler(
+        global_logfile, backupCount=4, maxBytes=4000000
+    )
+    globalfile_handler.setLevel(level)
 
     # set color formatter for stdout/stderr and formatter for files -> no color support
     color_formatter = colorlog.ColoredFormatter(
@@ -92,8 +100,10 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
 
     stdout_handler.setFormatter(color_formatter)
     file_handler.setFormatter(file_formatter)
+    globalfile_handler.setFormatter(file_formatter)
     # set handler
     logger.addHandler(stdout_handler)
     logger.addHandler(file_handler)
+    logger.addHandler(globalfile_handler)
 
     return logger
