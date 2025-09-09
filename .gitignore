@@ -20,6 +20,9 @@
 # others
 *.log
 
+# vim dev
+.session.vim
+
 # exceptions
 !examples/data/*.mf4
 !examples/data/*.mat
