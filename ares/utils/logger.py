@@ -36,9 +36,6 @@ from pathlib import Path
 
 import colorlog
 
-# TODO: create in ares/cli global logger that gets all messages
-ARES_GENERALLOGGING = "ares_pipeline.log"
-
 
 def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     """
@@ -64,9 +61,8 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
         logger = logging.getLogger(name)
         logfile = Path(logdir, f"{name}.log")
 
-    # set loglevel for root logger
-    if not logger.hasHandlers():
-        logger.setLevel(level)
+    # set loglevel
+    logger.setLevel(level)
 
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True

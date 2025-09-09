@@ -30,7 +30,9 @@ ________________________________________________________________________
 
 import logging
 from pathlib import Path
+
 import pytest
+
 from ares.utils.logger import create_logger
 
 
@@ -41,7 +43,7 @@ def test_logger_instance():
     logger = create_logger("test_logger_instance")
     assert isinstance(logger, logging.Logger)
     assert logger.name == "test_logger_instance"
-    assert logger.level == logging.DEBUG
+    assert logger.level == logging.INFO
     assert len(logger.handlers) == 2
 
 
