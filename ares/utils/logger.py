@@ -40,25 +40,33 @@ import colorlog
 ARES_GENERALLOGGING = "ares_pipeline.log"
 
 
-def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logger:
+def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     """
     Creates and configures a logger that outputs logs in JSON format.
     Usage should be to call just: "logger = create_logger()"
 
     Args:
-        name (str), default = 'ares': The name for the logger, typically __name__.
+        name (str), default = 'ares_root': The name for the logger, typically __name__.
         level (int), default = logging.INFO: The logging level, e.g., logging.INFO.
 
     Returns:
         logging.Logger: A configured logger instance for ARES.
     """
-
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    # create/get logdir: "logs"
     logdir = Path(__file__).parent / "../../logs"
     logdir.mkdir(parents=True, exist_ok=True)
     logfile = Path(logdir, f"{name}.log")
-    global_logfile = Path(logdir, ARES_GENERALLOGGING)
+    # create logger -> root or "name"
+    if name == "":
+        logger = logging.getLogger()
+        logfile = Path(logdir, "ares_root.log")
+    else:
+        logger = logging.getLogger(name)
+        logfile = Path(logdir, f"{name}.log")
+
+    # set loglevel for root logger
+    if not logger.hasHandlers():
+        logger.setLevel(level)
 
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True
@@ -70,11 +78,7 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
     # Use RotatingFileHandler with Count=4 and 4MB size -> 4 is just a good number + always use logger.INFO
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
-    file_handler.setLevel(logging.DEBUG)
-    globalfile_handler = RotatingFileHandler(
-        global_logfile, backupCount=4, maxBytes=4000000
-    )
-    globalfile_handler.setLevel(level)
+    file_handler.setLevel(level)
 
     # set color formatter for stdout/stderr and formatter for files -> no color support
     color_formatter = colorlog.ColoredFormatter(
@@ -100,10 +104,8 @@ def create_logger(name: str = "ares", level: int = logging.INFO) -> logging.Logg
 
     stdout_handler.setFormatter(color_formatter)
     file_handler.setFormatter(file_formatter)
-    globalfile_handler.setFormatter(file_formatter)
     # set handler
     logger.addHandler(stdout_handler)
     logger.addHandler(file_handler)
-    logger.addHandler(globalfile_handler)
 
     return logger
