@@ -11,7 +11,9 @@
                 "--workflow",
                 "${workspaceFolder}/examples/workflow/workflow_example_1.json",
                 "--output",
-                "${workspaceFolder}/examples/output/"
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}"
