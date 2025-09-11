@@ -111,12 +111,11 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
             if wf_element_value.type == "parameter":
                 if "source" not in wf_element_value:
                     wf_element_value.source = ["all"]
+
                 # read mode: create parameter object for each path in the workflow element
                 if wf_element_value.mode == "read":
                     parameter_objects[wf_element_name] = []
-                    for parameter_idx, parameter_path in enumerate(
-                        wf_element_value.path
-                    ):
+                    for parameter_path in wf_element_value.path:
                         parameter_objects[wf_element_name].append(
                             Parameter(
                                 file_path=parameter_path,
@@ -140,7 +139,7 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                         )
                         ares_wf.workflow[wf_element_name].path.append(output_file_path)
 
-            # handle "sim_unit" workflow elements
+            # Handle "sim_unit" workflow elements
             if wf_element_value.type == "sim_unit":
                 simunit_objects[wf_element_name] = SimUnit(
                     file_path=wf_element_value.path,
@@ -148,16 +147,15 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                     logfile=logfile,
                 )
 
-                # run simulation for each original data source- and parameter variant
+                # Run simulation for each original data source- and parameter variant
                 for data_value in data_objects[
                     wf_element_value.element_input_workflow[0]
                 ]:
+                    sim_input = data_value.get(step_size_ms=wf_element_value.cycle_time)
+
                     for parameter_value in parameter_objects[
                         wf_element_value.element_parameter_workflow[0]
                     ]:
-                        sim_input = data_value.get(
-                            step_size_ms=wf_element_value.cycle_time
-                        )
                         sim_parameter = parameter_value.get()
 
                         simulation_result = simunit_objects[
