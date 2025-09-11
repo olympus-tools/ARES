@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Literal, Union, List, Dict, TypeAlias, Annotated
+from typing import Annotated, Dict, List, Literal, TypeAlias, Union
+
 from pydantic import BaseModel, Field, RootModel
 
 
@@ -8,21 +9,22 @@ class Datatype(str, Enum):
     double = "double"
     bool = "bool"
     short = "short"
-    int = "int"
-    long = "long"
-    longlong = "longlong"
-    uint = "uint"
-    ulong = "ulong"
-    ulonglong = "ulonglong"
+    int8 = "int8"
+    int16 = "int16"
+    int32 = "int32"
+    int64 = "int64"
+    uint8 = "uint8"
+    uint16 = "uint16"
+    uint32 = "uint32"
+    uint64 = "uint64"
 
 
-Size = List[int]
-InputAlternatives: TypeAlias = List[Union[str, float, List[float]]]
+InputAlternatives: TypeAlias = List[Union[str, float, List[float], List[List[float]]]]
 
 
 class BaseDDModel(BaseModel):
     datatype: Datatype
-    size: Size
+    size: List[int]
 
     class Config:
         extra = "forbid"
@@ -42,7 +44,11 @@ class OutModel(BaseDDModel):
     type: Literal["out"]
 
 
-DDElement = Union[InModel, InoutModel, OutModel]
+class ParameterModel(BaseDDModel):
+    type: Literal["parameter"]
+
+
+DDElement = Union[InModel, InoutModel, OutModel, ParameterModel]
 
 
 class DataDictionaryModel(RootModel):

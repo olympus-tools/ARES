@@ -32,6 +32,7 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
+import numpy as np
 from typeguard import typechecked
 
 from ares.models.parameter_model import ParameterModel
@@ -175,9 +176,9 @@ class Parameter:
 
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:
-        """Adds a timestamp to the filename and returns a complete, absolute file path.
+        """Adds a timestamps to the filename and returns a complete, absolute file path.
 
-        The timestamp prevents overwriting. The format is `*_YYYYMMDDHHMMSS*` before
+        The timestamps prevents overwriting. The format is `*_YYYYMMDDHHMMSS*` before
         the file extension.
 
         Args:
@@ -185,14 +186,14 @@ class Parameter:
             output_format (str): The desired file extension without a leading dot (e.g., 'json').
 
         Returns:
-            str or None: The new, complete file path with a timestamp, or `None` if an
+            str or None: The new, complete file path with a timestamps, or `None` if an
                 error occurs.
         """
         try:
             os.makedirs(dir_path, exist_ok=True)
             file_name = os.path.splitext(os.path.basename(self._file_path))[0]
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            new_file_name = f"{file_name}_{timestamp}.{output_format}"
+            timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
+            new_file_name = f"{file_name}_{timestamps}.{output_format}"
             full_path = os.path.join(dir_path, new_file_name)
             return full_path
 
@@ -207,7 +208,13 @@ class Parameter:
         Returns:
             dict: The parameter data.
         """
-        merged_parameter = self._define_write_out_data(
+        merged_parameter: Dict[str, Any] = {}
+
+        merged_parameter_tmp = self._define_write_out_data(
             source=["all"], element_parameter_workflow=None
         )
+
+        for key, value in merged_parameter_tmp.items():
+            merged_parameter[key] = np.array([value.value])
+
         return merged_parameter

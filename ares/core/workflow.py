@@ -461,9 +461,9 @@ class Workflow:
 
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:
-        """Adds a timestamp to the filename and returns a complete, absolute file path.
+        """Adds a timestamps to the filename and returns a complete, absolute file path.
 
-        The timestamp prevents overwriting. The format is `*_YYYYMMDD_HHMMSS*` before
+        The timestamps prevents overwriting. The format is `*_YYYYMMDD_HHMMSS*` before
         the file extension.
 
         Args:
@@ -472,14 +472,14 @@ class Workflow:
                 is added automatically.
 
         Returns:
-            Optional[str]: The new, complete file path with a timestamp, or `None` if an
+            Optional[str]: The new, complete file path with a timestamps, or `None` if an
                 error occurs.
         """
         try:
             os.makedirs(dir_path, exist_ok=True)
             file_name = os.path.splitext(os.path.basename(self._file_path))[0]
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            new_file_name = f"{file_name}_{timestamp}.{output_format}"
+            timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
+            new_file_name = f"{file_name}_{timestamps}.{output_format}"
             full_path = os.path.join(dir_path, new_file_name)
             return full_path
 
