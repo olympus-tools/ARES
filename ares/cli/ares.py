@@ -77,7 +77,14 @@ def cli():
 @click.option(
     "--log-level",
     default=logging.WARNING,
-    help="Setting log level for root logger. Integer from [10-50]: DEBUG=XY, INFO=XY, WARNING=XY, ERROR=XY, CRITICAL=XY. Default level WARNING=30",
+    help="""\b
+    Setting log level for root logger via integer value:
+    10 = DEBUG
+    20 = INFO
+    30 = WARNING (default)
+    40 = ERROR
+    50 = CRITICAL
+    """,
 )
 def pipeline_command(workflow, output, log_level):
     ares_logger = create_logger(level=log_level)

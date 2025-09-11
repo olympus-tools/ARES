@@ -75,7 +75,7 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     # set color formatter for stdout/stderr and formatter for files -> no color support
     color_formatter = colorlog.ColoredFormatter(
         "%(log_color)s%(levelname)s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s",
-        datefmt="%d/%m/%Y|%H:%M:%S",
+        datefmt="%d.%m.%Y %H:%M:%S",
         reset=True,
         log_colors={
             "DEBUG": "cyan",
@@ -91,7 +91,7 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     # formatter for files
     file_formatter = logging.Formatter(
         fmt="%(levelname)s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s",
-        datefmt="%d/%m/%Y|%H:%M:%S",
+        datefmt="%d.%m.%Y %H:%M:%S",
     )
 
     stdout_handler.setFormatter(color_formatter)

@@ -56,6 +56,8 @@ def test_ares_pipeline_example_1(tmp_path):
         str(workflow_file),
         "--output",
         str(output_dir),
+        "--log-level",
+        "10",
     ]
 
     # Execute the command without checking the return code
