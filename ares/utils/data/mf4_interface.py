@@ -94,7 +94,7 @@ class DataMF4interface:
                     step_size_init_ms=step_size_init_ms,
                 )
 
-                data["timestamp"] = time_vector
+                data["timestamps"] = time_vector
                 data.update(data_resampled)
 
                 logger.debug(
@@ -207,7 +207,7 @@ class DataMF4interface:
 
             with MDF() as output_file_mf4:
                 for source_key, data_value in data.items():
-                    timestamp: np.ndarray = data_value["timestamp"]
+                    timestamps: np.ndarray = data_value["timestamps"]
 
                     src = Source(
                         name=source_key,
@@ -218,7 +218,7 @@ class DataMF4interface:
                     )
 
                     for signal_name, samples in data_value.items():
-                        if signal_name == "timestamp":
+                        if signal_name == "timestamps":
                             continue
 
                         try:
@@ -232,7 +232,7 @@ class DataMF4interface:
 
                         signal = Signal(
                             samples=samples_float,
-                            timestamps=timestamp,
+                            timestamps=timestamps,
                             name=signal_name,
                             source=src,
                             comment="",

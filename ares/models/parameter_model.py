@@ -68,7 +68,6 @@ class DCMKeywordArray2D(str, Enum):
 
 
 class BaseParameter(BaseModel):
-    datatype: Optional[DataType] = None
     description: Optional[str] = None
     unit: Optional[str] = None
 
