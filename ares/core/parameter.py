@@ -30,7 +30,7 @@ ________________________________________________________________________
 
 import os
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 from typeguard import typechecked
 
@@ -42,7 +42,7 @@ from ares.utils.parameter.json_interface import ParamJSONinterface
 
 class Parameter:
     @typechecked
-    def __init__(self, file_path: str, logfile: Logfile):
+    def __init__(self, file_path: str, base_wf_element_name: str, logfile: Logfile):
         """Initializes the Parameter class by loading and validating a parameter file.
 
         The constructor automatically loads the parameter data based on the file
@@ -51,19 +51,23 @@ class Parameter:
 
         Args:
             file_path (str): The path to the parameter file (.json or .dcm).
+            base_wf_element_name (str): The base name of the workflow element associated
+                with this data source.
             logfile (Logfile): The logfile object of the current ARES pipeline.
         """
         self._file_path = file_path
         self._logfile = logfile
-        self.parameter: Optional[ParameterModel] = None
+        self.parameter: Dict[str, ParameterModel] = {
+            base_wf_element_name: ParameterModel(root={})
+        }
 
         input_format = os.path.splitext(self._file_path)[1].lower()
         if input_format == ".json":
-            self.parameter = ParamJSONinterface.load(
+            self.parameter[base_wf_element_name] = ParamJSONinterface.load(
                 file_path=self._file_path, logfile=self._logfile
             )
         elif input_format == ".dcm":
-            self.parameter = ParamDCMinterface.load(
+            self.parameter[base_wf_element_name] = ParamDCMinterface.load(
                 file_path=self._file_path, logfile=self._logfile
             )
         else:
@@ -73,7 +77,12 @@ class Parameter:
 
     @typechecked
     def write_out(
-        self, dir_path: str, output_format: str, meta_data: Dict[str, Any]
+        self,
+        dir_path: str,
+        output_format: str,
+        meta_data: Dict[str, Any],
+        element_parameter_workflow: list[str],
+        source: list[str],
     ) -> Optional[str]:
         """Writes the parameter object to the specified directory in the given format.
 
@@ -81,7 +90,9 @@ class Parameter:
             dir_path (str): Directory where the output file will be written.
             output_format (str): Desired file format ('json' or 'dcm').
             meta_data (dict[str, any]): Current ARES and workstation meta data.
-
+            element_parameter_workflow (list[str]): The workflow elements associated with the parameter.
+            source (list[str]): A list of keys from `self.parameter` to be written. Use ['all']
+                to write all available sources.
         Returns:
             str or None: Full path to the written file, or None if writing fails.
         """
@@ -90,19 +101,26 @@ class Parameter:
             dir_path=dir_path, output_format=output_format
         )
 
+        output_data = self._define_write_out_data(
+            source=source, element_parameter_workflow=element_parameter_workflow
+        )
+        merged_parameter = ParameterModel(root=output_data)
+
         if output_format == "json":
             ParamJSONinterface.write_out(
-                parameter=self.parameter,
+                parameter=merged_parameter,
                 output_path=output_path,
                 logfile=self._logfile,
             )
+            pass
         elif output_format == "dcm":
             ParamDCMinterface.write_out(
-                parameter=self.parameter,
+                parameter=merged_parameter,
                 output_path=output_path,
                 meta_data=meta_data,
                 logfile=self._logfile,
             )
+            pass
         else:
             self._logfile.write(
                 f"Unsupported parameter output file format: {output_format}.",
@@ -111,6 +129,54 @@ class Parameter:
             return None
 
         return output_path
+
+    @typechecked
+    def _define_write_out_data(
+        self, source: List[str], element_parameter_workflow: Optional[List[str]]
+    ) -> Optional[Dict[str, Any]]:
+        """Defines the subset of data that should be written to an output file.
+
+        Args:
+            source (list[str]): The data sources to write, or ['all'] to include all
+                sources present in element_parameter_workflow.
+            element_parameter_workflow (list[str]): The workflow elements available for writing.
+
+        Returns:
+            dict or None: The merged parameters. Returns `None` if an error occurs.
+        """
+        try:
+            merged_parameter: Dict[str, Any] = {}
+
+            if "all" in source:
+                if element_parameter_workflow is not None:
+                    all_data_keys = set(self.parameter.keys())
+                    all_element_keys = set(element_parameter_workflow)
+                    source_list = list(all_data_keys.intersection(all_element_keys))
+                else:
+                    source_list = list(self.parameter.keys())
+            else:
+                source_list = [
+                    wf_element_name
+                    for wf_element_name in source
+                    if wf_element_name in element_parameter_workflow
+                ]
+
+            # merging datasets of all wf elements to one. if a parameter ist mentioned
+            # in more than one wf element, the last one in the list overwrites the previous ones
+            for wf_element_name in source_list:
+                if wf_element_name in self.parameter:
+                    param_model = self.parameter[wf_element_name]
+                    for param_key, param_val in param_model.items():
+                        merged_parameter[param_key] = param_val
+
+            return merged_parameter
+
+        except Exception as e:
+            self._logfile.write(
+                f"Error occurred while defining write-out dictionary: {e}",
+                level="ERROR",
+            )
+            return None
 
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:
@@ -140,3 +206,15 @@ class Parameter:
                 f"Evaluation of data output name failed: {e}", level="ERROR"
             )
             return None
+
+    @typechecked
+    def get(self) -> Dict[str, Any]:
+        """Returns the parameter data as a dictionary.
+
+        Returns:
+            dict: The parameter data.
+        """
+        merged_parameter = self._define_write_out_data(
+            source=["all"], element_parameter_workflow=None
+        )
+        return merged_parameter

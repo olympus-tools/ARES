@@ -30,7 +30,7 @@ ________________________________________________________________________
 
 import os
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional
 
 import numpy as np
 from typeguard import typechecked
@@ -44,6 +44,7 @@ class Data:
     def __init__(
         self,
         file_path: str,
+        base_wf_element_name: str,
         source: Iterable[str],
         step_size_init_ms: int,
         logfile: Logfile,
@@ -55,6 +56,8 @@ class Data:
 
         Args:
             file_path (str): The path to the data source file (.mf4, .parquet, or .mat).
+            base_wf_element_name (str): The base name of the workflow element associated
+                with this data source.
             source (Iterable[str]): Specifies which source(s) from the data file to include.
                 Use ['all'] to load all sources, or a list of specific source names (e.g.,
                 ['source1', 'source2']).
@@ -64,31 +67,30 @@ class Data:
         """
         self._file_path = file_path
         self._logfile = logfile
-        data: Dict[str, Dict[str, Any]] = {"base": {}}
+        self.data: Dict[Dict[str, np.ndarray]] = {base_wf_element_name: {}}
 
         # get fileformat to trigger the correct loading pipeline
         input_format = os.path.splitext(self._file_path)[1].lower()
         if input_format == ".mf4":
-            self.data = DataMF4interface.load_mf4(
+            self.data[base_wf_element_name] = DataMF4interface.load_mf4(
                 file_path=self._file_path,
-                data=data,
                 source=list(source),
                 step_size_init_ms=step_size_init_ms,
                 logfile=self._logfile,
             )
         elif input_format == ".parquet":
-            self.data = None
+            self.data[base_wf_element_name] = None
             self._logfile.write(
                 "Evaluation of .parquet input/output is not implemented yet",
                 level="ERROR",
             )  # TODO
         elif input_format == ".mat":
-            self.data = None
+            self.data[base_wf_element_name] = None
             self._logfile.write(
                 "Evaluation of .mat input/output is not implemented yet", level="ERROR"
             )  # TODO
         else:
-            self.data = None
+            self.data[base_wf_element_name] = None
             self._logfile.write(
                 f"Unknown file format for {self._file_path}.", level="ERROR"
             )
@@ -98,7 +100,8 @@ class Data:
         self,
         dir_path: str,
         output_format: str,
-        element_workflow: list[str],
+        meta_data: Dict[str, Any],
+        element_input_workflow: list[str],
         source: list[str],
     ) -> Optional[str]:
         """Writes data from a specified source within `self.data` to an output file.
@@ -110,7 +113,8 @@ class Data:
         Args:
             dir_path (str): The path to the output directory.
             output_format (str): The desired file extension (e.g., 'mf4').
-            element_workflow (list[str]): The workflow elements associated with the data.
+            meta_data (dict[str, any]): Current ARES and workstation meta data.
+            element_input_workflow (list[str]): The workflow elements associated with the data.
             source (list[str]): A list of keys from `self.data` to be written. Use ['all']
                 to write all available sources.
 
@@ -121,15 +125,15 @@ class Data:
             dir_path=dir_path, output_format=output_format
         )
 
-        output_data, log_sources = self._define_write_out_dict(
-            source=source, element_workflow=element_workflow
+        output_data = self._define_write_out_data(
+            source=source, element_input_workflow=element_input_workflow
         )
 
         if output_format == "mf4":
             DataMF4interface.write_out_mf4(
                 file_path=file_path,
                 data=output_data,
-                log_sources=log_sources,
+                meta_data=meta_data,
                 logfile=self._logfile,
             )
         elif output_format == "parquet":
@@ -151,50 +155,45 @@ class Data:
         return file_path
 
     @typechecked
-    def _define_write_out_dict(
-        self, source: List[str], element_workflow: List[str]
-    ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    def _define_write_out_data(
+        self, source: List[str], element_input_workflow: List[str]
+    ) -> Optional[Dict[str, Any]]:
         """Defines the subset of data that should be written to an output file.
 
         Args:
             source (list[str]): The data sources to write, or ['all'] to include all
-                sources present in element_workflow.
-            element_workflow (list[str]): The workflow elements available for writing.
+                sources present in element_input_workflow.
+            element_input_workflow (list[str]): The workflow elements available for writing.
 
         Returns:
-            tuple[dict or None, str or None]: A tuple containing:
-                - The data dictionary prepared for output. Returns `None` if an error occurs.
-                - A description of which sources were selected for writing. Returns `None`
-                  if an error occurs.
+            dict or None: The data dictionary prepared for output. Returns `None` if an error occurs.
         """
         try:
             output_data: Dict[str, Any] = {}
 
             if "all" in source:
                 all_data_keys = set(self.data.keys())
-                all_element_keys = set(element_workflow)
+                all_element_keys = set(element_input_workflow)
                 source_list = list(all_data_keys.intersection(all_element_keys))
-                log_sources = "all available sources present in element_workflow"
             else:
                 source_list = [
                     wf_element_name
                     for wf_element_name in source
-                    if wf_element_name in element_workflow
+                    if wf_element_name in element_input_workflow
                 ]
-                log_sources = str(source_list)
 
             for wf_element_name in source_list:
                 if wf_element_name in self.data:
                     output_data[wf_element_name] = self.data[wf_element_name]
 
-            return output_data, log_sources
+            return output_data
 
         except Exception as e:
             self._logfile.write(
                 f"Error occurred while defining write-out dictionary: {e}",
                 level="ERROR",
             )
-            return None, None
+            return None
 
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:

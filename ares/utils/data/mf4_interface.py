@@ -28,7 +28,7 @@ ________________________________________________________________________
 
 """
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from asammdf import MDF, Signal, Source
@@ -42,7 +42,6 @@ class DataMF4interface:
     @typechecked
     def load_mf4(
         file_path: str,
-        data: Dict[str, Any],
         source: List[str],
         step_size_init_ms: Optional[float] = None,
         logfile: Optional[Logfile] = None,
@@ -50,12 +49,10 @@ class DataMF4interface:
         """Loads an .mf4 file, extracts signals, and preprocesses them.
 
         Preprocessing includes finding a common time basis, resampling, and storing the
-        results in `data` under the key 'base'.
+        results in `data`.
 
         Args:
             file_path (str): The path to the .mf4 file.
-            data (dict[str, any]): The dictionary where the loaded data will be stored.
-                It is modified in place with a 'base' key.
             source (list[str]): The list of sources to load from the file. Use ['all']
                 to load all available sources.
             step_size_init_ms (float, optional): The target resampling step size in
@@ -66,6 +63,8 @@ class DataMF4interface:
             dict or None: The updated data dictionary, or None if an error occurs.
         """
         try:
+            data: Dict[str, Any] = {}
+
             with MDF(file_path) as datasource:
                 data_raw: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
                 for signal in datasource.iter_channels():
@@ -93,11 +92,11 @@ class DataMF4interface:
                     logfile=logfile,
                 )
 
-                data["base"]["timestamp"] = time_vector
-                data["base"].update(data_resampled)
+                data["timestamp"] = time_vector
+                data.update(data_resampled)
 
                 logfile.write(
-                    f"Source '{source}' from .mf4 file {file_path} loaded successfully (nested data under source 'base')."
+                    f"Source '{source}' from .mf4 file {file_path} loaded successfully."
                 )
                 return data
 
@@ -191,7 +190,10 @@ class DataMF4interface:
     @staticmethod
     @typechecked
     def write_out_mf4(
-        file_path: str, data: dict, log_sources: str, logfile: Optional[Logfile] = None
+        file_path: str,
+        data: dict,
+        meta_data: Dict[str, str],
+        logfile: Optional[Logfile] = None,
     ):
         """Writes data from the specified sources in `data` to an .mf4 file.
 
@@ -201,7 +203,8 @@ class DataMF4interface:
         Args:
             file_path (str): The path to the output file.
             data (dict[str, Any]): The data dictionary containing sources to export.
-            log_sources (str): A string describing the sources being written, used for logging.
+            meta_data (dict): A dictionary containing metadata such as the ARES
+                version and the current username.
             logfile (Logfile, optional): The logfile object for writing messages.
         """
         try:
@@ -244,7 +247,7 @@ class DataMF4interface:
 
                 if not all_signals_to_write:
                     logfile.write(
-                        f"No valid signals found to write for source(s) {log_sources} to {file_path}.",
+                        f"No valid signals found to write for source(s) to {file_path}.",
                         level="WARNING",
                     )
                 else:
@@ -253,12 +256,12 @@ class DataMF4interface:
                     )
                     output_file_mf4.save(file_path, overwrite=False)
                     logfile.write(
-                        f"Output .mf4 file written successfully to {file_path} with source(s) {log_sources}.",
+                        f"Output .mf4 file written successfully to {file_path}.",
                         level="INFO",
                     )
 
         except Exception as e:
             logfile.write(
-                f"Error saving .mf4 file to {file_path} with source(s) {log_sources}: {e}",
+                f"Error saving .mf4 file to {file_path}: {e}",
                 level="ERROR",
             )

@@ -40,13 +40,21 @@
     },
     "dataset_2": {
         "type": "parameter",
-        "parameter": ["dataset_1"],
-        "mode": "write",
-        "output_format": "dcm"
+        "path": [
+            "../parameter/dataset_example_1.dcm",
+            "../parameter/dataset_example_1.json"
+        ],
+        "mode": "read"
     },
     "dataset_3": {
         "type": "parameter",
         "parameter": ["dataset_1"],
+        "mode": "write",
+        "output_format": "dcm"
+    },
+    "dataset_4": {
+        "type": "parameter",
+        "parameter": ["dataset_2"],
         "mode": "write",
         "output_format": "json"
     }
