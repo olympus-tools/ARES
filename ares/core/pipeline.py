@@ -36,7 +36,6 @@ from ares.core.simunit import SimUnit
 from ares.core.workflow import Workflow
 from ares.utils.logger import create_logger
 
-# initialize logger
 logger = create_logger("pipeline")
 
 

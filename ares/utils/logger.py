@@ -57,12 +57,10 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     if name == "":
         logger = logging.getLogger()
         logfile = Path(logdir, "ares_root.log")
+        logger.setLevel(level)
     else:
         logger = logging.getLogger(name)
         logfile = Path(logdir, f"{name}.log")
-
-    # set loglevel
-    logger.setLevel(level)
 
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True
@@ -70,16 +68,14 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     # Use a StreamHandler to output to stdout --> parallel to streaming to file
     # default: sys.stderr
     stdout_handler = colorlog.StreamHandler(stream=sys.stdout)
-    stdout_handler.setLevel(level)
     # Use RotatingFileHandler with Count=4 and 4MB size -> 4 is just a good number + always use logger.INFO
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
-    file_handler.setLevel(level)
 
     # set color formatter for stdout/stderr and formatter for files -> no color support
     color_formatter = colorlog.ColoredFormatter(
-        "%(log_color)s%(levelname)s | %(asctime)s | %(filename)s%(lineno)s >> %(message)s",
-        datefmt="%H:%M:%S",
+        "%(log_color)s%(levelname)s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s",
+        datefmt="%d/%m/%Y|%H:%M:%S",
         reset=True,
         log_colors={
             "DEBUG": "cyan",
@@ -94,8 +90,8 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
 
     # formatter for files
     file_formatter = logging.Formatter(
-        fmt="%(levelname)s | %(asctime)s | %(filename)s%(lineno)s >> %(message)s",
-        datefmt="%H:%M:%S",
+        fmt="%(levelname)s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s",
+        datefmt="%d/%m/%Y|%H:%M:%S",
     )
 
     stdout_handler.setFormatter(color_formatter)

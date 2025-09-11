@@ -39,7 +39,6 @@ from ares.utils.logger import create_logger
 from ares.utils.parameter.dcm_interface import ParamDCMinterface
 from ares.utils.parameter.json_interface import ParamJSONinterface
 
-# initialize logger
 logger = create_logger("parameter")
 
 

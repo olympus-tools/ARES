@@ -40,7 +40,6 @@ from typeguard import typechecked
 from ares.models.workflow_model import WorkflowModel
 from ares.utils.logger import create_logger
 
-# initialize logger
 logger = create_logger("workflow")
 
 
