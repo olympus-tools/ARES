@@ -1,6 +1,7 @@
+from pathlib import Path
+
 import numpy as np
 from asammdf import MDF, Signal, Source
-from pathlib import Path
 
 # 1. Create data and timestamps
 # An array for the timestamps with 1s interval (0, 1, 2, ... 19)
@@ -34,7 +35,7 @@ mdf = MDF()
 mdf.append(signal_input_value)
 
 # 4. Define the output path and save the file
-output_dir = Path("examples")
+output_dir = Path("examples/data")
 file_name = "datasource_1.mf4"
 file_path = output_dir / file_name
 

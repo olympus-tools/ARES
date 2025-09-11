@@ -102,7 +102,7 @@ class Data:
         """Writes data from a specified source within `self.data` to an output file.
 
         The final file path is constructed by combining `dir_path` with a new filename,
-        which includes a timestamp and the specified `output_format`.
+        which includes a timestamps and the specified `output_format`.
         Currently, only .mf4 output is supported.
 
         Args:
@@ -188,7 +188,7 @@ class Data:
 
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:
-        """Adds a timestamp to the filename and returns a complete, absolute file path.
+        """Adds a timestamps to the filename and returns a complete, absolute file path.
 
         The format is `*_YYYYMMDD_HHMMSS*` before the file extension.
 
@@ -198,14 +198,14 @@ class Data:
                 is added automatically.
 
         Returns:
-            str or None: The new, complete file path with a timestamp, or None if an
+            str or None: The new, complete file path with a timestamps, or None if an
                 error occurs.
         """
         try:
             os.makedirs(dir_path, exist_ok=True)
             file_name = os.path.splitext(os.path.basename(self._file_path))[0]
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            new_file_name = f"{file_name}_{timestamp}.{output_format}"
+            timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
+            new_file_name = f"{file_name}_{timestamps}.{output_format}"
             full_path = os.path.join(dir_path, new_file_name)
             return full_path
 
@@ -259,36 +259,36 @@ class Data:
         """Resamples all numeric signals in a data dictionary to a uniform time basis.
 
         It assumes that all signals in `data_raw` share the same time vector, which is
-        stored under the key 'timestamp'.
+        stored under the key 'timestamps'.
 
         Args:
-            data_raw (dict[str, np.ndarray]): A dictionary containing the 'timestamp'
+            data_raw (dict[str, np.ndarray]): A dictionary containing the 'timestamps'
                 array and other signal arrays.
             step_size_ms (float): The target resampling step size in milliseconds.
 
         Returns:
-            dict or None: A new dictionary with the new 'timestamp' and
+            dict or None: A new dictionary with the new 'timestamps' and
                 the corresponding resampled signals, or None if an error occurs.
         """
         try:
-            timestamp = data_raw["timestamp"]
+            timestamps = data_raw["timestamps"]
             step_size_s = step_size_ms / 1000.0
             timestamp_resampled = np.arange(
-                timestamp[0], timestamp[-1] + step_size_s, step_size_s
+                timestamps[0], timestamps[-1] + step_size_s, step_size_s
             )
-            data_resampled: Dict[str, np.ndarray] = {"timestamp": timestamp_resampled}
+            data_resampled: Dict[str, np.ndarray] = {"timestamps": timestamp_resampled}
 
             for signal_name, signal_value in data_raw.items():
                 if (
                     isinstance(signal_value, np.ndarray)
                     and np.issubdtype(signal_value.dtype, np.number)
-                    and signal_name != "timestamp"
+                    and signal_name != "timestamps"
                 ):
-                    resampled = np.interp(timestamp_resampled, timestamp, signal_value)
+                    resampled = np.interp(timestamp_resampled, timestamps, signal_value)
                     data_resampled[signal_name] = resampled
-                # Non-numeric or non-timestamp signals are ignored during resampling
+                # Non-numeric or non-timestamps signals are ignored during resampling
 
-            logger.info("Resampling successfully finished.")
+            logger.debug("Resampling successfully finished.")
             return data_resampled
 
         except Exception as e:

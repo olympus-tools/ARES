@@ -39,7 +39,7 @@ from ares.utils.logger import create_logger
 logger = create_logger("pipeline")
 
 
-# TODO: use meta_data from files like e.g. mf4,mat,???
+# TODO: use meta_data from files like e.g. mf4,mat,????
 def pipeline(wf_path: str, output_path: str, meta_data: dict):
     """Executes the ARES simulation pipeline based on a defined workflow.
 
@@ -75,7 +75,7 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                 if "cycle_time" not in wf_element_value:
                     wf_element_value.cycle_time = 10
 
-                # read mode: create data objectsfor each path in the workflow element
+                # read mode: create data objects for each path in the workflow element
                 if wf_element_value.mode == "read":
                     data_objects[wf_element_name] = []
                     for data_path in wf_element_value.path:
@@ -133,14 +133,14 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                         )
                         ares_wf.workflow[wf_element_name].path.append(output_file_path)
 
-            # Handle "sim_unit" workflow elements
+            # handle "sim_unit" workflow elements
             if wf_element_value.type == "sim_unit":
                 simunit_objects[wf_element_name] = SimUnit(
                     file_path=wf_element_value.path,
                     dd_path=wf_element_value.data_dictionary,
                 )
 
-                # Run simulation for each original data source- and parameter variant
+                # run simulation for each original data source- and parameter variant
                 for data_value in data_objects[
                     wf_element_value.element_input_workflow[0]
                 ]:
@@ -151,13 +151,12 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                     ]:
                         sim_parameter = parameter_value.get()
 
-                        simulation_result = simunit_objects[
+                        data_value.data[wf_element_name] = simunit_objects[
                             wf_element_name
                         ].run_simulation(
                             data=sim_input,
                             parameter=sim_parameter,
                         )
-                        data_value.data[wf_element_name] = simulation_result
 
             # handle "custom" workflow elements
             if wf_element_value.type == "custom":
