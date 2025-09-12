@@ -52,7 +52,7 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     # create/get logdir: "logs"
     logdir = Path(__file__).parent / "../../logs"
     logdir.mkdir(parents=True, exist_ok=True)
-    logfile = Path(logdir, f"{name}.log")
+
     # create logger -> root or "name"
     if name == "":
         logger = logging.getLogger()
@@ -96,8 +96,10 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
 
     stdout_handler.setFormatter(color_formatter)
     file_handler.setFormatter(file_formatter)
-    # set handler
-    logger.addHandler(stdout_handler)
+    # set handler differentiating between root/no root
+    if name == "":
+        logger.addHandler(stdout_handler)
+
     logger.addHandler(file_handler)
 
     return logger

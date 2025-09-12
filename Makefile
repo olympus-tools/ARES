@@ -9,6 +9,10 @@
 venv: 
 	./setup_venv.sh
 
+.PHONY: example
+example: 
+	source ./setup_venv.sh true && ares pipeline -wf examples/workflow/workflow_example_1.json --log-level=20
+
 .PHONY: test
 test:
 	source ./setup_venv.sh true && pytest test/
