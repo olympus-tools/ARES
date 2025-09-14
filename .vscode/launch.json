@@ -5,7 +5,8 @@
             "name": "ARES example 1",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/.venv/bin/ares",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
             "args": [
                 "pipeline",
                 "--workflow",
@@ -16,7 +17,9 @@
                 "10"
             ],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}"
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-example1",
+            "postDebugTask": "clean"
         }
     ]
 }

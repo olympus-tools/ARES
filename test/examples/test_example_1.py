@@ -28,29 +28,31 @@ ________________________________________________________________________
 
 """
 
+import os
+import re
 import subprocess
 from pathlib import Path
 
-import pytest
 
-
-def test_ares_pipeline_example_1(tmp_path):
+def test_ares_pipeline_example_1(tmp_path, caplog):
     """
     Executes an ARES pipeline example and asserts its successful completion
     and the absence of errors.
     """
 
-    # Define paths based on project structure
-    ares_executable = Path(".venv/bin/ares").resolve()
-    workflow_file = Path("examples/workflow/workflow_example_1.json").resolve()
+    project_root = Path(__file__).resolve().parent.parent.parent
+    python_executable = (
+        project_root / ".venv" / ("Scripts" if os.name == "nt" else "bin") / "python"
+    )
+    workflow_file = project_root / "examples/workflow/workflow_example_1.json"
 
-    # Create a temporary output directory for the test
     output_dir = tmp_path / "output"
     output_dir.mkdir()
 
-    # Command to execute, matching the VS Code configuration
     command = [
-        str(ares_executable),
+        str(python_executable),
+        "-m",
+        "ares",
         "pipeline",
         "--workflow",
         str(workflow_file),
@@ -60,25 +62,25 @@ def test_ares_pipeline_example_1(tmp_path):
         "10",
     ]
 
-    # Execute the command without checking the return code
-    result = subprocess.run(command, capture_output=True, text=True, timeout=120)
+    env = dict(**os.environ)
+    env["PYTHONPATH"] = str(project_root)
 
-    # Assert that no errors were printed to stderr
-    # An empty stderr is a strong indicator of a clean run.
-    assert not result.stderr, (
-        f"ARES reported errors on stderr. "
-        f"Return code was {result.returncode}.\n"
-        f"Stderr:\n---\n{result.stderr}\n---\n"
-        f"Stdout:\n---\n{result.stdout}\n---\n"
-    )
+    with caplog.at_level("DEBUG"):
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=project_root,
+            env=env,
+            check=True,
+        )
 
-    # Assert successful completion based on a specific output string
-    # Adjust this string to match the actual success message from ARES.
+    clean_stdout = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+
+    assert "ERROR" not in clean_stdout, f"Pipeline reported ERRORs:\n{clean_stdout}"
+
     success_string = "ARES pipeline successfully finished."
-
-    assert success_string in result.stdout, (
-        f"Success string '{success_string}' not found in output. "
-        f"Return code was {result.returncode}.\n"
-        f"Full stdout:\n---\n{result.stdout}\n---\n"
-        f"Stderr:\n---\n{result.stderr}\n---\n"
+    assert success_string in clean_stdout, (
+        f"Success string '{success_string}' not found in output.\n{clean_stdout}"
     )

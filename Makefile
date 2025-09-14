@@ -1,25 +1,39 @@
 # makefile to manage project
 # commands:
-# 	- make test
-# 	- make format
-# 	- make clean
-# 	- meke venv    | doesn't activate afterwards
+#   - make setup_venv
+#   - make examples
+#   - make test
+#   - make format
+#   - make clean
 
-.PHONY: venv
-venv: 
-	./setup_venv.sh
+VENV_DIR := .venv
 
-.PHONY: example
-example: 
-	source ./setup_venv.sh true && ares pipeline -wf examples/workflow/workflow_example_1.json --log-level=20
+.PHONY: setup_venv
+setup_venv:
+	@if [ -d "$(VENV_DIR)" ]; then \
+		echo "Virtual environment '$(VENV_DIR)' already exists."; \
+	else \
+		echo "Creating virtual environment '$(VENV_DIR)'..."; \
+		python3 -m venv "$(VENV_DIR)" || { echo "Error: Failed to create virtual environment."; exit 1; }; \
+		echo "Installing ARES dependencies in virtual environment '$(VENV_DIR)'..."; \
+		"$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies."; exit 1; }; \
+	fi
+
+.PHONY: examples
+examples: setup_venv
+	$(MAKE) -C examples
+	$(MAKE) clean
 
 .PHONY: test
-test:
-	source ./setup_venv.sh true && pytest test/
+test: setup_venv
+	$(MAKE) -C examples/sim_unit all
+	@"$(VENV_DIR)/bin/python" -m pytest test/
+	$(MAKE) clean
 
 .PHONY: format
-format:
-	source ./setup_venv.sh true && ruff format . --exclude ares/core/version.py --exclude .venv
+format: setup_venv
+	@"$(VENV_DIR)/bin/python" -m ruff format . --exclude ares/core/version.py --exclude .venv
+	$(MAKE) clean
 
 .PHONY: clean
 clean:
@@ -28,4 +42,6 @@ clean:
 	find . -type d -name log | xargs rm -fr
 	find . -type d -name .pytest_cache | xargs rm -fr
 	find . -type d -name .ruff_cache | xargs rm -fr
+	$(MAKE) -C examples/sim_unit clean
+
 

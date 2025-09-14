@@ -17,14 +17,17 @@ We are committed to a welcoming and inclusive community. Please read our [Code o
 
 ARES is currently under active development. Therefore no compiled program exists. 
 To use ARES until the first release or for development the recommended way to use ARES is via a python virtual environment.
-To simplify the process of creating and configuring the virtualenv the following shell script exists:
+To simplify the process of creating and configuring the virtualenv the following make command can be used:
 
-- Linux: [setup_venv.sh](setup_venv.sh)
+```bash
+make setup_venv
+``` 
 
-What the script does:
-- create virtualenv in '.venv'
-- install project dependencies from 'pyproject.toml'
-- activate virtual environment
+What the make command does:
+- creating virtual environment in directory '.venv'
+- installing project dependencies from 'pyproject.toml'
+
+**⚠️ NOTE:** Currently ARES is only supported for Linux.
 
 ## 2. Get in touch with us
 

@@ -35,9 +35,6 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[project.scripts]
-ares = "ares.cli.ares:cli"
-
 [project.optional-dependencies]
 test = [
     "pytest==8.4.1",

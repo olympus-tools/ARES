@@ -90,7 +90,3 @@ def pipeline_command(workflow, output, log_level):
     ares_logger = create_logger(level=log_level)
 
     pipeline(wf_path=workflow, output_path=output, meta_data=meta_data)
-
-
-if __name__ == "__main__":
-    cli()

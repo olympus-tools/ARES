@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "prepare-example1",
+            "type": "shell",
+            "command": "make -C examples/sim_unit derivation && make -C examples/sim_unit lowpassfilterfirstorder",
+            "problemMatcher": []
+        },
+        {
+            "label": "clean",
+            "type": "shell",
+            "command": "make clean",
+            "problemMatcher": []
+        }
+    ]
+}
