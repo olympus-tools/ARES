@@ -35,11 +35,14 @@ from typing import Any, Dict, List, Optional, Union
 from pydantic import ValidationError
 from typeguard import typechecked
 
-from ares.core.logfile import Logfile
 from ares.models.parameter_model import ParameterElement, ParameterModel
+from ares.utils.logger import create_logger
+
+# initialize logger
+logger = create_logger("dcm_interface")
 
 
-# TODO: dcm keywor should not be implemented in parameter pydantic model
+# TODO: dcm keyword should not be implemented in parameter pydantic model
 # => there should be a evaluation in the dcm write_out method
 # => otherwise its not possible to import a .json and export a .dcm
 # => check placeholder method "_eval_dcm_keyword"
@@ -48,7 +51,7 @@ class ParamDCMinterface:
 
     @staticmethod
     @typechecked
-    def load(file_path: str, logfile: Logfile) -> Optional[ParameterModel]:
+    def load(file_path: str) -> Optional[ParameterModel]:
         """Parses a DCM file and converts it to a validated ParameterModel object.
 
         DAMOS DCM format is defined on:
@@ -56,7 +59,6 @@ class ParamDCMinterface:
 
         Args:
             file_path (str): The path to the DCM file to be parsed.
-            logfile (Logfile): The logfile object for writing messages.
 
         Returns:
             ParameterModel or None: Validated parameter object, or None if parsing fails.
@@ -267,23 +269,23 @@ class ParamDCMinterface:
 
         except FileNotFoundError:
             error_msg = f"DCM file not found: '{file_path}'"
-            logfile.write(error_msg, level="ERROR")
+            logger.error(error_msg)
             return None
         except OSError as e:
             error_msg = f"Error reading DCM file '{file_path}': {e}"
-            logfile.write(error_msg, level="ERROR")
+            logger.error(error_msg)
             return None
         except ValidationError as e:
             error_msg = (
                 f"Validation Error in DCM file '{file_path}': The file format does "
                 f"not match the expected parameter model.\nDetails: {e}"
             )
-            logfile.write(error_msg, level="ERROR")
+            logger.error(error_msg)
             return None
         except Exception as e:
             # For all other unexpected errors
             error_msg = f"An unexpected error occurred while parsing the DCM file '{file_path}': {e}"
-            logfile.write(error_msg, level="ERROR")
+            logger.error(error_msg)
             return None
 
     @staticmethod
@@ -292,7 +294,6 @@ class ParamDCMinterface:
         parameter: ParameterModel,
         output_path: str,
         meta_data: Dict[str, str],
-        logfile: Logfile,
     ):
         """Writes a ParameterModel object to a DCM file.
 
@@ -309,7 +310,6 @@ class ParamDCMinterface:
             output_path (str): The full path to the output DCM file.
             meta_data (dict): A dictionary containing metadata such as the ARES
                 version and the current username.
-            logfile (Logfile): The logfile object for writing messages.
         """
         try:
             encoding_type = "utf-8"
@@ -331,7 +331,6 @@ class ParamDCMinterface:
                     parameter_keyword = ParamDCMinterface._eval_dcm_keyword(
                         parameter_name=parameter_name,
                         parameter_value=parameter_value,
-                        logfile=logfile,
                     )
 
                     param_str = []
@@ -490,16 +489,16 @@ class ParamDCMinterface:
                 f"Error writing DCM file '{output_path}': Missing write permissions or "
                 f"an invalid path.\nDetails: {e}"
             )
-            logfile.write(error_msg, level="ERROR")
+            logger.error(error_msg)
         except KeyError as e:
             error_msg = (
                 f"Metadata error: The expected key {e} is missing. Please ensure "
                 f"'version' and 'username' are included in `meta_data`."
             )
-            logfile.write(error_msg, level="ERROR")
+            logger.error(error_msg)
         except Exception as e:
             error_msg = f"An unexpected error occurred while writing the DCM file '{output_path}': {e}"
-            logfile.write(error_msg, level="ERROR")
+            logger.error(error_msg)
 
     @staticmethod
     @typechecked
@@ -551,7 +550,8 @@ class ParamDCMinterface:
     @staticmethod
     @typechecked
     def _eval_dcm_keyword(
-        parameter_name: str, parameter_value: ParameterElement, logfile: Logfile
+        parameter_name: str,
+        parameter_value: ParameterElement,
     ) -> Optional[str]:
         """Evaluates the DCM keyword from a ParameterElement object.
 
@@ -559,7 +559,6 @@ class ParamDCMinterface:
             parameter_name (str): The name of the parameter.
             parameter_value (ParameterElement): The Pydantic object containing parameter
                 metadata.
-            logfile (Logfile): The logfile object for writing messages.
 
         Returns:
             str or None: The DCM keyword if found, otherwise None.
@@ -569,8 +568,7 @@ class ParamDCMinterface:
             return keyword
 
         except Exception as e:
-            logfile.write(
+            logger.error(
                 f"Failed to evaluate DCM keyword of parameter {parameter_name}: {e}",
-                level="ERROR",
             )
             return None

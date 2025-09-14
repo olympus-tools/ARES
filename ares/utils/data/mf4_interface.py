@@ -34,9 +34,15 @@ import numpy as np
 from asammdf import MDF, Signal, Source
 from typeguard import typechecked
 
-from ares.core.logfile import Logfile
+from ares.utils.logger import create_logger
+
+# initialize logger
+logger = create_logger("mf4_interface")
 
 
+# TODO: make DataMF4Interface an asammdf object? -> asammdf.MDF OR create other class: mf4_loader or so that takes over the job
+# TODO: another idea: create a "data-class" (general API data in ARES) -> this data class can inherit from mf4,mat, etc. classes that provide api for read,writing
+#       this would make if,elif, etc. in data.py unnecessary
 class DataMF4interface:
     @staticmethod
     @typechecked
@@ -44,7 +50,6 @@ class DataMF4interface:
         file_path: str,
         source: List[str],
         step_size_init_ms: Optional[float] = None,
-        logfile: Optional[Logfile] = None,
     ) -> Optional[Dict[str, Any]]:
         """Loads an .mf4 file, extracts signals, and preprocesses them.
 
@@ -57,7 +62,6 @@ class DataMF4interface:
                 to load all available sources.
             step_size_init_ms (float, optional): The target resampling step size in
                 milliseconds.
-            logfile (Logfile, optional): The logfile object for writing messages.
 
         Returns:
             dict or None: The updated data dictionary, or None if an error occurs.
@@ -81,27 +85,25 @@ class DataMF4interface:
                         data_raw[signal.name] = (signal.timestamps, signal.samples)
 
                 if not data_raw:
-                    logfile.write(
+                    logger.warning(
                         f"No signals found matching the specified source {source} in {file_path}.",
-                        level="WARNING",
                     )
 
                 time_vector, data_resampled = DataMF4interface._preprocessing_mf4(
                     data_raw=data_raw,
                     step_size_init_ms=step_size_init_ms,
-                    logfile=logfile,
                 )
 
                 data["timestamp"] = time_vector
                 data.update(data_resampled)
 
-                logfile.write(
+                logger.debug(
                     f"Source '{source}' from .mf4 file {file_path} loaded successfully."
                 )
                 return data
 
         except Exception as e:
-            logfile.write(f"Error loading .mf4 file {file_path}: {e}", level="ERROR")
+            logger.error(f"Error loading .mf4 file {file_path}: {e}")
             return None
 
     @staticmethod
@@ -109,7 +111,6 @@ class DataMF4interface:
     def _preprocessing_mf4(
         data_raw: Dict[str, Tuple[np.ndarray, np.ndarray]],
         step_size_init_ms: float,
-        logfile: Optional[Logfile],
     ) -> Tuple[Optional[np.ndarray], Dict[str, np.ndarray]]:
         """Resamples loaded signals from an MF4 file to a uniform time basis.
 
@@ -122,7 +123,6 @@ class DataMF4interface:
             data_raw (dict[str, tuple[np.ndarray, np.ndarray]]): A dictionary where keys
                 are signal names and values are tuples containing `(timestamps, samples)`.
             step_size_init_ms (float): The target resampling step size in milliseconds.
-            logfile (Logfile, optional): The logfile object for writing messages.
 
         Returns:
             tuple[np.ndarray or None, dict[str, np.ndarray]]: A tuple containing:
@@ -173,18 +173,15 @@ class DataMF4interface:
                     )
                     none_array = np.array([None] * num_samples, dtype=object)
                     data_resampled[signal_name] = none_array
-                    logfile.write(
+                    logger.info(
                         f"Signal '{signal_name}' could not be read from measurement file.",
-                        level="INFO",
                     )
 
-            logfile.write("Data source file successfully resampled.", level="INFO")
+            logger.info("Data source file successfully resampled.")
             return global_time_vector, data_resampled
 
         except Exception as e:
-            logfile.write(
-                f"Error during preprocessing mf4 data source file: {e}", level="ERROR"
-            )
+            logger.error(f"Error during preprocessing mf4 data source file: {e}")
             return None, {}
 
     @staticmethod
@@ -193,7 +190,6 @@ class DataMF4interface:
         file_path: str,
         data: dict,
         meta_data: Dict[str, str],
-        logfile: Optional[Logfile] = None,
     ):
         """Writes data from the specified sources in `data` to an .mf4 file.
 
@@ -205,7 +201,6 @@ class DataMF4interface:
             data (dict[str, Any]): The data dictionary containing sources to export.
             meta_data (dict): A dictionary containing metadata such as the ARES
                 version and the current username.
-            logfile (Logfile, optional): The logfile object for writing messages.
         """
         try:
             all_signals_to_write = []
@@ -230,9 +225,8 @@ class DataMF4interface:
                             # Convert to float64 for compatibility with asammdf
                             samples_float = samples.astype(np.float64)
                         except (ValueError, TypeError):
-                            logfile.write(
+                            logger.warning(
                                 f"Error: Signal '{signal_name}' in source '{source_key}' could not be converted to float64. Skipping.",
-                                level="WARNING",
                             )
                             continue
 
@@ -246,22 +240,19 @@ class DataMF4interface:
                         all_signals_to_write.append(signal)
 
                 if not all_signals_to_write:
-                    logfile.write(
+                    logger.warning(
                         f"No valid signals found to write for source(s) to {file_path}.",
-                        level="WARNING",
                     )
                 else:
                     output_file_mf4.append(
                         all_signals_to_write, comment="ares simulation result"
                     )
                     output_file_mf4.save(file_path, overwrite=False)
-                    logfile.write(
+                    logger.info(
                         f"Output .mf4 file written successfully to {file_path}.",
-                        level="INFO",
                     )
 
         except Exception as e:
-            logfile.write(
-                f"Error saving .mf4 file to {file_path}: {e}",
-                level="ERROR",
+            logger.error(
+                f"Error saving .mf4 file to {file_path} with source(s): {e}",
             )

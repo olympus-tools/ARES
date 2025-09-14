@@ -29,10 +29,12 @@ ________________________________________________________________________
 """
 
 import getpass
+import logging
 
 import click
 
 from ares.core.pipeline import pipeline
+from ares.utils.logger import create_logger
 from ares.version import __version__
 
 meta_data = {"username": getpass.getuser(), "version": __version__}
@@ -72,7 +74,21 @@ def cli():
     type=click.Path(file_okay=False),
     help="Absolute path to the output directory.",
 )
-def pipeline_command(workflow, output):
+@click.option(
+    "--log-level",
+    default=logging.WARNING,
+    help="""\b
+    Setting log level for root logger via integer value:
+    10 = DEBUG
+    20 = INFO
+    30 = WARNING (default)
+    40 = ERROR
+    50 = CRITICAL
+    """,
+)
+def pipeline_command(workflow, output, log_level):
+    ares_logger = create_logger(level=log_level)
+
     pipeline(wf_path=workflow, output_path=output, meta_data=meta_data)
 
 

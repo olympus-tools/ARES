@@ -37,8 +37,10 @@ from typing import Any, Dict, List, Optional
 from jsonschema import ValidationError
 from typeguard import typechecked
 
-from ares.core.logfile import Logfile
 from ares.models.workflow_model import WorkflowModel
+from ares.utils.logger import create_logger
+
+logger = create_logger("workflow")
 
 
 class Workflow:
@@ -46,15 +48,14 @@ class Workflow:
 
     @typechecked
     def __init__(
-        self, file_path: Optional[str] = None, logfile: Optional[Logfile] = None
+        self,
+        file_path: Optional[str] = None,
     ):
         """Initializes a Workflow object by reading and validating a workflow JSON file.
 
         Args:
             file_path (str, optional): Path to the workflow JSON file (*.json). Defaults to None.
-            logfile (Logfile, optional): The logfile object of the current ARES pipeline for logging purposes. Defaults to None.
         """
-        self._logfile = logfile
         self._file_path = file_path
         self.workflow: Optional[WorkflowModel] = self._load_and_validate_wf()
         self._evaluate_relative_paths()
@@ -74,7 +75,7 @@ class Workflow:
         """
         try:
             if self._file_path is None:
-                self._logfile.write("No workflow file path provided.", level="ERROR")
+                logger.error("No workflow file path provided.")
                 return None
 
             with open(self._file_path, "r", encoding="utf-8") as file:
@@ -83,34 +84,29 @@ class Workflow:
             # Pydantic-Validierung des rohen Dictionaries
             workflow_raw_pydantic = WorkflowModel.model_validate(workflow_raw)
 
-            self._logfile.write(
+            logger.info(
                 f"Workflow file {self._file_path} successfully loaded and validated with Pydantic.",
-                level="INFO",
             )
             return workflow_raw_pydantic
 
         except FileNotFoundError:
-            self._logfile.write(
+            logger.error(
                 f"Workflow file not found at '{self._file_path}'.",
-                level="ERROR",
             )
             return None
         except json.JSONDecodeError as e:
-            self._logfile.write(
+            logger.error(
                 f"Error parsing workflow file '{self._file_path}': {e}",
-                level="ERROR",
             )
             return None
         except ValidationError as e:
-            self._logfile.write(
+            logger.error(
                 f"Validation error in workflow file '{self._file_path}': {e}",
-                level="ERROR",
             )
             return None
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Unexpected error loading workflow file '{self._file_path}': {e}",
-                level="ERROR",
             )
             return None
 
@@ -144,9 +140,8 @@ class Workflow:
                                     os.path.join(base_dir, field_value)
                                 )
                                 setattr(wf_element_value, field_name, abs_path)
-                                self._logfile.write(
+                                logger.info(
                                     f"Resolved relative path for '{wf_element_name}.{field_name}': {abs_path}",
-                                    level="INFO",
                                 )
 
                     # Case 2: list of strings
@@ -173,15 +168,13 @@ class Workflow:
 
                         if changed:
                             setattr(wf_element_value, field_name, abs_paths)
-                            self._logfile.write(
+                            logger.info(
                                 f"Resolved relative paths for '{wf_element_name}.{field_name}': {abs_paths}",
-                                level="INFO",
                             )
 
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Error evaluating relative paths: {e}",
-                level="ERROR",
             )
 
     @typechecked
@@ -235,11 +228,11 @@ class Workflow:
                                 break
 
                 if call_count > 0:
-                    self._logfile.write(
+                    logger.debug(
                         f"""Workflow element "{wf_element_name}" is referenced {call_count} time(s) in other workflow elements."""
                     )
                 else:
-                    self._logfile.write(
+                    logger.debug(
                         f"""Workflow element "{wf_element_name}" is a workflow endpoint (sink)."""
                     )
                     wf_sinks.append(wf_element_name)
@@ -247,7 +240,7 @@ class Workflow:
             return wf_sinks
 
         except Exception as e:
-            self._logfile.write(f"Error while searching for sinks: {e}", level="ERROR")
+            logger.error(f"Error while searching for sinks: {e}")
             return None
 
     @typechecked
@@ -270,9 +263,8 @@ class Workflow:
             for wf_sink in wf_sinks:
                 path = self._recursive_search(sink=wf_sink, loop=False, element=wf_sink)
                 if path is None:
-                    self._logfile.write(
+                    logger.error(
                         f"Failed to determine execution path for sink '{wf_sink}'.",
-                        level="ERROR",
                     )
                     return None
                 for step in path:
@@ -280,16 +272,15 @@ class Workflow:
                         workflow_order.append(step)
 
             workflow_lin_string = " -> ".join(workflow_order)
-            self._logfile.write(
-                f"Workflow execution order: {workflow_lin_string}", level="INFO"
+            logger.info(
+                f"Workflow execution order: {workflow_lin_string}",
             )
 
             return workflow_order
 
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Error evaluating the execution order of the linear workflows: {e}",
-                level="ERROR",
             )
             return None
 
@@ -323,8 +314,8 @@ class Workflow:
             elem_obj = self.workflow.get(element)
 
             if elem_obj is None:
-                self._logfile.write(
-                    f"Workflow element '{element}' not found.", level="WARNING"
+                logger.warning(
+                    f"Workflow element '{element}' not found.",
                 )
                 return []
 
@@ -358,9 +349,8 @@ class Workflow:
             return path
 
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Error during recursive path tracing from {element}: {e}",
-                level="ERROR",
             )
             return None
 
@@ -381,7 +371,7 @@ class Workflow:
             self.workflow = WorkflowModel(root=workflow_sorted_dict)
 
         except Exception as e:
-            self._logfile.write(f"Error while sorting the workflow: {e}", level="ERROR")
+            logger.error(f"Error while sorting the workflow: {e}")
 
     @typechecked
     def _eval_element_input_workflow(self) -> None:
@@ -443,8 +433,8 @@ class Workflow:
                 )
 
         except Exception as e:
-            self._logfile.write(
-                f"Error while evaluating element workflow: {e}", level="ERROR"
+            logger.error(
+                f"Error while evaluating element workflow: {e}",
             )
 
     @typechecked
@@ -462,11 +452,11 @@ class Workflow:
             with open(output_file_path, "w", encoding="utf-8") as file:
                 file.write(self.workflow.model_dump_json(indent=4, exclude_none=True))
 
-            self._logfile.write(f"File successfully written to {output_file_path}.")
+            logger.debug(f"File successfully written to {output_file_path}.")
 
         except Exception as e:
-            self._logfile.write(
-                f"Error writing workflow to {output_file_path}: {e}", level="ERROR"
+            logger.error(
+                f"Error writing workflow to {output_file_path}: {e}",
             )
 
     @typechecked
@@ -494,7 +484,5 @@ class Workflow:
             return full_path
 
         except Exception as e:
-            self._logfile.write(
-                f"Evaluation of data output name failed: {e}", level="ERROR"
-            )
+            logger.error(f"Evaluation of data output name failed: {e}")
             return None

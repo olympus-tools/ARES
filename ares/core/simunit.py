@@ -36,8 +36,10 @@ import numpy as np
 from pydantic import ValidationError
 from typeguard import typechecked
 
-from ares.core.logfile import Logfile
 from ares.models.datadictionary_model import DataDictionaryModel
+from ares.utils.logger import create_logger
+
+logger = create_logger("simunit")
 
 
 class SimUnit:
@@ -59,7 +61,6 @@ class SimUnit:
         self,
         file_path: Optional[str] = None,
         dd_path: Optional[str] = None,
-        logfile: Logfile = None,
     ):
         """Initializes the simulation unit by loading a shared library and a Data Dictionary.
 
@@ -70,9 +71,7 @@ class SimUnit:
         Args:
             file_path (str, optional): The path to the shared library file (e.g., .so, .dll, .dylib).
             dd_path (str, optional): The path to the Data Dictionary JSON file.
-            logfile (Logfile): The logfile object for logging.
         """
-        self._logfile = logfile
         self._dd: Optional[DataDictionaryModel] = self._load_and_validate_dd(
             dd_path=dd_path
         )
@@ -101,32 +100,28 @@ class SimUnit:
                 dd_data = json.load(file)
 
             dd = DataDictionaryModel.model_validate(dd_data)
-            self._logfile.write(
+            logger.info(
                 f"Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.",
-                level="INFO",
             )
             return dd
         except FileNotFoundError:
-            self._logfile.write(
-                f"Data dictionary file not found at '{dd_path}'.", level="ERROR"
+            logger.error(
+                f"Data dictionary file not found at '{dd_path}'.",
             )
             return None
         except json.JSONDecodeError as e:
-            self._logfile.write(
+            logger.error(
                 f"Error parsing data dictionary JSON file '{dd_path}': {e}",
-                level="ERROR",
             )
             return None
         except ValidationError as e:
-            self._logfile.write(
+            logger.error(
                 f"Validation error for data dictionary '{dd_path}': {e}",
-                level="ERROR",
             )
             return None
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Unexpected error loading data dictionary file '{dd_path}': {e}",
-                level="ERROR",
             )
             return None
 
@@ -144,19 +139,18 @@ class SimUnit:
         """
         try:
             library = ctypes.CDLL(file_path)
-            self._logfile.write(
-                f"Library '{file_path}' successfully loaded.", level="INFO"
+            logger.info(
+                f"Library '{file_path}' successfully loaded.",
             )
             return library
         except OSError as e:
-            self._logfile.write(
-                f"Error loading shared library '{file_path}': {e}", level="ERROR"
+            logger.error(
+                f"Error loading shared library '{file_path}': {e}",
             )
             return None
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Unexpected error loading library '{file_path}': {e}",
-                level="ERROR",
             )
             return None
 
@@ -180,9 +174,8 @@ class SimUnit:
                 base_ctypes_type = SimUnit.DATATYPES[datatype][0]
 
                 if base_ctypes_type is None:
-                    self._logfile.write(
+                    logger.error(
                         f"Invalid datatype '{datatype}' in variable '{dd_element_name}'.",
-                        level="ERROR",
                     )
                     continue
 
@@ -192,43 +185,38 @@ class SimUnit:
                     elif size[0] > 1:
                         ctypes_type = base_ctypes_type * size[0]
                     else:
-                        self._logfile.write(
+                        logger.error(
                             f"Invalid size '{size[0]}' for '{dd_element_name}'. Expected > 0.",
-                            level="ERROR",
                         )
                         continue
                 elif len(size) == 2:
                     ctypes_type = (base_ctypes_type * size[1]) * size[0]
                 else:
-                    self._logfile.write(
+                    logger.error(
                         f"Invalid size '{size}' for '{dd_element_name}'. Expected 1 or 2 dimensions.",
-                        level="ERROR",
                     )
                     continue
 
                 dll_interface[dd_element_name] = ctypes_type.in_dll(
                     self._library, dd_element_name
                 )
-                self._logfile.write(
+                logger.info(
                     f"Global simulation variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}'.",
-                    level="INFO",
                 )
             except AttributeError as e:
-                self._logfile.write(
+                logger.error(
                     f"Failed to map global simulation variable '{dd_element_name}': Symbol not found or type mismatch. {e}",
-                    level="ERROR",
                 )
                 continue
             except Exception as e:
-                self._logfile.write(
+                logger.error(
                     f"An unexpected error occurred while mapping global simulation variable '{dd_element_name}': {e}",
-                    level="ERROR",
                 )
                 continue
 
         if not dll_interface:
-            self._logfile.write(
-                "No variables could be mapped successfully.", level="ERROR"
+            logger.error(
+                "No variables could be mapped successfully.",
             )
             return None
         return dll_interface
@@ -248,21 +236,18 @@ class SimUnit:
             sim_function = self._library.ares_simunit
             sim_function.argtypes = []
             sim_function.restype = None
-            self._logfile.write(
+            logger.info(
                 "Ares simulation function 'ares_simunit' successfully set up.",
-                level="INFO",
             )
             return sim_function
         except AttributeError as e:
-            self._logfile.write(
+            logger.error(
                 f"Ares simulation function 'ares_simunit' not found in library: {e}",
-                level="ERROR",
             )
             return None
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"An unexpected error occurred while setting up ares simulation function: {e}",
-                level="ERROR",
             )
             return None
 
@@ -286,15 +271,14 @@ class SimUnit:
         """
 
         try:
-            self._logfile.write("Starting ares simulation...", level="INFO")
+            logger.info("Starting ares simulation...")
 
             sim_result: Dict[str, np.ndarray] = {}
             time_steps = len(data["timestamp"])
-            self._logfile.write(
+            logger.info(
                 f"The simulation starts at timestamp {data['timestamp'][0]} seconds "
                 f"and ends at timestamp {data['timestamp'][-1]} seconds - duration: "
                 f"{data['timestamp'][-1] - data['timestamp'][0]} seconds",
-                level="INFO",
             )
 
             mapped_input = self._map_sim_input(input_data=data, time_steps=time_steps)
@@ -306,9 +290,8 @@ class SimUnit:
                 self._sim_function()
                 step_result = self._read_dll_interface()
                 if step_result is None:
-                    self._logfile.write(
+                    logger.error(
                         "Aborting simulation due to a critical error while reading output data.",
-                        level="ERROR",
                     )
                     return None
 
@@ -328,12 +311,10 @@ class SimUnit:
                         sim_result[output_signal], step_result[output_signal]
                     )
 
-            self._logfile.write("ares simulation successfully finished.", level="INFO")
+            logger.info("ares simulation successfully finished.")
             return sim_result
         except Exception as e:
-            self._logfile.write(
-                f"Error while running ares simulation: {e}", level="ERROR"
-            )
+            logger.error(f"Error while running ares simulation: {e}")
             return None
 
     @typechecked
@@ -362,9 +343,8 @@ class SimUnit:
 
                 if dd_element_name in input_data:
                     mapped_input[dd_element_name] = input_data[dd_element_name]
-                    self._logfile.write(
+                    logger.info(
                         f"Simulation signal '{dd_element_name}' could be mapped to the original signal.",
-                        level="INFO",
                     )
                     continue
 
@@ -379,9 +359,8 @@ class SimUnit:
                                 mapped_input[dd_element_name] = input_data[
                                     alternative_value
                                 ]
-                                self._logfile.write(
+                                logger.info(
                                     f"Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.",
-                                    level="INFO",
                                 )
                                 mapped = True
                                 break
@@ -392,9 +371,8 @@ class SimUnit:
                                 size=dd_element_value.size,
                                 value=alternative_value,
                             )
-                            self._logfile.write(
+                            logger.info(
                                 f"Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
-                                level="INFO",
                             )
                             mapped = True
                             break
@@ -408,16 +386,15 @@ class SimUnit:
                         size=dd_element_value.size,
                         value=value,
                     )
-                    self._logfile.write(
+                    logger.info(
                         f"Simulation signal '{dd_element_name}' has been mapped to default constant value {value}.",
-                        level="INFO",
                     )
 
-            self._logfile.write("Mapping is successfully finished.", level="INFO")
+            logger.info("Mapping is successfully finished.")
             return mapped_input
         except Exception as e:
-            self._logfile.write(
-                f"Error during mapping of simulation input signals: {e}", level="ERROR"
+            logger.error(
+                f"Error during mapping of simulation input signals: {e}",
             )
             return None
 
@@ -470,14 +447,13 @@ class SimUnit:
                     out[:] = value
                 return out
             else:
-                self._logfile.write(
+                logger.error(
                     f"Unsupported size '{size}'. Expected 1 or 2 dimensions.",
-                    level="ERROR",
                 )
                 return None
         except Exception as e:
-            self._logfile.write(
-                f"Error during mapping static value {value}: {e}", level="ERROR"
+            logger.error(
+                f"Error during mapping static value {value}: {e}",
             )
             return None
 
@@ -511,14 +487,12 @@ class SimUnit:
                         for j in range(size[1]):
                             sim_var[i][j] = input[dd_element_name][time_step_idx][i][j]
                 else:
-                    self._logfile.write(
+                    logger.error(
                         f"Unsupported size '{size}' for '{dd_element_name}'. Cannot write values.",
-                        level="ERROR",
                     )
             except Exception as e:
-                self._logfile.write(
+                logger.error(
                     f"Error writing input value '{dd_element_name}' to 'ares_simunit' function: {e}",
-                    level="ERROR",
                 )
 
     @typechecked
@@ -552,19 +526,17 @@ class SimUnit:
                         [sim_var[i][j] for j in range(size[1])] for i in range(size[0])
                     ]
                 else:
-                    self._logfile.write(
+                    logger.error(
                         f"Unsupported size '{size}' for '{dd_element_name}'. Cannot read values.",
-                        level="ERROR",
                     )
             except Exception as e:
-                self._logfile.write(
+                logger.error(
                     f"Error reading output value '{dd_element_name}' from 'ares_simunit' function: {e}",
-                    level="ERROR",
                 )
 
         if not current_values:
-            self._logfile.write(
-                "No variables could be read successfully.", level="ERROR"
+            logger.error(
+                "No variables could be read successfully.",
             )
             return None
         return current_values

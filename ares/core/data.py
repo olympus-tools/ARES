@@ -35,8 +35,10 @@ from typing import Any, Dict, Iterable, List, Optional
 import numpy as np
 from typeguard import typechecked
 
-from ares.core.logfile import Logfile
 from ares.utils.data.mf4_interface import DataMF4interface
+from ares.utils.logger import create_logger
+
+logger = create_logger("data")
 
 
 class Data:
@@ -47,7 +49,6 @@ class Data:
         base_wf_element_name: str,
         source: Iterable[str],
         step_size_init_ms: int,
-        logfile: Logfile,
     ):
         """Initializes the Data class by reading a data source file.
 
@@ -63,10 +64,8 @@ class Data:
                 ['source1', 'source2']).
             step_size_init_ms (int): The target resampling step size in milliseconds for
                 the initial loading.
-            logfile (Logfile): The logfile object of the current ARES pipeline.
         """
         self._file_path = file_path
-        self._logfile = logfile
         self.data: Dict[Dict[str, np.ndarray]] = {base_wf_element_name: {}}
 
         # get fileformat to trigger the correct loading pipeline
@@ -76,24 +75,20 @@ class Data:
                 file_path=self._file_path,
                 source=list(source),
                 step_size_init_ms=step_size_init_ms,
-                logfile=self._logfile,
             )
         elif input_format == ".parquet":
             self.data[base_wf_element_name] = None
-            self._logfile.write(
+            logger.error(
                 "Evaluation of .parquet input/output is not implemented yet",
-                level="ERROR",
-            )  # TODO
+            )  # TODO:
         elif input_format == ".mat":
             self.data[base_wf_element_name] = None
-            self._logfile.write(
-                "Evaluation of .mat input/output is not implemented yet", level="ERROR"
-            )  # TODO
+            logger.error(
+                "Evaluation of .mat input/output is not implemented yet"
+            )  # TODO:
         else:
             self.data[base_wf_element_name] = None
-            self._logfile.write(
-                f"Unknown file format for {self._file_path}.", level="ERROR"
-            )
+            logger.error(f"Unknown file format for {self._file_path}.")
 
     @typechecked
     def write_out(
@@ -134,21 +129,18 @@ class Data:
                 file_path=file_path,
                 data=output_data,
                 meta_data=meta_data,
-                logfile=self._logfile,
             )
         elif output_format == "parquet":
-            self._logfile.write(
+            logger.error(
                 "Evaluation of .parquet input/output is not implemented yet",
-                level="ERROR",
-            )  # TODO
+            )  # TODO:
         elif output_format == "mat":
-            self._logfile.write(
-                "Evaluation of .mat input/output is not implemented yet", level="ERROR"
-            )  # TODO
+            logger.error(
+                "Evaluation of .mat input/output is not implemented yet",
+            )  # TODO:
         else:
-            self._logfile.write(
+            logger.warning(
                 f"Unsupported data output file format: {output_format}.",
-                level="WARNING",
             )
             file_path = None
 
@@ -189,9 +181,8 @@ class Data:
             return output_data
 
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Error occurred while defining write-out dictionary: {e}",
-                level="ERROR",
             )
             return None
 
@@ -219,9 +210,7 @@ class Data:
             return full_path
 
         except Exception as e:
-            self._logfile.write(
-                f"Evaluation of data output name failed: {e}", level="ERROR"
-            )
+            logger.error(f"Evaluation of data output name failed: {e}")
             return None
 
     @typechecked
@@ -252,16 +241,14 @@ class Data:
                 source_list.append(data_source_name)
 
             source_string = " <- ".join(source_list)
-            self._logfile.write(
+            logger.info(
                 f"Simulation input data got merged from sources: {source_string}",
-                level="INFO",
             )
             return out_data
 
         except Exception as e:
-            self._logfile.write(
+            logger.error(
                 f"Error occurred while merging simulation input data: {e}",
-                level="ERROR",
             )
             return None
 
@@ -301,9 +288,9 @@ class Data:
                     data_resampled[signal_name] = resampled
                 # Non-numeric or non-timestamp signals are ignored during resampling
 
-            self._logfile.write("Resampling successfully finished.", level="INFO")
+            logger.info("Resampling successfully finished.")
             return data_resampled
 
         except Exception as e:
-            self._logfile.write(f"Error during resampling: {e}", level="ERROR")
+            logger.error(f"Error during resampling: {e}")
             return None
