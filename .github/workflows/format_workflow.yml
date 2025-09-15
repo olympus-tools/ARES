@@ -23,4 +23,4 @@ jobs:
 
       - name: Run ruff for format checking
         run: |
-          make format
+          make format_check

@@ -35,6 +35,11 @@ format: setup_venv
 	@"$(VENV_DIR)/bin/python" -m ruff format . --exclude ares/core/version.py --exclude .venv
 	$(MAKE) clean
 
+.PHONY: format_check
+format_check: setup_venv
+	@"$(VENV_DIR)/bin/python" -m ruff format --check . --exclude ares/core/version.py --exclude .venv
+	$(MAKE) clean
+
 .PHONY: clean
 clean:
 	find . -type f -name "*.pyc" | xargs rm -fr
