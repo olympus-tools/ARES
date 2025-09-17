@@ -30,6 +30,10 @@ examples_run: setup_venv
 test_all: setup_venv
 	$(MAKE) -C examples/sim_unit all
 	@"$(VENV_DIR)/bin/python" -m pytest test/
+
+.PHONY: examples
+examples: setup_venv
+	$(MAKE) -C examples
 	$(MAKE) clean
 
 .PHONY: test

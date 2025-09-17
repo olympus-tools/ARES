@@ -28,6 +28,7 @@ ________________________________________________________________________
 
 """
 
+import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
@@ -38,6 +39,27 @@ from ares.utils.logger import create_logger
 
 # initialize logger
 logger = create_logger("mf4_interface")
+
+
+class mf4_handler(MDF):
+    """A extension of the asammdf.MDF class to allow ARES to interact with mf4's.
+    see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
+    """
+
+    def __init__(self, name: str = "", **kwargs):
+        """Initialize MDF and get all available channels.
+        With 'name=None' an empty mf4-file is created that can be written with self.save()"""
+        super().__init__(name, **kwargs)
+        self._available_channel = list(self.channels_db.keys())
+
+    def save(self, *args, **kwargs):
+        """Wrapper for MDF save() to print message and adding timestamp."""
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.header.add_comment(f"File last saved on: {timestamp}")
+
+        result_file = super().save(*args, **kwargs)
+        logger.debug(f"Data was written to: {result_file}")
 
 
 # TODO: make DataMF4Interface an asammdf object? -> asammdf.MDF OR create other class: mf4_loader or so that takes over the job
