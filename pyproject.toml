@@ -67,3 +67,11 @@ target-version = "py312"
 quote-style = "double"
 # The preferred indentation style.
 indent-style = "space"
+
+[tool.pyright]
+# Pyright will analyze files in this directory.
+include = ["ares"]
+
+# Point to virtual environment.
+venvPath = "."
+venv = ".venv"
