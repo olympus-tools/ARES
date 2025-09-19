@@ -35,12 +35,20 @@ from typing import Any, Dict, Iterable, List, Optional
 import numpy as np
 from typeguard import typechecked
 
-from ares.utils.data.mf4_interface import DataMF4interface
+from ares.utils.data.mf4_interface import (
+    DataMF4interface,
+    mf4_handler,
+)
+from ares.utils.decorators import safely_run
 from ares.utils.logger import create_logger
+from ares.utils.signal import signal
 
 logger = create_logger("data")
 
 
+# TODO: informations for rewriting data+mf4 --> use Data as "Factory" pattern -> this is returning a class that does everything we need "always"
+# to be implemented
+# - save --> interface
 class Data:
     @typechecked
     def __init__(
@@ -66,31 +74,45 @@ class Data:
                 the initial loading.
         """
         self._file_path = file_path
+        self.element = base_wf_element_name
         self.data: Dict[Dict[str, np.ndarray]] = {base_wf_element_name: {}}
 
         # get fileformat to trigger the correct loading pipeline
         input_format = os.path.splitext(self._file_path)[1].lower()
         if input_format == ".mf4":
-            self.data[base_wf_element_name] = DataMF4interface.load_mf4(
-                file_path=self._file_path,
-                source=list(source),
-                step_size_init_ms=step_size_init_ms,
-            )
+            data_handler = mf4_handler(self._file_path)
+
+            # FIX: remove legacy implementation
+            # self.data[base_wf_element_name] = DataMF4interface.load_mf4(
+            #     file_path=self._file_path,
+            #     source=list(source),
+            #     step_size_init_ms=step_size_init_ms,
+            # )
+
         elif input_format == ".parquet":
-            self.data[base_wf_element_name] = None
             logger.error(
                 "Evaluation of .parquet input/output is not implemented yet",
             )  # TODO:
         elif input_format == ".mat":
-            self.data[base_wf_element_name] = None
             logger.error(
                 "Evaluation of .mat input/output is not implemented yet"
             )  # TODO:
         else:
-            self.data[base_wf_element_name] = None
             logger.error(f"Unknown file format for {self._file_path}.")
 
+        # XXX: legacy implementation -> get dictionary from data_handler/std interface until we can use the interface in ARES globally
+        tmp_source = None if source == ["all"] else source
+        self._legacy_convert(
+            data_handler.get(tmp_source, stepsize_ms=step_size_init_ms)
+        )
+
+    def _legacy_convert(self, dh: list[signal]):
+        """Legacy convert function. Converts ARES signal list into backwards compatible struct."""
+        self.data[self.element]["timestamp"] = dh[0].timestamps
+        [self.data[self.element].update({d.label: d.data}) for d in dh]
+
     @typechecked
+    # TODO: move to ares_interface
     def write_out(
         self,
         dir_path: str,
@@ -187,6 +209,9 @@ class Data:
             return None
 
     @typechecked
+    @safely_run(
+        default_return=None, message="Evaluation of data ouput path failed.", log=logger
+    )
     def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:
         """Adds a timestamps to the filename and returns a complete, absolute file path.
 
@@ -201,19 +226,29 @@ class Data:
             str or None: The new, complete file path with a timestamps, or None if an
                 error occurs.
         """
-        try:
-            os.makedirs(dir_path, exist_ok=True)
-            file_name = os.path.splitext(os.path.basename(self._file_path))[0]
-            timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
-            new_file_name = f"{file_name}_{timestamps}.{output_format}"
-            full_path = os.path.join(dir_path, new_file_name)
-            return full_path
+<<<<<<< Conflict 1 of 1
+%%%%%%% Changes from base to side #1
+         try:
+             os.makedirs(dir_path, exist_ok=True)
+             file_name = os.path.splitext(os.path.basename(self._file_path))[0]
+-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+-            new_file_name = f"{file_name}_{timestamp}.{output_format}"
++            timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
++            new_file_name = f"{file_name}_{timestamps}.{output_format}"
+             full_path = os.path.join(dir_path, new_file_name)
+             return full_path
++++++++ Contents of side #2
+        os.makedirs(dir_path, exist_ok=True)
+        file_name = os.path.splitext(os.path.basename(self._file_path))[0]
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        new_file_name = f"{file_name}_{timestamp}.{output_format}"
+        full_path = os.path.join(dir_path, new_file_name)
+>>>>>>> Conflict 1 of 1 ends
 
-        except Exception as e:
-            logger.error(f"Evaluation of data output name failed: {e}")
-            return None
+        return full_path
 
     @typechecked
+    # TODO: move to ares interace
     def get(self, step_size_ms: float) -> Optional[Dict[str, np.ndarray]]:
         """Retrieves and resamples the processed data from all sources within `self.data`.
 
@@ -253,6 +288,7 @@ class Data:
             return None
 
     @typechecked
+    # TODO: move to ares- interface
     def _resample(
         self, data_raw: Dict[str, np.ndarray], step_size_ms: float
     ) -> Optional[Dict[str, np.ndarray]]:

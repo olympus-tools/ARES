@@ -29,19 +29,21 @@ ________________________________________________________________________
 """
 
 import datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict
 
 import numpy as np
 from asammdf import MDF, Signal, Source
 from typeguard import typechecked
 
+from ares.utils.data.ares_interface import AresDataInterface
 from ares.utils.logger import create_logger
+from ares.utils.signal import signal
 
 # initialize logger
 logger = create_logger("mf4_interface")
 
 
-class mf4_handler(MDF):
+class mf4_handler(MDF, AresDataInterface):
     """A extension of the asammdf.MDF class to allow ARES to interact with mf4's.
     see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
     """
@@ -50,7 +52,10 @@ class mf4_handler(MDF):
         """Initialize MDF and get all available channels.
         With 'name=None' an empty mf4-file is created that can be written with self.save()"""
         super().__init__(name, **kwargs)
-        self._available_channel = list(self.channels_db.keys())
+        self._available_channels = list(self.channels_db.keys())
+
+        # TODO: remove magic default values, make this more general, config file?
+        self._available_channels.remove("time")
 
     def save(self, *args, **kwargs):
         """Wrapper for MDF save() to print message and adding timestamp."""
@@ -61,151 +66,61 @@ class mf4_handler(MDF):
         result_file = super().save(*args, **kwargs)
         logger.debug(f"Data was written to: {result_file}")
 
+    def get(self, channels=None, **kwargs) -> list[signal]:
+        """ares get signal function"""
+        stepsize_ms = kwargs.pop("stepsize_ms", None)
+        tmp_data = (
+            self.get_signals(self._available_channels)
+            if channels is None
+            else self.get_signals(channels, **kwargs)
+        )
 
-# TODO: make DataMF4Interface an asammdf object? -> asammdf.MDF OR create other class: mf4_loader or so that takes over the job
-# TODO: another idea: create a "data-class" (general API data in ARES) -> this data class can inherit from mf4,mat, etc. classes that provide api for read,writing
-#       this would make if,elif, etc. in data.py unnecessary
-class DataMF4interface:
-    @staticmethod
-    @typechecked
-    def load_mf4(
-        file_path: str,
-        source: List[str],
-        step_size_init_ms: Optional[float] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """Loads an .mf4 file, extracts signals, and preprocesses them.
+        if stepsize_ms is None:
+            return tmp_data
+        else:
+            return self._resample(tmp_data, stepsize_ms=stepsize_ms)
 
-        Preprocessing includes finding a common time basis, resampling, and storing the
-        results in `data`.
-
-        Args:
-            file_path (str): The path to the .mf4 file.
-            source (list[str]): The list of sources to load from the file. Use ['all']
-                to load all available sources.
-            step_size_init_ms (float, optional): The target resampling step size in
-                milliseconds.
-
-        Returns:
-            dict or None: The updated data dictionary, or None if an error occurs.
-        """
-        try:
-            data: Dict[str, Any] = {}
-
-            with MDF(file_path) as datasource:
-                data_raw: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
-                for signal in datasource.iter_channels():
-                    signal_source_name = (
-                        signal.source.path if hasattr(signal.source, "path") else None
-                    )
-                    if not signal_source_name and hasattr(signal.source, "path"):
-                        signal_source_name = signal.source.path
-
-                    # Filter signals based on specified source
-                    if "all" in source or (
-                        signal_source_name and signal_source_name in source
-                    ):
-                        data_raw[signal.name] = (signal.timestamps, signal.samples)
-
-                if not data_raw:
-                    logger.warning(
-                        f"No signals found matching the specified source {source} in {file_path}.",
-                    )
-
-                time_vector, data_resampled = DataMF4interface._preprocessing_mf4(
-                    data_raw=data_raw,
-                    step_size_init_ms=step_size_init_ms,
-                )
-
-                data["timestamps"] = time_vector
-                data.update(data_resampled)
-
-                logger.debug(
-                    f"Source '{source}' from .mf4 file {file_path} loaded successfully."
-                )
-                return data
-
-        except Exception as e:
-            logger.error(f"Error loading .mf4 file {file_path}: {e}")
-            return None
-
-    @staticmethod
-    @typechecked
-    def _preprocessing_mf4(
-        data_raw: Dict[str, Tuple[np.ndarray, np.ndarray]],
-        step_size_init_ms: float,
-    ) -> Tuple[Optional[np.ndarray], Dict[str, np.ndarray]]:
-        """Resamples loaded signals from an MF4 file to a uniform time basis.
-
-        This function finds the latest start time and earliest end time to create a global
-        time vector. It then resamples all numeric signals to this time basis using linear
-        interpolation. Non-numeric or invalid signals are handled by creating an array of `None`
-        values.
-
-        Args:
-            data_raw (dict[str, tuple[np.ndarray, np.ndarray]]): A dictionary where keys
-                are signal names and values are tuples containing `(timestamps, samples)`.
-            step_size_init_ms (float): The target resampling step size in milliseconds.
-
-        Returns:
-            tuple[np.ndarray or None, dict[str, np.ndarray]]: A tuple containing:
-                1. The global time vector (`np.ndarray`) for the resampled data, or `None`
-                   if no valid data range is found.
-                2. A dictionary where keys are signal names and values are the resampled
-                   sample arrays (`np.ndarray`).
-        """
-        try:
-            latest_start_time = 0.0
-            earliest_end_time = np.inf
-
-            # Find the latest start time and the earliest end time across all numeric signals
-            for timestamps, _ in data_raw.values():
-                if (
-                    isinstance(timestamps, np.ndarray)
-                    and np.issubdtype(timestamps.dtype, np.number)
-                    and len(timestamps) > 0
-                ):
-                    latest_start_time = max(latest_start_time, timestamps[0])
-                    earliest_end_time = min(earliest_end_time, timestamps[-1])
-
-            target_rate_hz = 1000.0 / step_size_init_ms
-            global_time_vector = np.arange(
-                0,
-                (earliest_end_time - latest_start_time) + (1 / target_rate_hz),
-                1 / target_rate_hz,
+    def get_signals(self, channels, **kwargs) -> list[signal]:
+        # check signals for multiple occurences using "whereis"
+        occurences = [self.whereis(c) for c in channels]
+        not_found = np.array([i for i, x in enumerate(occurences) if len(x) == 0])
+        if len(not_found) > 0:
+            raise ValueError(
+                f"Selection of the following channels not possible. Existence is not given: {','.join(channels[not_found])}"
             )
 
-            data_resampled: Dict[str, np.ndarray] = {}
-            for signal_name, (timestamps, samples) in data_raw.items():
-                if (
-                    isinstance(timestamps, np.ndarray)
-                    and np.issubdtype(timestamps.dtype, np.number)
-                    and isinstance(samples, np.ndarray)
-                    and np.issubdtype(samples.dtype, np.number)
-                    and len(timestamps) > 0
-                ):
-                    # Make timestamps relative to the latest start time
-                    relative_timestamps = timestamps - latest_start_time
-                    resampled_samples = np.interp(
-                        global_time_vector, relative_timestamps, samples
-                    )
-                    data_resampled[signal_name] = resampled_samples
-                else:
-                    num_samples = (
-                        len(global_time_vector) if global_time_vector is not None else 0
-                    )
-                    none_array = np.array([None] * num_samples, dtype=object)
-                    data_resampled[signal_name] = none_array
-                    logger.info(
-                        f"Signal '{signal_name}' could not be read from measurement file.",
-                    )
+        single_occ = np.array([i for i, x in enumerate(occurences) if len(x) == 1])
+        multi_occ = np.array([i for i, x in enumerate(occurences) if len(x) > 1])
 
-            logger.info("Data source file successfully resampled.")
-            return global_time_vector, data_resampled
+        data = np.full(len(channels), None)
+        if len(single_occ) > 0:
+            data[single_occ] = super().select(
+                [channels[idx] for idx in single_occ], **kwargs
+            )
+            for i in multi_occ:
+                sel_signal = [
+                    (None, gp_idx, cn_idx) for gp_idx, cn_idx in occurences[i]
+                ]
+                all_signals = super().select(sel_signal, **kwargs)
+                len_samples = [len(s.samples) for s in all_signals]
+                idx = len_samples.index(max(len_samples))
+                data[i] = all_signals[idx]
 
-        except Exception as e:
-            logger.error(f"Error during preprocessing mf4 data source file: {e}")
-            return None, {}
+            data = data.tolist()
+        else:
+            data = super().select(channels, **kwargs)
 
+        return [
+            signal(label=d.name, timestamps=d.timestamps, data=d.samples) for d in data
+        ]
+
+    def write(self):
+        # TODO: implement write function for mf4 files
+        pass
+
+
+# TODO: convert all remaining functions in DataMF4interface to "mf4-interface" and make them valid ares-iterface functions -> factory pattern
+class DataMF4interface:
     @staticmethod
     @typechecked
     def write_out_mf4(

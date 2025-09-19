@@ -17,6 +17,9 @@
 *.mat
 *.parquet
 
+# compilation artefacts
+**/*.so
+
 # others
 *.log
 
