@@ -1,0 +1,91 @@
+r"""
+________________________________________________________________________
+|                                                                      |
+|               $$$$$$\  $$$$$$$\  $$$$$$$$\  $$$$$$\                  |
+|              $$  __$$\ $$  __$$\ $$  _____|$$  __$$\                 |
+|              $$ /  $$ |$$ |  $$ |$$ |      $$ /  \__|                |
+|              $$$$$$$$ |$$$$$$$  |$$$$$\    \$$$$$$\                  |
+|              $$  __$$ |$$  __$$< $$  __|    \____$$\                 |
+|              $$ |  $$ |$$ |  $$ |$$ |      $$\   $$ |                |
+|              $$ |  $$ |$$ |  $$ |$$$$$$$$\ \$$$$$$  |                |
+|              \__|  \__|\__|  \__|\________| \______/                 |
+|                                                                      |
+|              Automated Rapid Embedded Simulation (c)                 |
+|______________________________________________________________________|
+
+# Copyright (c) 2025 Andrä Carotta
+#
+# Licensed under the MIT License. See the LICENSE file for details.
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# You may obtain a copy of the License at
+# https://github.com/AndraeCarotta/ares/blob/master/LICENSE
+
+"""
+
+from abc import ABC, abstractmethod
+from typing import Optional
+
+import numpy as np
+
+from ares.utils.signal import signal
+
+
+class AresDataInterface(ABC):
+    def __init__(self, fpath: str):
+        """AresDataInterface abstract class to provide template for all filetypes (mf4, mat, parquet).
+            The idea is that all ares interfaces inherit this class so that easy data-handling inside ARES is possible.
+            MUST have functions for data interfaces are:
+                - get
+                - write
+                - save
+
+        Args:
+            file_path (str): The path to the data source file (.mf4, .parquet, or .mat).
+        """
+        self.fpath = fpath
+
+    @abstractmethod
+    def save(self, *args, **kwargs) -> Optional[str]:
+        """AresDataInterface abstract function for saving the current data to disk."""
+        pass
+
+    @abstractmethod
+    def get(self, channels=None, **kwargs) -> list[signal]:
+        """AresDataInterface abstract function for getting signals from mf4. Returns list with asammdf signals"""
+        pass
+
+    @abstractmethod
+    def write(self):
+        pass
+
+    # TODO: rename function after final implementation -> resample is currently also in asammdf package parent implemented so careful name chosing is necessary
+    # TODO: think about adding "data" to object.
+    @staticmethod
+    def _resample(data: [signal], stepsize_ms: int) -> list[signal]:
+        """AresDataInterface, standard resample function
+        - linear interpolation
+        """
+        latest_start_time = float(0.0)
+        earliest_end_time = np.inf
+
+        # get timevector
+        for sig in data:
+            if len(sig.timestamps) > 0:
+                latest_start_time = max(latest_start_time, sig.timestamps[0])
+                earliest_end_time = min(earliest_end_time, sig.timestamps[-1])
+
+        timestamps_resample = np.arange(
+            0,
+            (earliest_end_time - latest_start_time) + (stepsize_ms / 1000.0),
+            stepsize_ms / 1000.0,
+        )
+
+        # resampling of each element
+        [sig.resample(timestamps_resample) for sig in data]
+        return data
