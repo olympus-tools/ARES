@@ -108,7 +108,7 @@ class Data:
 
     def _legacy_convert(self, dh: list[signal]):
         """Legacy convert function. Converts ARES signal list into backwards compatible struct."""
-        self.data[self.element]["timestamp"] = dh[0].timestamps
+        self.data[self.element]["timestamps"] = dh[0].timestamps
         [self.data[self.element].update({d.label: d.data}) for d in dh]
 
     @typechecked
@@ -226,24 +226,11 @@ class Data:
             str or None: The new, complete file path with a timestamps, or None if an
                 error occurs.
         """
-<<<<<<< Conflict 1 of 1
-%%%%%%% Changes from base to side #1
-         try:
-             os.makedirs(dir_path, exist_ok=True)
-             file_name = os.path.splitext(os.path.basename(self._file_path))[0]
--            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
--            new_file_name = f"{file_name}_{timestamp}.{output_format}"
-+            timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
-+            new_file_name = f"{file_name}_{timestamps}.{output_format}"
-             full_path = os.path.join(dir_path, new_file_name)
-             return full_path
-+++++++ Contents of side #2
         os.makedirs(dir_path, exist_ok=True)
         file_name = os.path.splitext(os.path.basename(self._file_path))[0]
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        new_file_name = f"{file_name}_{timestamp}.{output_format}"
+        timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
+        new_file_name = f"{file_name}_{timestamps}.{output_format}"
         full_path = os.path.join(dir_path, new_file_name)
->>>>>>> Conflict 1 of 1 ends
 
         return full_path
 

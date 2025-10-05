@@ -110,5 +110,51 @@ def test_ares_signal(label, timestamps, data):
     assert len(test_signal.data) == data_length, "Ops, data length is false."
 
 
+def test_ares_signal_resample():
+    """
+    Test the resample method of the ares signal.
+    """
+    test_signal = signal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=float),
+        data=np.array([0, 1, 2, 3], dtype=float),
+    )
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=float)
+    test_signal.resample(resampled_timestamps)
+    expected_data = np.array([0.5, 1.5, 2.5], dtype=float)
+    assert np.array_equal(test_signal.timestamps, resampled_timestamps)
+    assert np.array_equal(test_signal.data, expected_data)
+
+
+def test_ares_signal_wrong_timestamps_type():
+    """
+    Test if TypeError is raised for wrong timestamps type.
+    """
+    with pytest.raises(TypeError):
+        signal(
+            label="test_signal",
+            timestamps=np.array([1, 2, 3, 4], dtype=int),
+            data=np.array([1, 2, 3, 4], dtype=float),
+        )
+
+
+def test_ares_signal_wrong_dimension():
+    """
+    Test if ValueError is raised for wrong dimension.
+    """
+    with pytest.raises(ValueError):
+        signal(
+            label="test_signal",
+            timestamps=np.array([[1, 2], [3, 4]], dtype=float),
+            data=np.array([1, 2, 3, 4], dtype=float),
+        )
+    with pytest.raises(ValueError):
+        signal(
+            label="test_signal",
+            timestamps=np.array([1, 2, 3, 4], dtype=float),
+            data=np.array([[1, 2], [3, 4]], dtype=float),
+        )
+
+
 if __name__ == "__main__":
-    test_ares_signal_types()
+    test_ares_signal_wrong_dimension()
