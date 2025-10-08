@@ -59,11 +59,10 @@ class Workflow:
         self._file_path = file_path
         self.workflow: Optional[WorkflowModel] = self._load_and_validate_wf()
         self._evaluate_relative_paths()
-        workflow_sinks = self._find_sinks()
-        workflow_order = self._eval_workflow_order(wf_sinks=workflow_sinks)
+        self.workflow_sinks = self._find_sinks()
+        workflow_order = self._eval_workflow_order()
         self._sort_workflow(workflow_order=workflow_order)
-        self._eval_element_input_workflow()
-        self._eval_element_parameter_workflow()
+        self._eval_element_workflow()
 
     @typechecked
     def _load_and_validate_wf(self) -> Optional[WorkflowModel]:
@@ -192,50 +191,59 @@ class Workflow:
         try:
             wf_sinks: List[str] = []
 
-            for wf_element_name in self.workflow.keys():
+            for wf_element_name_1, wf_element_value_1 in self.workflow.items():
                 call_count = 0
 
-                for wf_element_value in self.workflow.values():
+                for wf_element_value_2 in self.workflow.values():
                     ref_input_list: List[str] = []
 
                     if (
-                        hasattr(wf_element_value, "parameter")
-                        and wf_element_value.parameter is not None
+                        hasattr(wf_element_value_2, "parameter")
+                        and wf_element_value_2.parameter is not None
                     ):
-                        ref_input_list.extend(wf_element_value.parameter)
+                        ref_input_list.extend(wf_element_value_2.parameter)
 
                     if (
-                        hasattr(wf_element_value, "cancel_condition")
-                        and wf_element_value.cancel_condition is not None
+                        hasattr(wf_element_value_2, "cancel_condition")
+                        and wf_element_value_2.cancel_condition is not None
                     ):
                         if (
-                            hasattr(wf_element_value, "init")
-                            and wf_element_value.init is not None
+                            hasattr(wf_element_value_2, "init")
+                            and wf_element_value_2.init is not None
                         ):
-                            ref_input_list.extend(wf_element_value.init)
+                            ref_input_list.extend(wf_element_value_2.init)
                     else:
                         if (
-                            hasattr(wf_element_value, "input")
-                            and wf_element_value.input is not None
+                            hasattr(wf_element_value_2, "input")
+                            and wf_element_value_2.input is not None
                         ):
-                            ref_input_list.extend(wf_element_value.input)
+                            ref_input_list.extend(wf_element_value_2.input)
 
                     # counting how often a wf element is referenced in other elements
                     if ref_input_list is not None:
                         for ref_input_list_member in ref_input_list:
-                            if ref_input_list_member == wf_element_name:
+                            if ref_input_list_member == wf_element_name_1:
                                 call_count += 1
                                 break
 
-                if call_count > 0:
+                if call_count == 0 and (
+                    hasattr(wf_element_value_1, "parameter")
+                    and wf_element_value_1.parameter is None
+                    or hasattr(wf_element_value_1, "input")
+                    and wf_element_value_1.input is None
+                ):
                     logger.debug(
-                        f"""Workflow element "{wf_element_name}" is referenced {call_count} time(s) in other workflow elements."""
+                        f"""Workflow element "{wf_element_name_1}" is a unused workflow source."""
+                    )
+                elif call_count > 0:
+                    logger.debug(
+                        f"""Workflow element "{wf_element_name_1}" is referenced {call_count} time(s) in other workflow elements."""
                     )
                 else:
                     logger.debug(
-                        f"""Workflow element "{wf_element_name}" is a workflow endpoint (sink)."""
+                        f"""Workflow element "{wf_element_name_1}" is a workflow endpoint (sink)."""
                     )
-                    wf_sinks.append(wf_element_name)
+                    wf_sinks.append(wf_element_name_1)
 
             return wf_sinks
 
@@ -244,14 +252,11 @@ class Workflow:
             return None
 
     @typechecked
-    def _eval_workflow_order(self, wf_sinks: List[str]) -> Optional[List[str]]:
+    def _eval_workflow_order(self) -> Optional[List[str]]:
         """Determines the correct execution order of the workflow elements.
 
         This is done by recursively searching backward from the sinks to the sources.
         The function logs the determined order.
-
-        Args:
-            wf_sinks (List[str]): A list of the workflow's endpoint elements.
 
         Returns:
             Optional[List[str]]: A list of strings containing the elements in their execution
@@ -260,7 +265,7 @@ class Workflow:
         try:
             workflow_order: List[str] = []
 
-            for wf_sink in wf_sinks:
+            for wf_sink in self.workflow_sinks:
                 path = self._recursive_search(sink=wf_sink, loop=False, element=wf_sink)
                 if path is None:
                     logger.error(
@@ -374,46 +379,11 @@ class Workflow:
             logger.error(f"Error while sorting the workflow: {e}")
 
     @typechecked
-    def _eval_element_input_workflow(self) -> None:
+    def _eval_element_workflow(self) -> None:
         """Assigns the workflow from a data source to each workflow element."""
         try:
             for wf_element_name, wf_element in self.workflow.items():
-                element_input_workflow: List[str] = []
-
-                if hasattr(wf_element, "init") and wf_element.init is not None:
-                    for init in wf_element.init:
-                        init_elem = self.workflow.get(init)
-                        if init_elem is not None:
-                            element_input_workflow.extend(
-                                init_elem.element_input_workflow
-                            )
-                            element_input_workflow.append(init)
-
-                if hasattr(wf_element, "input") and wf_element.input is not None:
-                    for input_name in wf_element.input:
-                        input_elem = self.workflow.get(input_name)
-                        if input_elem is not None:
-                            element_input_workflow.extend(
-                                input_elem.element_input_workflow
-                            )
-                            element_input_workflow.append(input_name)
-
-                # remove duplicates and store it to the dictionary
-                self.workflow[wf_element_name].element_input_workflow = list(
-                    dict.fromkeys(element_input_workflow)
-                )
-
-        except Exception as e:
-            self._logfile.write(
-                f"Error while evaluating element workflow: {e}", level="ERROR"
-            )
-
-    @typechecked
-    def _eval_element_parameter_workflow(self) -> None:
-        """Assigns the workflow from a data source to each workflow element."""
-        try:
-            for wf_element_name, wf_element in self.workflow.items():
-                element_parameter_workflow: List[str] = []
+                element_workflow: List[str] = []
 
                 if (
                     hasattr(wf_element, "parameter")
@@ -422,19 +392,31 @@ class Workflow:
                     for param_name in wf_element.parameter:
                         param_elem = self.workflow.get(param_name)
                         if param_elem is not None:
-                            element_parameter_workflow.extend(
-                                param_elem.element_input_workflow
-                            )
-                            element_parameter_workflow.append(param_name)
+                            element_workflow.extend(param_elem.element_workflow)
+                            element_workflow.append(param_name)
+
+                if hasattr(wf_element, "init") and wf_element.init is not None:
+                    for init_name in wf_element.init:
+                        init_elem = self.workflow.get(init_name)
+                        if init_elem is not None:
+                            element_workflow.extend(init_elem.element_workflow)
+                            element_workflow.append(init_name)
+
+                elif hasattr(wf_element, "input") and wf_element.input is not None:
+                    for input_name in wf_element.input:
+                        input_elem = self.workflow.get(input_name)
+                        if input_elem is not None:
+                            element_workflow.extend(input_elem.element_workflow)
+                            element_workflow.append(input_name)
 
                 # remove duplicates and store it to the dictionary
-                self.workflow[wf_element_name].element_parameter_workflow = list(
-                    dict.fromkeys(element_parameter_workflow)
+                self.workflow[wf_element_name].element_workflow = list(
+                    dict.fromkeys(element_workflow)
                 )
 
         except Exception as e:
-            logger.error(
-                f"Error while evaluating element workflow: {e}",
+            self._logfile.write(
+                f"Error while evaluating element workflow: {e}", level="ERROR"
             )
 
     @typechecked

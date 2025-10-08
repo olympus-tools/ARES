@@ -38,8 +38,7 @@ class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
     type: str
-    element_input_workflow: List[str] = Field(default_factory=list)
-    element_parameter_workflow: List[str] = Field(default_factory=list)
+    element_workflow: List[str] = Field(default_factory=list)
 
 
 class DataElement(BaseElement):
