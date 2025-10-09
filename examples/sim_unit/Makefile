@@ -11,7 +11,12 @@ CFLAGS  ?= -shared -fPIC
 RM      ?= rm -f
 
 .PHONY: all
-all: derivation lowpassfilterfirstorder
+all: derivation lowpassfilterfirstorder inout_handling
+
+.PHONY: inout_handling
+inout_handling:
+	@echo "Compiling sim_unit \"inout_handling\"..."
+	$(CC) $(CFLAGS) -o inout_handling/inout_handling.so inout_handling/wrapper.c inout_handling/inout_handling.c
 
 .PHONY: derivation
 derivation:
@@ -26,5 +31,6 @@ lowpassfilterfirstorder:
 .PHONY: clean
 clean:
 	@echo "Cleaning sim_unit files..."
+	$(RM) inout_handling/*.so
 	$(RM) derivation/*.so
 	$(RM) lowpassfilterfirstorder/*.so

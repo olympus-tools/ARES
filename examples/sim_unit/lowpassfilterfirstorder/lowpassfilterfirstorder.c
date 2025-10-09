@@ -1,6 +1,6 @@
 #include "lowpassfilterfirstorder.h"
 
-float filter_last_output = 0;
+float filter_last_output = 0.f;
 float cutoff_freq = 0.f;
 float sample_time = 0.f;
 
