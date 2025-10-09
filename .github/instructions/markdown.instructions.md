@@ -5,6 +5,9 @@ applyTo: '**/*.md'
 
 ## Markdown Content Rules
 
+
+All Markdown content, comments, and documentation must always be written in English.
+
 The following markdown content rules are enforced in the validators:
 
 1. **Headings**: Use appropriate heading levels (H2, H3, etc.) to structure your content. Do not use an H1 heading, as this will be generated based on the title.

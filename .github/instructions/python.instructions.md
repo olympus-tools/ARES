@@ -7,7 +7,7 @@ applyTo: '**/*.py'
 
 ## Python Instructions
 
-- Write clear and concise comments for each function.
+- Write clear and concise comments for each function in English.
 - Ensure functions have descriptive names and include type hints.
 - Use the `typing` module for type annotations (e.g., `Union[int, float]`, `List[str]`, `Dict[str, int]`).
 - Break down complex functions into smaller, more manageable functions.
@@ -18,13 +18,14 @@ applyTo: '**/*.py'
 
 ## General Instructions
 
-- Always prioritize readability and clarity.
+- Always prioritize readability and clarity. All code, comments, and docstrings must be written in English.
 - For algorithm-related code, include explanations of the approach used.
 - Write code with good maintainability practices, including comments on why certain design decisions were made.
 - Handle edge cases and write clear exception handling.
 - For libraries or external dependencies, mention their usage and purpose in comments.
 - Use consistent naming conventions and follow language-specific best practices.
 - Write concise, efficient, and idiomatic code that is also easily understandable.
+- Doc-strings and comments should always be written in clear english.
 
 ## Code Style and Formatting
 
@@ -40,9 +41,10 @@ applyTo: '**/*.py'
 ## Example of Proper Documentation
 
 - Always use **Google style** for documentation.
-- Include `Args`, `Returns` and sections when relevant.
+- Include `Args`, `Returns` and when relevant => other sections (e.g. Examples,...) should not be included.
 - Use **typing** for all arguments and return values.
 - Decorate with `@typechecked` and use **Pydantic models** if applicable.
+- Imports should always be listed together at the beginning of the Python file.
 
 ```python
 from typing import Union
