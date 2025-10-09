@@ -4,7 +4,7 @@
         {
             "label": "prepare-example1",
             "type": "shell",
-            "command": "make -C examples/sim_unit derivation && make -C examples/sim_unit lowpassfilterfirstorder",
+            "command": "make -C examples/sim_unit derivation && make -C examples/sim_unit lowpassfilterfirstorder && make -C examples/sim_unit inout_handling",
             "problemMatcher": []
         },
         {
