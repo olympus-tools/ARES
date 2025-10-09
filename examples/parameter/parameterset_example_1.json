@@ -220,6 +220,16 @@
         "unit": "L",
         "value": 5.0
     },
+    "sample_time": {
+        "description": "Schrittweite der Software Komponente",
+        "unit": "ms",
+        "value": 10
+    },
+    "cutoff_freq": {
+        "description": "Eckfrequenz des PT1 Glieds",
+        "unit": "Hz",
+        "value": 5.0
+    },
     "Injektor_Timing_Map_2D": {
         "description": "Festgelegte Timing-Werte fuer Injektoren",
         "unit": "ms",

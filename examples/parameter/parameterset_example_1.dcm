@@ -90,6 +90,20 @@ FESTWERT Oelstand_Minimum
     WERT    5.0
 END
 
+FESTWERT sample_time
+    LANGNAME "Schrittweite der Software Komponente"
+    FUNKTION SWC
+    EINHEIT_W "ms"
+    WERT    10
+END
+
+FESTWERT cutoff_freq
+    LANGNAME "Eckfrequenz des PT1 Glieds"
+    FUNKTION Filter
+    EINHEIT_W "Hz"
+    WERT    5.0
+END
+
 FESTWERTEBLOCK Injektor_Timing_Map_2D 3 @ 2
     LANGNAME "Festgelegte Timing-Werte fuer Injektoren"
     EINHEIT_W "ms"
