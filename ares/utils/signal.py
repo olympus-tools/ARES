@@ -47,9 +47,11 @@ class signal:
         """
         if not np.issubdtype(self.timestamps.dtype, np.floating):
             raise TypeError("The 'timestamps' array must have a float datatype.")
-        if self.timestamps.ndim != 1 or self.data.ndim != 1:
+        if self.timestamps.ndim != 1 or (
+            self.data.ndim >= 1 and self.timestamps.shape[0] != self.data.shape[0]
+        ):
             raise ValueError(
-                "Both 'timestamps' and 'data' arrays must be 1-dimensional."
+                "Both 'timestamps' and 'data' arrays must be at least 1-dimensional."
             )
 
     def resample(self, timestamps_resampled: np.ndarray):

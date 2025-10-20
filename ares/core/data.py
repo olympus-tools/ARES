@@ -36,7 +36,6 @@ import numpy as np
 from typeguard import typechecked
 
 from ares.utils.data.mf4_interface import (
-    DataMF4interface,
     mf4_handler,
 )
 from ares.utils.decorators import safely_run
@@ -102,14 +101,22 @@ class Data:
 
         # XXX: legacy implementation -> get dictionary from data_handler/std interface until we can use the interface in ARES globally
         tmp_source = None if source == ["all"] else source
-        self._legacy_convert(
+        self._legacy_convert2dict(
             data_handler.get(tmp_source, stepsize_ms=step_size_init_ms)
         )
 
-    def _legacy_convert(self, dh: list[signal]):
-        """Legacy convert function. Converts ARES signal list into backwards compatible struct."""
+    def _legacy_convert2dict(self, dh: list[signal]):
+        """Legacy convert function. Converts ARES signal list into backwards compatible data dictionary struct."""
         self.data[self.element]["timestamps"] = dh[0].timestamps
         [self.data[self.element].update({d.label: d.data}) for d in dh]
+
+    def _legacy_convert2list(self, data_element: str) -> list[signal]:
+        """Legacy convert function. Converts ARES data dictionalry in to signal list for a better future."""
+        dh = list()
+        timestamps = self.data[data_element]["timestamps"]
+        for sig, samples in self.data[data_element].items():
+            dh.append(signal(label=sig, timestamps=timestamps, data=samples))
+        return dh
 
     @typechecked
     # TODO: move to ares_interface
@@ -142,16 +149,14 @@ class Data:
             dir_path=dir_path, output_format=output_format
         )
 
-        output_data = self._define_write_out_data(
-            source=source, element_input_workflow=element_input_workflow
-        )
-
         if output_format == "mf4":
-            DataMF4interface.write_out_mf4(
-                file_path=file_path,
-                data=output_data,
-                meta_data=meta_data,
-            )
+            data_handler = mf4_handler()
+            # FIX: remove legacy implementation
+            # DataMF4interface.write_out_mf4(
+            #     file_path=file_path,
+            #     data=output_data,
+            #     meta_data=meta_data,
+            # )
         elif output_format == "parquet":
             logger.error(
                 "Evaluation of .parquet input/output is not implemented yet",
@@ -166,47 +171,12 @@ class Data:
             )
             file_path = None
 
+        for element in element_input_workflow:
+            data = self._legacy_convert2list(element)
+            data_handler.write(data)
+        data_handler.save_file(file_path)
+
         return file_path
-
-    @typechecked
-    def _define_write_out_data(
-        self, source: List[str], element_input_workflow: List[str]
-    ) -> Optional[Dict[str, Any]]:
-        """Defines the subset of data that should be written to an output file.
-
-        Args:
-            source (list[str]): The data sources to write, or ['all'] to include all
-                sources present in element_input_workflow.
-            element_input_workflow (list[str]): The workflow elements available for writing.
-
-        Returns:
-            dict or None: The data dictionary prepared for output. Returns `None` if an error occurs.
-        """
-        try:
-            output_data: Dict[str, Any] = {}
-
-            if "all" in source:
-                all_data_keys = set(self.data.keys())
-                all_element_keys = set(element_input_workflow)
-                source_list = list(all_data_keys.intersection(all_element_keys))
-            else:
-                source_list = [
-                    wf_element_name
-                    for wf_element_name in source
-                    if wf_element_name in element_input_workflow
-                ]
-
-            for wf_element_name in source_list:
-                if wf_element_name in self.data:
-                    output_data[wf_element_name] = self.data[wf_element_name]
-
-            return output_data
-
-        except Exception as e:
-            logger.error(
-                f"Error occurred while defining write-out dictionary: {e}",
-            )
-            return None
 
     @typechecked
     @safely_run(

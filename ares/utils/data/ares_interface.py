@@ -43,7 +43,7 @@ class AresDataInterface(ABC):
             MUST have functions for data interfaces are:
                 - get
                 - write
-                - save
+                - save_file
 
         Args:
             file_path (str): The path to the data source file (.mf4, .parquet, or .mat).
@@ -51,7 +51,7 @@ class AresDataInterface(ABC):
         self.fpath = fpath
 
     @abstractmethod
-    def save(self, *args, **kwargs) -> Optional[str]:
+    def save_file(self, *args, **kwargs) -> Optional[str]:
         """AresDataInterface abstract function for saving the current data to disk."""
         pass
 
@@ -61,11 +61,11 @@ class AresDataInterface(ABC):
         pass
 
     @abstractmethod
-    def write(self):
+    def write(self, data: list[signal]) -> None:
         pass
 
     # TODO: rename function after final implementation -> resample is currently also in asammdf package parent implemented so careful name chosing is necessary
-    # TODO: think about adding "data" to object.
+    # TODO: think about adding "data" to object. but not to interface!
     @staticmethod
     def _resample(data: [signal], stepsize_ms: int) -> list[signal]:
         """AresDataInterface, standard resample function

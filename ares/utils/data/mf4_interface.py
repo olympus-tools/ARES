@@ -29,11 +29,9 @@ ________________________________________________________________________
 """
 
 import datetime
-from typing import Dict
 
 import numpy as np
-from asammdf import MDF, Signal, Source
-from typeguard import typechecked
+from asammdf import MDF, Signal
 
 from ares.utils.data.ares_interface import AresDataInterface
 from ares.utils.logger import create_logger
@@ -55,16 +53,16 @@ class mf4_handler(MDF, AresDataInterface):
         self._available_channels = list(self.channels_db.keys())
 
         # TODO: remove magic default values, make this more general, config file?
-        self._available_channels.remove("time")
+        if "time" in self._available_channels:
+            self._available_channels.remove("time")
 
-    def save(self, *args, **kwargs):
+    def save_file(self, file_path, **kwargs):
         """Wrapper for MDF save() to print message and adding timestamp."""
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        self.header.add_comment(f"File last saved on: {timestamp}")
-
-        result_file = super().save(*args, **kwargs)
-        logger.debug(f"Data was written to: {result_file}")
+        self.header.comment = f"File last saved on: {timestamp}"
+        result_path = self.save(file_path, **kwargs)
+        logger.debug(f"Data was written to: {result_path}")
 
     def get(self, channels=None, **kwargs) -> list[signal]:
         """ares get signal function"""
@@ -114,82 +112,11 @@ class mf4_handler(MDF, AresDataInterface):
             signal(label=d.name, timestamps=d.timestamps, data=d.samples) for d in data
         ]
 
-    def write(self):
-        # TODO: implement write function for mf4 files
-        pass
-
-
-# TODO: convert all remaining functions in DataMF4interface to "mf4-interface" and make them valid ares-iterface functions -> factory pattern
-class DataMF4interface:
-    @staticmethod
-    @typechecked
-    def write_out_mf4(
-        file_path: str,
-        data: dict,
-        meta_data: Dict[str, str],
-    ):
-        """Writes data from the specified sources in `data` to an .mf4 file.
-
-        It iterates through the provided `data` keys, creates `asammdf.Signal` objects,
-        and appends them to a new `asammdf.MDF` file.
-
-        Args:
-            file_path (str): The path to the output file.
-            data (dict[str, Any]): The data dictionary containing sources to export.
-            meta_data (dict): A dictionary containing metadata such as the ARES
-                version and the current username.
-        """
-        try:
-            all_signals_to_write = []
-
-            with MDF() as output_file_mf4:
-                for source_key, data_value in data.items():
-                    timestamps: np.ndarray = data_value["timestamps"]
-
-                    src = Source(
-                        name=source_key,
-                        path=source_key,
-                        comment=f"Data from {source_key}",
-                        source_type=1,
-                        bus_type=1,
-                    )
-
-                    for signal_name, samples in data_value.items():
-                        if signal_name == "timestamps":
-                            continue
-
-                        try:
-                            # Convert to float64 for compatibility with asammdf
-                            samples_float = samples.astype(np.float64)
-                        except (ValueError, TypeError):
-                            logger.warning(
-                                f"Error: Signal '{signal_name}' in source '{source_key}' could not be converted to float64. Skipping.",
-                            )
-                            continue
-
-                        signal = Signal(
-                            samples=samples_float,
-                            timestamps=timestamps,
-                            name=signal_name,
-                            source=src,
-                            comment="",
-                        )
-                        all_signals_to_write.append(signal)
-
-                if not all_signals_to_write:
-                    logger.warning(
-                        f"No valid signals found to write for source(s) to {file_path}.",
-                    )
-                else:
-                    output_file_mf4.append(
-                        all_signals_to_write, comment="ares simulation result"
-                    )
-                    output_file_mf4.save(file_path, overwrite=False)
-                    logger.info(
-                        f"Output .mf4 file written successfully to {file_path}.",
-                    )
-
-        except Exception as e:
-            logger.error(
-                f"Error saving .mf4 file to {file_path} with source(s): {e}",
-            )
+    def write(self, data: list[signal]) -> None:
+        """Basic function to write ares signals to mf4."""
+        self.append(
+            signals=[
+                Signal(samples=sig.data, timestamps=sig.timestamps, name=sig.label)
+                for sig in data
+            ],
+        )
