@@ -36,7 +36,11 @@ import numpy as np
 from pydantic import ValidationError
 from typeguard import typechecked
 
-from ares.models.datadictionary_model import DataDictionaryModel
+from ares.interface.data.ares_data_interface import AresDataInterface
+from ares.interface.data.signal import AresSignal
+from ares.interface.parameter.ares_param_interface import AresParamInterface
+from ares.interface.parameter.parameter import AresParameter
+from ares.pydantic_models.datadictionary_model import DataDictionaryModel
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
@@ -60,15 +64,9 @@ class SimUnit:
     @typechecked
     def __init__(
         self,
-        type: str = "sim_unit",
-        input: Optional[List[str]] = None,
-        parameter: Optional[List[str]] = None,
-        cancel_condition: Optional[str] = None,
-        init: Optional[List[str]] = None,
-        cycle_time: Optional[int] = None,
-        element_workflow: Optional[List[str]] = None,
-        file_path: Optional[str] = None,
-        dd_path: Optional[str] = None,
+        element_name: str = None,
+        file_path: str = None,
+        dd_path: str = None,
     ):
         """
         Initializes the simulation unit and sets up all required simulation parameters.
@@ -80,26 +78,11 @@ class SimUnit:
         - Sets up the main simulation function
         - Stores all configuration parameters as instance variables
 
-        Args:
-            type (str, optional): The type of the simulation unit. Default is "sim_unit".
-            input (List[str], optional): List of input signal names.
-            parameter (List[str], optional): List of parameter names.
-            cancel_condition (str, optional): Condition to cancel the simulation.
-            init (List[str], optional): List of initialization steps or signals.
-            cycle_time (int, optional): Simulation cycle time in milliseconds.
-            element_workflow (List[str], optional): Workflow elements for the simulation.
-            file_path (str, optional): Path to the shared library file (e.g., .so, .dll, .dylib).
-            dd_path (str, optional): Path to the Data Dictionary JSON file.
         """
-        self.type: str = type
-        self.input: Optional[List[str]] = input
-        self.parameter: Optional[List[str]] = parameter
-        self.cancel_condition: Optional[str] = cancel_condition
-        self.init: Optional[List[str]] = init
-        self.cycle_time: Optional[int] = cycle_time
-        self.element_workflow: Optional[List[str]] = element_workflow
-        self.file_path: Optional[str] = file_path
-        self.dd_path: Optional[str] = dd_path
+
+        self.element_name: str = element_name
+        self.file_path: str = file_path
+        self.dd_path: str = dd_path
 
         self._dd: Optional[DataDictionaryModel] = self._load_and_validate_dd(
             dd_path=dd_path
@@ -130,27 +113,27 @@ class SimUnit:
 
             dd = DataDictionaryModel.model_validate(dd_data)
             logger.info(
-                f"Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.",
+                f"{self.element_name}: Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.",
             )
             return dd
         except FileNotFoundError:
             logger.error(
-                f"Data dictionary file not found at '{dd_path}'.",
+                f"{self.element_name}: Data dictionary file not found at '{dd_path}'.",
             )
             return None
         except json.JSONDecodeError as e:
             logger.error(
-                f"Error parsing data dictionary JSON file '{dd_path}': {e}",
+                f"{self.element_name}: Error parsing data dictionary JSON file '{dd_path}': {e}",
             )
             return None
         except ValidationError as e:
             logger.error(
-                f"Validation error for data dictionary '{dd_path}': {e}",
+                f"{self.element_name}: Validation error for data dictionary '{dd_path}': {e}",
             )
             return None
         except Exception as e:
             logger.error(
-                f"Unexpected error loading data dictionary file '{dd_path}': {e}",
+                f"{self.element_name}: Unexpected error loading data dictionary file '{dd_path}': {e}",
             )
             return None
 
@@ -171,17 +154,17 @@ class SimUnit:
             library.restype = None
 
             logger.info(
-                f"Library '{self.file_path}' successfully loaded.",
+                f"{self.element_name}: Library '{self.file_path}' successfully loaded.",
             )
             return library
         except OSError as e:
             logger.error(
-                f"Error loading shared library '{self.file_path}': {e}",
+                f"{self.element_name}: Error loading shared library '{self.file_path}': {e}",
             )
             return None
         except Exception as e:
             logger.error(
-                f"Unexpected error loading library '{self.file_path}': {e}",
+                f"{self.element_name}: Unexpected error loading library '{self.file_path}': {e}",
             )
             return None
 
@@ -213,7 +196,7 @@ class SimUnit:
                     ctypes_type = (base_ctypes_type * size[1]) * size[0]
                 else:
                     logger.warning(
-                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                        f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
                     )
                     continue
 
@@ -221,22 +204,22 @@ class SimUnit:
                     self._library, dd_element_name
                 )
                 logger.debug(
-                    f"Global simulation variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}'.",
+                    f"{self.element_name}: Global simulation variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}'.",
                 )
             except AttributeError as e:
                 logger.warning(
-                    f"Failed to map global simulation variable '{dd_element_name}': Symbol not found or type mismatch. {e}",
+                    f"{self.element_name}: Failed to map global simulation variable '{dd_element_name}': Symbol not found or type mismatch. {e}",
                 )
                 continue
             except Exception as e:
                 logger.warning(
-                    f"An unexpected failure occurred while mapping global simulation variable '{dd_element_name}': {e}",
+                    f"{self.element_name}: An unexpected failure occurred while mapping global simulation variable '{dd_element_name}': {e}",
                 )
                 continue
 
         if not dll_interface:
             logger.error(
-                "No variables could be mapped successfully.",
+                f"{self.element_name}: No variables could be mapped successfully.",
             )
             return None
         return dll_interface
@@ -257,23 +240,23 @@ class SimUnit:
             sim_function.argtypes = []
             sim_function.restype = None
             logger.debug(
-                "Ares simulation function 'ares_simunit' successfully set up.",
+                f"{self.element_name}:Ares simulation function 'ares_simunit' successfully set up.",
             )
             return sim_function
         except AttributeError as e:
             logger.error(
-                f"Ares simulation function 'ares_simunit' not found in library: {e}",
+                f"{self.element_name}: Ares simulation function 'ares_simunit' not found in library: {e}",
             )
             return None
         except Exception as e:
             logger.error(
-                f"An unexpected error occurred while setting up ares simulation function: {e}",
+                f"{self.element_name}: An unexpected error occurred while setting up ares simulation function: {e}",
             )
             return None
 
     @typechecked
     def run_simulation(
-        self, data: Dict[str, Any], parameter: Dict[str, Any]
+        self, data: List[AresSignal], parameter: List[AresParameter]
     ) -> Optional[Dict[str, Any]]:
         """Executes the main simulation function over multiple time steps.
 
@@ -281,22 +264,22 @@ class SimUnit:
         function for each time step, and reads the output back into a dictionary.
 
         Args:
-            data (dict): A dictionary containing all input signals, including a 'timestamps' array.
+            data: List[AresSignal] A dictionary containing all input signals, including a 'timestamps' array.
                 Example: `{"timestamps": [t0, t1], "signal_A": [v0, v1]}`.
-            parameter (dict): A dictionary containing simulation parameters.
+            parameter: List[AresParameter] A list of AresParameter objects containing simulation parameters.
 
         Returns:
-            Optional[Dict[str, Any]]: A dictionary of NumPy arrays containing the output signals for all
+            Optional[List[AresSignal]]: A dictionary of NumPy arrays containing the output signals for all
                 time steps, or `None` if an error occurs during the simulation.
         """
 
         try:
-            logger.info("Starting ares simulation...")
+            logger.info(f"{self.element_name}: Starting ares simulation...")
 
             sim_result: Dict[str, np.ndarray] = {}
             time_steps = len(data["timestamps"])
             logger.info(
-                f"The simulation starts at timestamps {data['timestamps'][0]} seconds "
+                f"{self.element_name}: The simulation starts at timestamps {data['timestamps'][0]} seconds "
                 f"and ends at timestamps {data['timestamps'][-1]} seconds - duration: "
                 f"{data['timestamps'][-1] - data['timestamps'][0]} seconds",
             )
@@ -333,10 +316,12 @@ class SimUnit:
                     time_step_idx
                 ]
 
-            logger.info("ares simulation successfully finished.")
+            logger.info(f"{self.element_name}: ares simulation successfully finished.")
             return sim_result
         except Exception as e:
-            logger.error(f"Error while running ares simulation: {e}")
+            logger.error(
+                f"{self.element_name}: Error while running ares simulation: {e}"
+            )
             return None
 
     @typechecked
@@ -367,7 +352,7 @@ class SimUnit:
                 if dd_element_name in input:
                     mapped_input[dd_element_name] = input[dd_element_name]
                     logger.debug(
-                        f"Simulation signal '{dd_element_name}' could be mapped to the original signal.",
+                        f"{self.element_name}: Simulation signal '{dd_element_name}' could be mapped to the original signal.",
                     )
                     continue
 
@@ -382,7 +367,7 @@ class SimUnit:
                             if alternative_value in input:
                                 mapped_input[dd_element_name] = input[alternative_value]
                                 logger.debug(
-                                    f"Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.",
+                                    f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.",
                                 )
                                 mapped = True
                                 break
@@ -394,23 +379,23 @@ class SimUnit:
                                 value=alternative_value,
                             )
                             logger.debug(
-                                f"Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
+                                f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
                             )
                             mapped = True
                             break
 
                 if not mapped:
                     logger.debug(
-                        f"Simulation signal '{dd_element_name}' has been mapped to default constant value 0.",
+                        f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to default constant value 0.",
                     )
 
             except Exception as e:
                 logger.warning(
-                    f"Error while mapping signal {dd_element_name}: {e}",
+                    f"{self.element_name}: Error while mapping signal {dd_element_name}: {e}",
                 )
                 return None
 
-        logger.debug("Mapping is successfully finished.")
+        logger.debug(f"{self.element_name}: Mapping is successfully finished.")
         return mapped_input
 
     @typechecked
@@ -442,13 +427,13 @@ class SimUnit:
                 return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1, 1))
             else:
                 logger.warning(
-                    f"Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                    f"{self.element_name}: Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
                 )
                 return None
 
         except Exception as e:
             logger.warning(
-                f"Warnging during mapping static value {value}: {e}",
+                f"{self.element_name}: Warnging during mapping static value {value}: {e}",
             )
             return None
 
@@ -483,13 +468,13 @@ class SimUnit:
                             ].tolist()
                     else:
                         logger.warning(
-                            f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                            f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
                         )
                         continue
 
             except Exception as e:
                 logger.warning(
-                    f"Warning writing input value '{dd_element_name}' to 'ares_simunit' function: {e}",
+                    f"{self.element_name}: Warning writing input value '{dd_element_name}' to 'ares_simunit' function: {e}",
                 )
 
     @typechecked
@@ -530,13 +515,57 @@ class SimUnit:
                         )
                 else:
                     logger.warning(
-                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                        f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
                     )
                     continue
 
             except Exception as e:
                 logger.error(
-                    f"Error reading output value '{dd_element_name}' from 'ares_simunit' function: {e}",
+                    f"{self.element_name}: Error reading output value '{dd_element_name}' from 'ares_simunit' function: {e}",
                 )
 
         return step_result
+
+
+def ares_plugin(plugin_input):
+    """ARES plugin entrypoint for sim_unit elements.
+
+    Args:
+        plugin_input: Dictionary containing all plugin configuration and data:
+            - element_name: Name of the workflow element
+            - parameter: Dict[str, AresParamInterface] - AresParameter storage with hashes as keys
+            - plugin_path: str - Path to this plugin file
+            - type: str - Element type ("plugin" or "sim_unit")
+            - element_workflow: List[str] - Workflow elements
+            - ... other fields from WorkflowElement
+    """
+
+    element_parameter_lists: List[List[AresParamInterface]] = plugin_input.get(
+        "parameter", []
+    )
+    element_data_lists: List[List[AresDataInterface]] = plugin_input.get("data", [])
+
+    sim_unit = SimUnit(
+        element_name=plugin_input["element_name"],
+        file_path=plugin_input["file_path"],
+        dd_path=plugin_input["dd_path"],
+    )
+
+    for element_parameter_list in element_parameter_lists:
+        for element_parameter_obj in element_parameter_list:
+            for element_data_list in element_data_lists:
+                for element_data_obj in element_data_list:
+                    dependencie_list = [
+                        element_parameter_obj.hash,
+                        element_data_obj.hash,
+                    ]
+
+                    sim_result = sim_unit.run_simulation(
+                        data=None,
+                        parameter=element_parameter_obj.get(),
+                    )
+
+                    if sim_result is not None:
+                        AresDataInterface.create(
+                            data=sim_result, dependencies=dependencie_list
+                        )

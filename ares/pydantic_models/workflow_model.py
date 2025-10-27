@@ -28,6 +28,8 @@ ________________________________________________________________________
 
 """
 
+import os
+from pathlib import Path
 from typing import Annotated, Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field, RootModel
@@ -38,17 +40,17 @@ class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
     type: str
-    element_input_workflow: List[str] = Field(default_factory=list)
-    element_parameter_workflow: List[str] = Field(default_factory=list)
+    element_workflow: List[str] = []
+    hash_list: Dict[str, List[str]] = {}
 
 
 class DataElement(BaseElement):
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
-    path: Optional[List[str]] = None
-    input: Optional[List[str]] = None
-    output_format: Optional[str] = None
-    source: Optional[List[str]] = None
+    path: Optional[List[str]] = []
+    input: Optional[List[str]] = []
+    output_format: Optional[Literal["json", "mf4"]] = None
+    source: Optional[List[str]] = []
     cycle_time: Optional[int] = None
 
     class Config:
@@ -66,10 +68,9 @@ class DataElement(BaseElement):
 class ParameterElement(BaseElement):
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
-    path: Optional[List[str]] = None
-    source: Optional[List[str]] = None
-    parameter: Optional[List[str]] = None
-    output_format: Optional[str] = None
+    path: Optional[List[str]] = []
+    parameter: Optional[List[str]] = []
+    output_format: Optional[Literal["json", "dcm"]] = None
 
     class Config:
         extra = "forbid"
@@ -83,41 +84,41 @@ class ParameterElement(BaseElement):
             )
 
 
-class SimUnitElement(BaseElement):
-    type: Literal["sim_unit"] = "sim_unit"
-    path: str
-    parameter: Optional[List[str]] = None
-    cycle_time: int
-    input: List[str]
-    data_dictionary: str
-    init: Optional[List[str]] = None
-    cancel_condition: Optional[str] = None
+class PluginElement(BaseElement):
+    type: Literal["plugin"] = "plugin"
+    file_path: str
 
     class Config:
-        extra = "forbid"
+        extra = "allow"
 
 
-class CustomElement(BaseElement):
-    type: Literal["custom"] = "custom"
+class SimUnitElement(PluginElement):
+    type: Literal["sim_unit"] = "sim_unit"
+    plugin_path: str = Field(
+        default_factory=lambda: os.path.relpath(
+            Path(__file__).parent.parent / "plugins" / "simunit.py",
+            Path(__file__).parent,
+        )
+    )
     path: str
-    input: Optional[List[str]] = None
-    output: Optional[str] = None
-    parameter: Optional[List[str]] = None
-    init: Optional[List[str]] = None
+    cycle_time: int
+    input: List[str]
+    parameter: Optional[List[str]] = []
+    data_dictionary: str
+    init: Optional[List[str]] = []
     cancel_condition: Optional[str] = None
-    plot_config: Optional[Dict[str, Any]] = None
-    spec: Optional[str] = None
 
     class Config:
         extra = "forbid"
 
 
 WorkflowElement = Annotated[
-    Union[DataElement, ParameterElement, SimUnitElement, CustomElement],
+    Union[DataElement, ParameterElement, SimUnitElement, PluginElement],
     Field(discriminator="type"),
 ]
 
 
+# TODO: don't add this extra methods => userdict???
 class WorkflowModel(RootModel):
     root: Dict[str, WorkflowElement]
 
