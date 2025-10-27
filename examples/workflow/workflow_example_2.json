@@ -1,0 +1,22 @@
+{
+    "parameterset_1": {
+        "type": "parameter",
+        "file_path": [
+            "../parameter/parameterset_example_1.dcm",
+            "../parameter/parameterset_example_2.dcm"
+        ],
+        "mode": "read"
+    },
+    "plugin_1": {
+        "type": "plugin",
+        "file_path": "../plugin/plugin_example_1.py",
+        "parameter": ["parameterset_1"],
+        "input": []
+    },
+    "parameterset_2": {
+        "type": "parameter",
+        "parameter": ["plugin_1","parameterset_1"],
+        "mode": "write",
+        "output_format": "json"
+    }
+}
