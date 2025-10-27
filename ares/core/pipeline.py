@@ -87,6 +87,7 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                                 step_size_init_ms=wf_element_value.cycle_time,
                             )
                         )
+
                 # write mode: export data from data objects
                 elif wf_element_value.mode == "write":
                     ares_wf.workflow[wf_element_name].path = []
@@ -144,18 +145,28 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
                 for data_value in data_objects[
                     wf_element_value.element_input_workflow[0]
                 ]:
-                    sim_input = data_value.get(step_size_ms=wf_element_value.cycle_time)
+                    # FIX: here -> get has to be removed also resampling should happen beforehand
+                    sim_input = data_value._legacy_convert2dict()
 
                     for parameter_value in parameter_objects[
                         wf_element_value.element_parameter_workflow[0]
                     ]:
                         sim_parameter = parameter_value.get()
 
-                        data_value.data[wf_element_name] = simunit_objects[
-                            wf_element_name
-                        ].run_simulation(
-                            data=sim_input,
-                            parameter=sim_parameter,
+                        # FIX: talk to andrä about data structure in pipeline
+                        # data_value.data[wf_element_name] = simunit_objects[
+                        #     wf_element_name
+                        # ].run_simulation(
+                        #     data=sim_input,
+                        #     parameter=sim_parameter,
+                        # )
+                        data_value.data.extend(
+                            data_value._legacy_convert2list(
+                                simunit_objects[wf_element_name].run_simulation(
+                                    data=sim_input,
+                                    parameter=sim_parameter,
+                                )
+                            )
                         )
 
             # handle "custom" workflow elements

@@ -5,7 +5,7 @@
 VENV_DIR ?= ../.venv
 
 .PHONY: example1
-example1:
+example1_compile:
 	$(MAKE) -C sim_unit inout_handling
 	$(MAKE) -C sim_unit derivation
 	$(MAKE) -C sim_unit lowpassfilterfirstorder
