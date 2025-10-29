@@ -11,6 +11,7 @@
 *.pyc
 *.pyo
 **/build/*
+**/.zed/*
 
 # datasource
 *.mf4

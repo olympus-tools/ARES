@@ -16,7 +16,7 @@ setup_venv:
 		echo "Creating virtual environment '$(VENV_DIR)'..."; \
 		python3 -m venv "$(VENV_DIR)" || { echo "Error: Failed to create virtual environment."; exit 1; }; \
 		echo "Installing ARES dependencies in virtual environment '$(VENV_DIR)'..."; \
-		"$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies."; exit 1; }; \
+		SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies."; exit 1; }; \
 	fi
 .PHONY: examples_compile
 examples_compile: setup_venv
@@ -34,7 +34,6 @@ test_all: setup_venv
 .PHONY: examples
 examples: setup_venv
 	$(MAKE) -C examples
-	$(MAKE) clean
 
 .PHONY: test
 test: setup_venv

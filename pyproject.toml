@@ -71,6 +71,9 @@ indent-style = "space"
 [tool.pyright]
 # Pyright will analyze files in this directory.
 include = ["ares"]
+reportAny = "none"
+reportExplicitAny = "none"
+
 
 # Point to virtual environment.
 venvPath = "."
