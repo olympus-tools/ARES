@@ -29,7 +29,6 @@ ________________________________________________________________________
 """
 
 import os
-from datetime import datetime
 from typing import Any, Dict, Iterable, Optional
 
 from typeguard import typechecked
@@ -37,7 +36,7 @@ from typeguard import typechecked
 from ares.utils.data.mf4_interface import (
     mf4_handler,
 )
-from ares.utils.decorators import safely_run
+from ares.utils.hash import sha256_filepath
 from ares.utils.logger import create_logger
 from ares.utils.signal import signal
 
@@ -69,6 +68,7 @@ class Data:
                 the initial loading.
         """
         self._file_path = file_path
+        self.hash = sha256_filepath(self._file_path)
         self.element = base_wf_element_name  # TODO: necessary, check again?
 
         # get fileformat to trigger the correct loading pipeline
@@ -90,29 +90,11 @@ class Data:
         tmp_source = None if source == ["all"] else source
         self.data = data_handler.get(tmp_source, stepsize_ms=step_size_init_ms)
 
-        # XXX: legacy implementation -> get dictionary from data_handler/std interface until we can use the interface in ARES globally
-        # tmp_source = None if source == ["all"] else source
-        # self._legacy_convert2dict(
-        #     data_handler.get(tmp_source, stepsize_ms=step_size_init_ms)
-        # )
-
-    # def _legacy_convert2dict(self, dh: list[signal]):
-    #     """Legacy convert function. Converts ARES signal list into backwards compatible data dictionary struct."""
-    #     self.data[self.element]["timestamps"] = dh[0].timestamps
-    #     [self.data[self.element].update({d.label: d.data}) for d in dh]
     def _legacy_convert2dict(self):
         data_dict = {}
         data_dict["timestamps"] = self.data[0].timestamps
         [data_dict.update({d.label: d.data}) for d in self.data]
         return data_dict
-
-    # def _legacy_convert2list(self, data_element: str) -> list[signal]:
-    #     """Legacy convert function. Converts ARES data dictionalry in to signal list for a better future."""
-    #     dh = list()
-    #     timestamps = self.data[data_element]["timestamps"]
-    #     for sig, samples in self.data[data_element].items():
-    #         dh.append(signal(label=sig, timestamps=timestamps, data=samples))
-    #     return dh
 
     def _legacy_convert2list(self, data: dict) -> list[signal]:
         """Legacy convert function. Converts ARES data dictionalry in to signal list for a better future."""
@@ -123,14 +105,12 @@ class Data:
         return dh
 
     @typechecked
-    # TODO: also - make static OR split -> add function to add signals to dataelement and save additionally or as destructor?
+    @staticmethod
     def write_out(
-        self,
-        dir_path: str,
+        file_path: str,
         output_format: str,
+        data: list[signal],
         meta_data: Dict[str, Any],
-        element_input_workflow: list[str],
-        source: list[str],
     ) -> Optional[str]:
         """Writes data from a specified source within `self.data` to an output file.
 
@@ -139,20 +119,14 @@ class Data:
         Currently, only .mf4 output is supported.
 
         Args:
-            dir_path (str): The path to the output directory.
+            file_path (str): The path to the file that should be created.
             output_format (str): The desired file extension (e.g., 'mf4').
+            data (list[signal]): A list of signals to be written to the file.
             meta_data (dict[str, any]): Current ARES and workstation meta data.
-            element_input_workflow (list[str]): The workflow elements associated with the data.
-            source (list[str]): A list of keys from `self.data` to be written. Use ['all']
-                to write all available sources.
 
         Returns:
             str or None: The full path of the output file, or None if an error occurs.
         """
-        file_path = self._eval_output_path(
-            dir_path=dir_path, output_format=output_format
-        )
-
         if output_format == "mf4":
             data_handler = mf4_handler()
 
@@ -170,125 +144,7 @@ class Data:
             )
             file_path = None
 
-        data_handler.write(self.data)
+        data_handler.write(data)
         data_handler.save_file(file_path)
 
         return file_path
-
-    @typechecked
-    @safely_run(
-        default_return=None, message="Evaluation of data ouput path failed.", log=logger
-    )
-    # TODO: why not static? and why is here self._file_path?
-    def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:
-        """Adds a timestamps to the filename and returns a complete, absolute file path.
-
-        The format is `*_YYYYMMDD_HHMMSS*` before the file extension.
-
-        Args:
-            dir_path (str): The absolute path to the output directory.
-            output_format (str): The desired file extension (e.g., 'mf4'). The leading dot
-                is added automatically.
-
-        Returns:
-            str or None: The new, complete file path with a timestamps, or None if an
-                error occurs.
-        """
-        os.makedirs(dir_path, exist_ok=True)
-        file_name = os.path.splitext(os.path.basename(self._file_path))[0]
-        timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
-        new_file_name = f"{file_name}_{timestamps}.{output_format}"
-        full_path = os.path.join(dir_path, new_file_name)
-
-        return full_path
-
-    # @typechecked
-    # FIX: remove after fixing interface in current functions
-    # def get(self, step_size_ms: float) -> Optional[Dict[str, np.ndarray]]:
-    #     """Retrieves and resamples the processed data from all sources within `self.data`.
-    #
-    #     It resamples each source to the specified `step_size_ms` and merges them into a
-    #     single dictionary. This combined dictionary is intended for use by a subsequent
-    #     workflow element.
-    #
-    #     Args:
-    #         step_size_ms (float): The target resampling step size in milliseconds.
-    #
-    #     Returns:
-    #         dict or None: A merged dictionary containing all resampled signals and their
-    #             timestamps, or None if an error occurs during resampling or merging.
-    #     """
-    #     try:
-    #         out_data: Dict[str, np.ndarray] = {}
-    #         source_list: List[str] = []
-    #
-    #         for data_source_name, data_source_value in self.data.items():
-    #             resampled_data = self._resample(
-    #                 data_raw=data_source_value, step_size_ms=step_size_ms
-    #             )
-    #
-    #             out_data.update(resampled_data)
-    #             source_list.append(data_source_name)
-    #
-    #         source_string = " <- ".join(source_list)
-    #         logger.info(
-    #             f"Simulation input data got merged from sources: {source_string}",
-    #         )
-    #         return out_data
-    #
-    #     except Exception as e:
-    #         logger.error(
-    #             f"Error occurred while merging simulation input data: {e}",
-    #         )
-    #         return None
-
-    # @typechecked
-    # # FIX: comment out after getting everything working again
-    # def _resample(
-    #     self, data_raw: Dict[str, np.ndarray], step_size_ms: float
-    # ) -> Optional[Dict[str, np.ndarray]]:
-    #     """Resamples all numeric signals in a data dictionary to a uniform time basis.
-    #
-    #     It assumes that all signals in `data_raw` share the same time vector, which is
-    #     stored under the key 'timestamps'.
-    #
-    #     Args:
-    #         data_raw (dict[str, np.ndarray]): A dictionary containing the 'timestamps'
-    #             array and other signal arrays.
-    #         step_size_ms (float): The target resampling step size in milliseconds.
-    #
-    #     Returns:
-    #         dict or None: A new dictionary with the new 'timestamps' and
-    #             the corresponding resampled signals, or None if an error occurs.
-    #     """
-    #     try:
-    #         timestamps = data_raw["timestamps"]
-    #         step_size_s = step_size_ms / 1000.0
-    #         timestamp_resampled = np.arange(
-    #             timestamps[0], timestamps[-1] + step_size_s, step_size_s
-    #         )
-    #         data_resampled: Dict[str, np.ndarray] = {"timestamps": timestamp_resampled}
-    #
-    #         for signal_name, signal_value in data_raw.items():
-    #             if (
-    #                 isinstance(signal_value, np.ndarray)
-    #                 and np.issubdtype(signal_value.dtype, np.number)
-    #                 and signal_name != "timestamps"
-    #             ):
-    #                 if signal_value.ndim == 1:
-    #                     resampled = np.interp(
-    #                         timestamp_resampled, timestamps, signal_value
-    #                     )
-    #                     data_resampled[signal_name] = resampled
-    #                 else:
-    #                     logger.debug(
-    #                         f"Signal '{signal_name}' is not able to be resampled."
-    #                     )
-    #             # Non-numeric or non-timestamps signals are ignored during resampling
-    #
-    #         logger.debug("Resampling successfully finished.")
-    #         return data_resampled
-    #
-    #     except Exception as e:
-    #         logger.error(f"Error during resampling: {e}")
-    #         return None
