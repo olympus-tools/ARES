@@ -36,8 +36,7 @@ from typeguard import typechecked
 
 from ares.utils.logger import create_logger
 
-# initialize logger
-logger = create_logger("mf4_interface")
+logger = create_logger(__name__)
 
 
 # TODO: make DataMF4Interface an asammdf object? -> asammdf.MDF OR create other class: mf4_loader or so that takes over the job

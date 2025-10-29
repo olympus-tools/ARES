@@ -37,8 +37,7 @@ from typeguard import typechecked
 from ares.models.parameter_model import ParameterModel
 from ares.utils.logger import create_logger
 
-# initialize logger
-logger = create_logger("ares_data")
+logger = create_logger(__name__)
 
 
 class ParamJSONinterface:

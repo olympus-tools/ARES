@@ -38,8 +38,7 @@ from typeguard import typechecked
 from ares.models.parameter_model import ParameterElement, ParameterModel
 from ares.utils.logger import create_logger
 
-# initialize logger
-logger = create_logger("dcm_interface")
+logger = create_logger(__name__)
 
 
 # TODO: dcm keyword should not be implemented in parameter pydantic model

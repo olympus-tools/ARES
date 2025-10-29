@@ -44,7 +44,6 @@ def test_logger_instance():
     assert isinstance(logger, logging.Logger)
     assert logger.name == "test_logger_instance"
     assert logger.level == logging.NOTSET
-    # assert len(logger.handlers) == 2
 
 
 @pytest.mark.parametrize(

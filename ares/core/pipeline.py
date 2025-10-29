@@ -36,7 +36,7 @@ from ares.core.simunit import SimUnit
 from ares.core.workflow import Workflow
 from ares.utils.logger import create_logger
 
-logger = create_logger("pipeline")
+logger = create_logger(__name__)
 
 
 # TODO: use meta_data from files like e.g. mf4,mat,????

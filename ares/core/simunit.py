@@ -39,7 +39,7 @@ from typeguard import typechecked
 from ares.models.datadictionary_model import DataDictionaryModel
 from ares.utils.logger import create_logger
 
-logger = create_logger("simunit")
+logger = create_logger(__name__)
 
 
 class SimUnit:

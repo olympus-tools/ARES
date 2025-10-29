@@ -38,7 +38,7 @@ from typeguard import typechecked
 from ares.utils.data.mf4_interface import DataMF4interface
 from ares.utils.logger import create_logger
 
-logger = create_logger("data")
+logger = create_logger(__name__)
 
 
 class Data:
