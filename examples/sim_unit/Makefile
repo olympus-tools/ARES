@@ -2,6 +2,7 @@
 # commands:
 #   - make derivation
 #   - make lowpassfilterfirstorder
+#   - make inout_handling
 #   - make clean
 
 SHELL := /bin/sh

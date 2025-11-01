@@ -21,9 +21,9 @@ jobs:
           echo "Running on Linux"
           uname -a
 
-      - name: Run examples
+      - name: Test examples
         run: |
-          make examples
+          make test_examples
 
       - name: Clean up
         run: |
