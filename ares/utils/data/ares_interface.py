@@ -29,15 +29,14 @@ ________________________________________________________________________
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional
-
+from typing import Any
 import numpy as np
 
 from ares.utils.signal import signal
 
 
 class AresDataInterface(ABC):
-    def __init__(self, fpath: str):
+    def __init__(self, **kwargs: Any):
         """AresDataInterface abstract class to provide template for all filetypes (mf4, mat, parquet).
             The idea is that all ares interfaces inherit this class so that easy data-handling inside ARES is possible.
             MUST have functions for data interfaces are:
@@ -46,17 +45,24 @@ class AresDataInterface(ABC):
                 - save_file
 
         Args:
-            file_path (str): The path to the data source file (.mf4, .parquet, or .mat).
+            fpath (str): The path to the data source file (.mf4, .parquet, or .mat).
         """
-        self.fpath = fpath
+        super().__init__(**kwargs)
+
+    @property
+    @abstractmethod
+    def _available_channels(self) -> list[str] | None:
+        pass
 
     @abstractmethod
-    def save_file(self, *args, **kwargs) -> Optional[str]:
+    def save_file(self, *args: Any, **kwargs: Any) -> str | None:
         """AresDataInterface abstract function for saving the current data to disk."""
         pass
 
     @abstractmethod
-    def get(self, channels=None, **kwargs) -> list[signal]:
+    def get(
+        self, channels: list[str] | None = None, **kwargs: Any
+    ) -> list[signal] | None:
         """AresDataInterface abstract function for getting signals from mf4. Returns list with asammdf signals"""
         pass
 
@@ -64,10 +70,11 @@ class AresDataInterface(ABC):
     def write(self, data: list[signal]) -> None:
         pass
 
+    def get_available_channels(self) -> list[str] | None:
+        return self._available_channels
+
     # TODO: rename function after final implementation -> resample is currently also in asammdf package parent implemented so careful name chosing is necessary
-    # TODO: think about adding "data" to object. but not to interface!
-    @staticmethod
-    def _resample(data: [signal], stepsize_ms: int) -> list[signal]:
+    def _resample(self, data: list[signal], stepsize_ms: int) -> list[signal]:
         """AresDataInterface, standard resample function
         - linear interpolation
         """
