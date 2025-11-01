@@ -31,6 +31,6 @@ ________________________________________________________________________
 import hashlib
 
 
-def sha256_filepath(file_path):
-    sha256 = hashlib.sha256(file_path.encode("utf-8"))
+def sha256_string(hash_string: str) -> str:
+    sha256 = hashlib.sha256(hash_string.encode("utf-8"))
     return sha256.hexdigest()
