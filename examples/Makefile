@@ -14,4 +14,3 @@ example1:
 		-wf workflow/workflow_example_1.json \
 		--output output/ \
 		--log-level=10
-	$(MAKE) -C sim_unit clean

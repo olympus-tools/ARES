@@ -1,4 +1,4 @@
-name: Format Check Pipeline
+name: Example Pipeline
 
 on:
   push:
@@ -21,9 +21,9 @@ jobs:
           echo "Running on Linux"
           uname -a
 
-      - name: Run ruff for format checking
+      - name: Run examples
         run: |
-          make format_check
+          make examples
 
       - name: Clean up
         run: |

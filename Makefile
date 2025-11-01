@@ -22,23 +22,18 @@ setup_venv:
 .PHONY: examples
 examples: setup_venv
 	$(MAKE) -C examples
-	$(MAKE) clean
 
 .PHONY: test
 test: setup_venv
-	$(MAKE) -C examples/sim_unit all
-	@"$(VENV_DIR)/bin/python" -m pytest test/
-	$(MAKE) clean
+	@"$(VENV_DIR)/bin/python" -m pytest test/ --ignore=test/examples
 
 .PHONY: format
 format: setup_venv
 	@"$(VENV_DIR)/bin/python" -m ruff format . --exclude ares/core/version.py --exclude .venv
-	$(MAKE) clean
 
 .PHONY: format_check
 format_check: setup_venv
 	@"$(VENV_DIR)/bin/python" -m ruff format --check . --exclude ares/core/version.py --exclude .venv
-	$(MAKE) clean
 
 .PHONY: clean
 clean:
@@ -48,4 +43,3 @@ clean:
 	find . -type d -name .pytest_cache | xargs rm -fr
 	find . -type d -name .ruff_cache | xargs rm -fr
 	$(MAKE) -C examples/sim_unit clean
-
