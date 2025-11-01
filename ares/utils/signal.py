@@ -31,6 +31,7 @@ ________________________________________________________________________
 from dataclasses import dataclass, field
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 @dataclass()
@@ -38,8 +39,12 @@ class signal:
     """A python dataclass to store signals in ARES."""
 
     label: str
-    timestamps: np.ndarray = field(default_factory=lambda: np.array([], dtype=float))
-    data: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.object_))
+    timestamps: NDArray[np.floating] = field(
+        default_factory=lambda: np.array([], dtype=np.floating)
+    )
+    data: NDArray[np.object_] = field(
+        default_factory=lambda: np.array([], dtype=np.object_)
+    )
 
     def __post_init__(self):
         """
@@ -54,12 +59,12 @@ class signal:
                 "Both 'timestamps' and 'data' arrays must be at least 1-dimensional."
             )
 
-    def resample(self, timestamps_resampled: np.ndarray):
+    def resample(self, timestamps_resampled: NDArray[np.floating]):
         """Resample function for ares signals
         Algortihms available:
             - linear interpolation (default)
         """
-        self.data = np.interp(timestamps_resampled, self.timestamps, self.data).astype(
-            self.data.dtype
-        )
+        self.data = np.interp(
+            timestamps_resampled, self.timestamps, self.data.astype(np.floating)
+        ).astype(self.data.dtype)
         self.timestamps = timestamps_resampled
