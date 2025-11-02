@@ -3,6 +3,7 @@
 
 # python
 **/.venv/*
+**/.zed/*
 **/env/
 *.env/
 **/__pycache__/*
@@ -19,6 +20,9 @@
 
 # others
 *.log
+
+# comile artefacts
+**/*.so
 
 # vim dev
 .session.vim
