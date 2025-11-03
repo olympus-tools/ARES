@@ -1,0 +1,17 @@
+{
+    "data_1": {
+        "type": "data",
+        "path": [
+            "../data/data_example_1.mf4",
+            "../data/data_example_1.mf4"
+        ],
+        "source": ["source_1"],
+        "mode": "read"
+    },
+    "data_2": {
+        "type": "data",
+        "input": ["data_1"],
+        "mode": "write",
+        "output_format": "mf4"
+    }
+}
