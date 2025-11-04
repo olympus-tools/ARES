@@ -29,10 +29,10 @@ ________________________________________________________________________
 """
 
 import datetime
+from typing import Any, override
 
 import numpy as np
 from asammdf import MDF, Signal
-from typing import Any, override
 
 from ares.utils.data.ares_interface import AresDataInterface
 from ares.utils.hash import sha256_string
@@ -51,29 +51,40 @@ class mf4_handler(MDF, AresDataInterface):  # pyright: ignore[reportUnsafeMultip
     see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
     """
 
-    def __init__(self, name: str | None = "", **kwargs: Any):
+    def __init__(
+        self,
+        name: str | None = "",
+        mode: Literal["write", "read"] = "read",
+        **kwargs: Any,
+    ):
         """Initialize MDF and get all available channels.
         With 'name=None' an empty mf4-file is created that can be written with self.save()"""
-        super().__init__(name, **kwargs)
-        self._available_channels: list[str] = list(self.channels_db.keys())
+        self._mode = mode
         self._file_path: str = "" if name is None else name
         self.hash: str = sha256_string(self._file_path + str(self._available_channels))
 
         if self._file_path == "":
-            logger.debug("MF4 file is initiated wihtout data. Ready for write.")
-            return
+            raise ValueError(
+                "DataElement mf4-handler was initialized without filepath."
+            )
 
+        if self._mode == "read":
+            super().__init__(self._file_path, **kwargs)
+        elif self._mode == "write":
+            super().__init__("", **kwargs)
+
+        self._available_channels: list[str] = list(self.channels_db.keys())
         for obs_channel in OBSOLETE_CHANNEL:
             if obs_channel in self._available_channels:
                 self._available_channels.remove(obs_channel)
 
     @override
-    def save_file(self, file_path: str, **kwargs: Any):
+    def save_file(self, **kwargs: Any):
         """Wrapper for MDF save() to print message and adding timestamp."""
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.header.comment = f"File last saved on: {timestamp}"
-        result_path = self.save(file_path, **kwargs)
+        result_path = self.save(self._file_path, **kwargs)
         logger.debug(f"Data was written to: {result_path}")
 
     @override

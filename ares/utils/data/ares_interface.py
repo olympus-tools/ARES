@@ -29,7 +29,8 @@ ________________________________________________________________________
 """
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Literal
+
 import numpy as np
 
 from ares.utils.signal import signal
@@ -51,7 +52,20 @@ class AresDataInterface(ABC):
 
     @property
     @abstractmethod
+    def _file_path(self) -> str | None:
+        """File path to data element. Can be empty."""
+        pass
+
+    @property
+    @abstractmethod
     def _available_channels(self) -> list[str] | None:
+        """All channels available in this data-element."""
+        pass
+
+    @property
+    @abstractmethod
+    def _mode(self) -> Literal["write", "read"]:
+        """Mode of the data-element. Possible ['write', 'read']"""
         pass
 
     @abstractmethod
@@ -96,3 +110,8 @@ class AresDataInterface(ABC):
         # resampling of each element
         [sig.resample(timestamps_resample) for sig in data]
         return data
+
+    def __del__(self):
+        """AresDataInterface, destructor for handling saving of data fils"""
+        if self._mode == "write":
+            self.save_file()
