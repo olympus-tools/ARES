@@ -10,8 +10,10 @@
     },
     "data_2": {
         "type": "data",
+        "path": [
+            "../data/data_example_1_2.mf4"
+        ],
         "input": ["data_1"],
-        "mode": "write",
-        "output_format": "mf4"
+        "mode": "write"
     }
 }

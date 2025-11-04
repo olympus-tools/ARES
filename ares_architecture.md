@@ -20,11 +20,11 @@
       service sim_unit(database)[simunit] in ares_plugin
       service custom_plugins(database)[xxx] in ares_plugin
 ```
-
 ## ARES classes
+
 ```mermaid
 ---
-title: ARES classes
+title: ARES  basetypes
 ---
 classDiagram
     class ares_signal{
@@ -42,7 +42,12 @@ classDiagram
         +String : dtype
         +Any | Array[Any] : value
     }
-
+```
+```mermaid
+---
+title: ARES  base interfaces
+---
+classDiagram
     class ares_data_interface{
         <<interface>>
         +String : filepath
@@ -56,6 +61,13 @@ classDiagram
         write_out() -> filepath
         change(str: label, any: value)
     }
+```
+
+```mermaid
+---
+title: ARES  plugins
+---
+classDiagram
     note for simunit "execute() as default execution function"
     class simunit{
         <<plugin>>

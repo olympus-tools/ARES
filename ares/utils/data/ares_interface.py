@@ -37,7 +37,9 @@ from ares.utils.signal import signal
 
 
 class AresDataInterface(ABC):
-    def __init__(self, **kwargs: Any):
+    def __init__(
+        self, name: str, file_path: str, mode: Literal["write", "read"], **kwargs: Any
+    ):
         """AresDataInterface abstract class to provide template for all filetypes (mf4, mat, parquet).
             The idea is that all ares interfaces inherit this class so that easy data-handling inside ARES is possible.
             MUST have functions for data interfaces are:
@@ -51,22 +53,24 @@ class AresDataInterface(ABC):
         super().__init__(**kwargs)
 
     @property
-    @abstractmethod
-    def _file_path(self) -> str | None:
-        """File path to data element. Can be empty."""
-        pass
+    def name(self) -> str | None:
+        """name of data element"""
+        return self._name
 
     @property
-    @abstractmethod
-    def _available_channels(self) -> list[str] | None:
+    def file_path(self) -> str | None:
+        """File path to element to read/write. File can NOT exist."""
+        return self._file_path
+
+    @property
+    def available_channels(self) -> list[str] | None:
         """All channels available in this data-element."""
-        pass
+        return self._available_channels
 
     @property
-    @abstractmethod
-    def _mode(self) -> Literal["write", "read"]:
+    def mode(self) -> Literal["write", "read"]:
         """Mode of the data-element. Possible ['write', 'read']"""
-        pass
+        return self._mode
 
     @abstractmethod
     def save_file(self, *args: Any, **kwargs: Any) -> str | None:
@@ -83,9 +87,6 @@ class AresDataInterface(ABC):
     @abstractmethod
     def write(self, data: list[signal]) -> None:
         pass
-
-    def get_available_channels(self) -> list[str] | None:
-        return self._available_channels
 
     # TODO: rename function after final implementation -> resample is currently also in asammdf package parent implemented so careful name chosing is necessary
     def _resample(self, data: list[signal], stepsize_ms: int) -> list[signal]:
@@ -111,7 +112,9 @@ class AresDataInterface(ABC):
         [sig.resample(timestamps_resample) for sig in data]
         return data
 
+    # TODO: destructor won't work in python -> garbage collector is challenge!
+    # alternative would "context manager" using the with ... statement + __enter__, __exit__
     def __del__(self):
         """AresDataInterface, destructor for handling saving of data fils"""
         if self._mode == "write":
-            self.save_file()
+            _ = self.save_file()

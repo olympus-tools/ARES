@@ -29,7 +29,7 @@ ________________________________________________________________________
 """
 
 import datetime
-from typing import Any, override
+from typing import Any, Literal, override
 
 import numpy as np
 from asammdf import MDF, Signal
@@ -53,30 +53,29 @@ class mf4_handler(MDF, AresDataInterface):  # pyright: ignore[reportUnsafeMultip
 
     def __init__(
         self,
-        name: str | None = "",
+        name: str,
+        file_path: str,
         mode: Literal["write", "read"] = "read",
         **kwargs: Any,
     ):
-        """Initialize MDF and get all available channels.
-        With 'name=None' an empty mf4-file is created that can be written with self.save()"""
-        self._mode = mode
-        self._file_path: str = "" if name is None else name
-        self.hash: str = sha256_string(self._file_path + str(self._available_channels))
-
-        if self._file_path == "":
-            raise ValueError(
-                "DataElement mf4-handler was initialized without filepath."
-            )
-
-        if self._mode == "read":
-            super().__init__(self._file_path, **kwargs)
-        elif self._mode == "write":
+        """Initialize MDF and get all available channels."""
+        if mode == "read":
+            super().__init__(file_path, **kwargs)
+        elif mode == "write":
             super().__init__("", **kwargs)
+
+        self._mode = mode
+        self._name = name
+        self._file_path: str = "" if file_path is None else file_path
 
         self._available_channels: list[str] = list(self.channels_db.keys())
         for obs_channel in OBSOLETE_CHANNEL:
             if obs_channel in self._available_channels:
                 self._available_channels.remove(obs_channel)
+
+        self.hash: str = sha256_string(
+            self.name + self._file_path + str(self._available_channels)
+        )
 
     @override
     def save_file(self, **kwargs: Any):
@@ -138,10 +137,9 @@ class mf4_handler(MDF, AresDataInterface):  # pyright: ignore[reportUnsafeMultip
 
     @override
     def write(self, data: list[signal]) -> None:
-        """Basic function to write ares signals to mf4."""
-        self.append(
-            signals=[
-                Signal(samples=sig.data, timestamps=sig.timestamps, name=sig.label)
-                for sig in data
-            ],
-        )
+        """Basic function to write ares signals to mf4 using 'append()'"""
+        signals_to_write = [
+            Signal(samples=sig.data, timestamps=sig.timestamps, name=sig.label)
+            for sig in data
+        ]
+        self.append(signals_to_write)
