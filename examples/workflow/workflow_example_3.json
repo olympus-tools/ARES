@@ -3,7 +3,7 @@
         "type": "data",
         "path": [
             "../data/data_example_1.mf4",
-            "../data/data_example_2.mf4"
+            "../data/data_example_1.mf4"
         ],
         "source": ["source_1"],
         "mode": "read"

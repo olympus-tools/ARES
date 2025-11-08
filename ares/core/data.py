@@ -39,6 +39,66 @@ from ares.utils.logger import create_logger
 logger = create_logger("data")
 
 
+class DataHandler:
+    """Central manager for AresDataInterface objects.
+    This class provides a unified interface for loading, storing, and managing
+    data handler for various file formats.
+    Includes built-in factory functionality for automatic format detection.
+    """
+
+    def __init__(self):
+        self._data_ojbects: list[AresDataInterface] = list()
+
+    def add_element(self, data_element_name: str, data_element: DataElement):
+        for file_path in data_element.path:
+            if file_path.endswith(".mf4"):
+                if data_element.mode == "read":
+                    self._data_ojbects.append(
+                        mf4_handler(
+                            name=data_element_name,
+                            file_path=file_path,
+                            mode=data_element.mode,
+                        )
+                    )
+                elif data_element.mode == "write":
+                    for data_element_input in data_element.input:
+                        data_handler_inputs = self.get_handler(data_element_input)
+
+                        for dh_in in data_handler_inputs:
+                            file_path_out = (
+                                file_path.replace(".mf4", "_") + dh_in.hash + ".mf4"
+                            )
+
+                            self._data_ojbects.append(
+                                mf4_handler(
+                                    name=data_element_name,
+                                    file_path=file_path_out,
+                                    mode=data_element.mode,
+                                )
+                            )
+                            self._data_ojbects[-1].write(data_handler_in.get())
+                            self._data_ojbects[-1].save_file(overwrite=True)
+
+            elif file_path.endswith(".parquet"):
+                logger.error(
+                    "Evaluation of .parquet input/output is not implemented yet."
+                )
+                raise ValueError("Not implemented yet.")
+            elif file_path.endswith(".mat"):
+                logger.error("Evaluation of .mat input/output is not implemented yet.")
+                raise ValueError("Not implemented yet.")
+            else:
+                logger.error(f"Unknown file format for file: {file_path}")
+                raise ValueError("Unknown file format.")
+
+    def get_handler(self, data_element_name: str) -> list[AresDataInterface]:
+        pass
+
+    def get_element(self, data_element_name: str) -> DataElement:
+        """ """
+        pass
+
+
 @typechecked
 @safely_run(
     default_return=[],
@@ -82,7 +142,7 @@ def get_data_handler(
 
                         # TODO: can i move this in the destructor?
                         # in my concept this would be executed by the "plugin" -> now this MUST BE done by the dh function
-                        dh_out[-1].save_file()
+                        dh_out[-1].save_file(overwrite=True)
 
         elif file_path.endswith(".parquet"):
             logger.error("Evaluation of .parquet input/output is not implemented yet.")

@@ -68,6 +68,10 @@ def pipeline(wf_path: str, output_path: str, meta_data: dict):
 
     for wf_element_name, wf_element in ares_wf.workflow.items():
         if wf_element.type == "data":
+            # XXX: open question/problem: if "get_data_hanlder()" or "Handler" objects execute write/mode directly -> what's the data transfer between data/parameter and plugins?
+            # possible solutions:
+            #   - 3rd mode is introduced: "write/read/extern" → write/ is triggered externally
+            #   - write is not executed directly → data/parameter element can be given to plugins
             tmp_data_handler = get_data_handler(
                 name=wf_element_name,
                 data_element=wf_element,

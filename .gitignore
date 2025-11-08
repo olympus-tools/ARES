@@ -12,6 +12,7 @@
 *.pyo
 **/build/*
 **/.zed/*
+**/.mermaid/*
 
 # datasource
 *.mf4

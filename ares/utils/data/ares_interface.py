@@ -89,7 +89,9 @@ class AresDataInterface(ABC):
         pass
 
     # TODO: rename function after final implementation -> resample is currently also in asammdf package parent implemented so careful name chosing is necessary
-    def _resample(self, data: list[signal], stepsize_ms: int) -> list[signal]:
+    # -> move to data_sethandler()?
+    @staticmethod
+    def _resample(data: list[signal], stepsize_ms: int) -> list[signal]:
         """AresDataInterface, standard resample function
         - linear interpolation
         """

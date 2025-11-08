@@ -51,6 +51,23 @@ class mf4_handler(MDF, AresDataInterface):  # pyright: ignore[reportUnsafeMultip
     see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
     """
 
+    _instances = {}
+
+    # TODO: first singleton implementation -> adapt hash calculation
+    def __new__(
+        cls,
+        name: str,
+        file_path: str,
+        mode: Literal["write", "read"] = "read",
+        **kwargs: Any,
+    ):
+        instance_hash = sha256_string(name + file_path)
+        if instance_hash not in cls._instances:
+            logger.info(f"Creating new instance of mf4-handler: {instance_hash}")
+            cls._instances[instance_hash] = super().__new__(cls)
+
+        return cls._instances[instance_hash]
+
     def __init__(
         self,
         name: str,
@@ -59,23 +76,31 @@ class mf4_handler(MDF, AresDataInterface):  # pyright: ignore[reportUnsafeMultip
         **kwargs: Any,
     ):
         """Initialize MDF and get all available channels."""
-        if mode == "read":
-            super().__init__(file_path, **kwargs)
-        elif mode == "write":
-            super().__init__("", **kwargs)
+        if len(self.__dict__) == 0 or (
+            len(self.__dict__) > 0 and not hasattr(self, "_initialized")
+        ):
+            if mode == "read":
+                super().__init__(file_path, **kwargs)
+            elif mode == "write":
+                super().__init__("", **kwargs)
 
-        self._mode = mode
-        self._name = name
-        self._file_path: str = "" if file_path is None else file_path
+            self._mode = mode
+            self._name = name
+            self._file_path: str = "" if file_path is None else file_path
 
-        self._available_channels: list[str] = list(self.channels_db.keys())
-        for obs_channel in OBSOLETE_CHANNEL:
-            if obs_channel in self._available_channels:
-                self._available_channels.remove(obs_channel)
+            self._available_channels: list[str] = list(self.channels_db.keys())
+            for obs_channel in OBSOLETE_CHANNEL:
+                if obs_channel in self._available_channels:
+                    self._available_channels.remove(obs_channel)
 
-        self.hash: str = sha256_string(
-            self.name + self._file_path + str(self._available_channels)
-        )
+            self.hash: str = sha256_string(
+                self.name + self._file_path + str(self._available_channels)
+            )
+            self._initialized = True
+        else:
+            logger.info(
+                "Clone detected! Using already existent mf4-handler! Be smart, don't do things twice!"
+            )
 
     @override
     def save_file(self, **kwargs: Any):
