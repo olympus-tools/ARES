@@ -28,39 +28,43 @@ ________________________________________________________________________
 
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any
 
-from ares.pydantic_models.workflow_model import DataElement
 from typeguard import typechecked
 
+from ares.core.data.mf4_interface import mf4_handler
 from ares.core.storage_handler import StorageHandler
+from ares.pydantic_models.workflow_model import DataElement
+from ares.utils.decorators import safely_run
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
 
 
 class DataHandler(StorageHandler[DataElement, Any]):
-    """Dummy DataHandler implementation based on StorageHandler.
+    """DataHandler implementation based on StorageHandler.
 
     This class serves as a placeholder/template for future data handling implementation,
     following the pattern established by ParameterHandler.
     """
 
-    @typechecked
     def __init__(self):
         super().__init__()
-        self.data_dict: Dict[str, Any] = self.data
-        self._element_name: Optional[str] = None
 
+    @safely_run(
+        default_return=None,
+        message="Oops, something went terribly wrong. Check your workflow json.",
+        log=logger,
+    )
     @typechecked
-    def interface(
+    def handler(
         self,
         element_name: str,
         element_value: DataElement,
-        input_hash_list: Optional[List[List[str]]] = None,
-        output_dir: Optional[str] = None,
+        input_hash_list: list[list[str]] | None = None,
+        output_dir: str | None = None,
         **kwargs,
-    ) -> List[str]:
+    ) -> list[str]:
         """Perform a data interface and return a list of hashes for affected data objects.
 
         Args:
@@ -70,60 +74,48 @@ class DataHandler(StorageHandler[DataElement, Any]):
             output_dir: Output directory for writing operations
 
         Returns:
-            List[str]: List of hashes for affected data objects.
+            list[str]: List of hashes for affected data objects.
         """
-        self._element_name = element_name
-        output_hash_list: List[str] = []
+        output_hash_list: list[str] = []
 
-        try:
-            match element_value.mode:
-                case "read":
-                    logger.info(
-                        f"{self._element_name}: Dummy read operation for {element_value.file_path}"
-                    )
-                    output_hash_list = self._load(file_path=element_value.file_path)
-                case "write":
-                    if input_hash_list:
-                        logger.info(f"{self._element_name}: Dummy write operation")
-                        self._write(
-                            hash_list=input_hash_list,
-                            output_format=element_value.output_format,
-                            output_dir=output_dir,
+        for file_path in element_value.path:
+            if file_path.endswith(".mf4"):
+                match element_value.mode:
+                    case "read":
+                        tmp_handler = mf4_handler(
+                            name=element_name,
+                            file_path=file_path,
+                            mode=element_value.mode,
                         )
+                        self.data.update({tmp_handler.hash: tmp_handler})
 
-            return output_hash_list
+                    case "write":
+                        for element_input_hash in input_hash_list:
+                            handler_inputs = self.data.get(element_input_hash)
 
-        except Exception as e:
-            logger.warning(
-                f"{self._element_name}: Data interface operation failed: {e}"
-            )
-            return []
+                            for data_handler in handler_inputs:
+                                file_path_out: str = (
+                                    file_path.replace(".mf4", "_")
+                                    + data_handler.hash
+                                    + ".mf4"
+                                )
 
-    @typechecked
-    def _load(self, file_path: List[str], **kwargs) -> Optional[List[str]]:
-        """Dummy load implementation.
+                                tmp_handler = mf4_handler(
+                                    name=element_name,
+                                    file_path=file_path_out,
+                                    mode=element_name.mode,
+                                )
+                                tmp_handler.write(handler_inputs.get())
+                                tmp_handler.save_file(overwrite=True)
 
-        Args:
-            file_path: List of file paths to load from
-
-        Returns:
-            Optional[List[str]]: List of content hashes
-        """
-        return []
-
-    @typechecked
-    def _write(
-        self,
-        hash_list: List[List[str]],
-        output_format: str,
-        output_dir: str,
-        **kwargs,
-    ) -> None:
-        """Dummy write implementation.
-
-        Args:
-            hash_list: Nested list of content hashes to write
-            output_format: Target output format
-            output_dir: Output directory path
-        """
-        pass
+            elif file_path.endswith(".parquet"):
+                logger.error(
+                    "Evaluation of .parquet input/output is not implemented yet."
+                )
+                raise ValueError("Not implemented yet.")
+            elif file_path.endswith(".mat"):
+                logger.error("Evaluation of .mat input/output is not implemented yet.")
+                raise ValueError("Not implemented yet.")
+            else:
+                logger.error(f"Unknown file format for file: {file_path}")
+                raise ValueError("Unknown file format.")

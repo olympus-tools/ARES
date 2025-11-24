@@ -109,6 +109,7 @@ class StorageHandler(UserDict, ABC, Generic[WfElementType, InterfaceType]):
         Returns:
             Complete absolute file path, or None if an error occurs
         """
+        # TODO: do we want to move this elsewhere?
         os.makedirs(output_dir, exist_ok=True)
         timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
         new_file_name = f"{element_name}_{hash}_{timestamp}.{output_format}"
