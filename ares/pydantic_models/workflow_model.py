@@ -47,7 +47,7 @@ class BaseElement(BaseModel):
 class DataElement(BaseElement):
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
-    path: Optional[List[str]] = []
+    file_path: Optional[List[str]] = []
     input: Optional[List[str]] = []
     output_format: Optional[Literal["json", "mf4"]] = None
     source: Optional[List[str]] = []
@@ -57,8 +57,8 @@ class DataElement(BaseElement):
         extra = "forbid"
 
     def validate_mode_requirements(self):
-        if self.mode == "read" and not self.path:
-            raise ValueError("Field 'path' is required for mode='read'.")
+        if self.mode == "read" and not self.file_path:
+            raise ValueError("Field 'file_path' is required for mode='read'.")
         if self.mode == "write" and (not self.input or not self.output_format):
             raise ValueError(
                 "Fields 'input' and 'output_format' are required for mode='write'."
@@ -68,7 +68,7 @@ class DataElement(BaseElement):
 class ParameterElement(BaseElement):
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
-    path: Optional[List[str]] = []
+    file_path: Optional[List[str]] = []
     parameter: Optional[List[str]] = []
     output_format: Optional[Literal["json", "dcm"]] = None
 
@@ -76,8 +76,8 @@ class ParameterElement(BaseElement):
         extra = "forbid"
 
     def validate_mode_requirements(self):
-        if self.mode == "read" and not self.path:
-            raise ValueError("Field 'path' is required for mode='read'.")
+        if self.mode == "read" and not self.file_path:
+            raise ValueError("Field 'file_path' is required for mode='read'.")
         if self.mode == "write" and (not self.parameter or not self.output_format):
             raise ValueError(
                 "Fields 'input' and 'output_format' are required for mode='write'."
@@ -100,7 +100,7 @@ class SimUnitElement(PluginElement):
             Path(__file__).parent,
         )
     )
-    path: str
+    file_path: str
     cycle_time: int
     input: List[str]
     parameter: Optional[List[str]] = []

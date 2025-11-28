@@ -32,35 +32,50 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import ValidationError
 from typeguard import typechecked
 
-from ares.models.parameter_model import ParameterElement, ParameterModel
-from ares.utils.logger import create_logger
 
-logger = create_logger(__name__)
+class ParamDCM:
+    """DCM Parameter file handler.
 
+    This class loads and manages DCM parameter files, providing access to
+    the parsed parameters through a dictionary.
 
-# TODO: dcm keyword should not be implemented in parameter pydantic model
-# => there should be a evaluation in the dcm write_out method
-# => otherwise its not possible to import a .json and export a .dcm
-# => check placeholder method "_eval_dcm_keyword"
-class ParamDCMinterface:
+    Usage:
+        # Load from file
+        param = ParamDCM(file_path="path/to/file.dcm")
+        if param.parameter:
+            # Access parameter
+            value = param.parameter["parameter_name"]
+
+        # Create empty
+        param = ParamDCM()
+        param.parameter["new_param"] = {...}
+    """
+
     DCMValueLength = 6
 
-    @staticmethod
     @typechecked
-    def load(file_path: str) -> Optional[ParameterModel]:
+    def __init__(self, file_path: Optional[str] = None):
+        """Initialize ParamDCM and optionally load a DCM file.
+
+        Args:
+            file_path: Optional path to the DCM file to load. If None, an empty
+                parameter dictionary is created.
+        """
+        self.file_path: Optional[str] = file_path
+        self.parameter: Dict[str, Any] = {}
+        if file_path is not None:
+            self.parameter = self._load()
+
+    def _load(self) -> Dict[str, Any]:
         """Parses a DCM file and converts it to a validated ParameterModel object.
 
         DAMOS DCM format is defined on:
         https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
-        Args:
-            file_path (str): The path to the DCM file to be parsed.
-
         Returns:
-            ParameterModel or None: Validated parameter object, or None if parsing fails.
+            Dict[str, Any]: Validated parameter dictionary. Returns empty dict on error.
         """
         try:
             keywords = [
@@ -81,7 +96,7 @@ class ParamDCMinterface:
 
             parameter: Dict[str, Any] = {}
 
-            with open(file_path, "r", encoding="utf-8") as dcm_file:
+            with open(self.file_path, "r", encoding="utf-8") as dcm_file:
                 dcm_content = dcm_file.read()
                 dcm_content = dcm_content.replace("\t", " ")
                 dcm_parameters = re.findall(parameter_pattern, dcm_content, flags=re.M)
@@ -169,23 +184,19 @@ class ParamDCMinterface:
                     if parameter_keyword in ["FESTWERT"]:
                         parameter[parameter_name]["unit"] = unit_value
                         parameter[parameter_name]["value"] = value[0]
-                        parameter[parameter_name]["type"] = "scalar"
                     elif parameter_keyword in ["TEXTSTRING"]:
                         parameter[parameter_name]["value"] = value[0]
-                        parameter[parameter_name]["type"] = "scalar"
                     elif parameter_keyword in ["FESTWERTEBLOCK"]:
                         parameter[parameter_name]["unit"] = unit_value
                         dim_str = [x for x in dim_str if "@" not in x]
                         dim = [int(x) for x in dim_str]
                         if len(dim) <= 1:
                             parameter[parameter_name]["value"] = value
-                            parameter[parameter_name]["type"] = "array1d"
                         else:
                             parameter[parameter_name]["value"] = [
                                 value[i : i + dim[0]]
                                 for i in range(0, len(value), dim[0])
                             ]
-                            parameter[parameter_name]["type"] = "array2d"
                     elif parameter_keyword in ["FESTKENNLINIE", "KENNLINIE"]:
                         parameter[parameter_name]["unit"] = unit_value
                         name_breakpoints_1 = f"{parameter_name}_static_breakpoints_1"
@@ -199,11 +210,9 @@ class ParamDCMinterface:
                         parameter[name_breakpoints_1]["description"] = (
                             f"breakpoints 1 to static axis {parameter_name}"
                         )
-                        parameter[name_breakpoints_1]["type"] = "array1d"
                         parameter[name_breakpoints_1]["dcm_keyword"] = (
                             "STUETZSTELLENVERTEILUNG"
                         )
-                        parameter[parameter_name]["type"] = "array1d"
                     elif parameter_keyword in ["FESTKENNFELD", "KENNFELD"]:
                         parameter[parameter_name]["unit"] = unit_value
                         name_breakpoints_1 = f"{parameter_name}_static_breakpoints_1"
@@ -224,7 +233,6 @@ class ParamDCMinterface:
                         parameter[name_breakpoints_1]["description"] = (
                             f"breakpoints 1 to static axis {parameter_name}"
                         )
-                        parameter[name_breakpoints_1]["type"] = "array1d"
                         parameter[name_breakpoints_1]["dcm_keyword"] = (
                             "STUETZSTELLENVERTEILUNG"
                         )
@@ -234,18 +242,15 @@ class ParamDCMinterface:
                         parameter[name_breakpoints_2]["description"] = (
                             f"breakpoints 2 to static axis {parameter_name}"
                         )
-                        parameter[name_breakpoints_2]["type"] = "array1d"
                         parameter[name_breakpoints_2]["dcm_keyword"] = (
                             "STUETZSTELLENVERTEILUNG"
                         )
-                        parameter[parameter_name]["type"] = "array2d"
                     elif parameter_keyword in ["GRUPPENKENNLINIE"]:
                         parameter[parameter_name]["unit"] = unit_value
                         parameter[parameter_name]["name_breakpoints_1"] = (
                             name_breakpoints_1
                         )
                         parameter[parameter_name]["value"] = value
-                        parameter[parameter_name]["type"] = "array1d"
                     elif parameter_keyword in ["GRUPPENKENNFELD"]:
                         parameter[parameter_name]["unit"] = unit_value
                         parameter[parameter_name]["name_breakpoints_1"] = (
@@ -258,43 +263,33 @@ class ParamDCMinterface:
                             value[i : i + len(breakpoints_1)]
                             for i in range(0, len(value), len(breakpoints_1))
                         ]
-                        parameter[parameter_name]["type"] = "array2d"
                     elif parameter_keyword in ["STUETZSTELLENVERTEILUNG"]:
                         parameter[parameter_name]["unit"] = unit_breakpoints_1
                         parameter[parameter_name]["value"] = breakpoints_1
-                        parameter[parameter_name]["type"] = "array1d"
 
-            return ParameterModel.model_validate(parameter)
+            return parameter
 
         except FileNotFoundError:
-            error_msg = f"DCM file not found: '{file_path}'"
-            logger.error(error_msg)
-            return None
+            error_msg = f"DCM file not found: '{self.file_path}'"
+            print(error_msg)
+            return {}
         except OSError as e:
-            error_msg = f"Error reading DCM file '{file_path}': {e}"
-            logger.error(error_msg)
-            return None
-        except ValidationError as e:
-            error_msg = (
-                f"Validation Error in DCM file '{file_path}': The file format does "
-                f"not match the expected parameter model.\nDetails: {e}"
-            )
-            logger.error(error_msg)
-            return None
+            error_msg = f"Error reading DCM file '{self.file_path}': {e}"
+            print(error_msg)
+            return {}
         except Exception as e:
             # For all other unexpected errors
-            error_msg = f"An unexpected error occurred while parsing the DCM file '{file_path}': {e}"
-            logger.error(error_msg)
-            return None
+            error_msg = f"An unexpected error occurred while parsing the DCM file '{self.file_path}': {e}"
+            print(error_msg)
+            return {}
 
-    @staticmethod
     @typechecked
-    def write_out(
-        parameter: ParameterModel,
+    def write(
+        self,
         output_path: str,
         meta_data: Dict[str, str],
     ):
-        """Writes a ParameterModel object to a DCM file.
+        """Writes the loaded parameter model to a DCM file.
 
         The method formats the validated Pydantic object into a DCM-compliant
         string and saves it to the specified file path. It handles various
@@ -304,8 +299,6 @@ class ParamDCMinterface:
         https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
         Args:
-            parameter (ParameterModel): The validated Pydantic object containing
-                the simulation parameters.
             output_path (str): The full path to the output DCM file.
             meta_data (dict): A dictionary containing metadata such as the ARES
                 version and the current username.
@@ -326,8 +319,8 @@ class ParamDCMinterface:
             with open(output_path, "w", encoding=encoding_type) as file:
                 file.write(metadata_str)
 
-                for parameter_name, parameter_value in parameter.items():
-                    parameter_keyword = ParamDCMinterface._eval_dcm_keyword(
+                for parameter_name, parameter_value in self.parameter.items():
+                    parameter_keyword = ParamDCM._eval_dcm_keyword(
                         parameter_name=parameter_name,
                         parameter_value=parameter_value,
                     )
@@ -351,59 +344,53 @@ class ParamDCMinterface:
                                 dim_str = f"{len(parameter_value.value)}"
                                 unit_str.append(f'\tEINHEIT_W "{parameter_value.unit}"')
                                 value_str.extend(
-                                    ParamDCMinterface._dcm_array1d_str(
+                                    ParamDCM._dcm_array1d_str(
                                         "WERT", parameter_value.value
                                     )
                                 )
                             else:
                                 dim_str = f"{len(parameter_value.value[0])} @ {len(parameter_value.value)}"
                                 unit_str.append(f'\tEINHEIT_W "{parameter_value.unit}"')
-                                value_block = ParamDCMinterface._dcm_array2d_str(
+                                value_block = ParamDCM._dcm_array2d_str(
                                     "WERT", parameter_value.value
                                 )
                                 for block in value_block:
                                     value_str.extend(block)
                         case "FESTKENNLINIE" | "KENNLINIE":
                             dim_str = f"{len(parameter_value.value)}"
-                            breakpoints_1 = parameter[
+                            breakpoints_1 = self.parameter[
                                 parameter_value.name_breakpoints_1
                             ]
                             unit_str.append(f'\tEINHEIT_X "{breakpoints_1.unit}"')
                             unit_str.append(f'\tEINHEIT_W "{parameter_value.unit}"')
                             value_str.extend(
-                                ParamDCMinterface._dcm_array1d_str(
-                                    "ST/X", breakpoints_1.value
-                                )
+                                ParamDCM._dcm_array1d_str("ST/X", breakpoints_1.value)
                             )
                             value_str.extend(
-                                ParamDCMinterface._dcm_array1d_str(
-                                    "WERT", parameter_value.value
-                                )
+                                ParamDCM._dcm_array1d_str("WERT", parameter_value.value)
                             )
                         case "FESTKENNFELD" | "KENNFELD":
                             dim_str = f"{len(parameter_value.value[0])} {len(parameter_value.value)}"
-                            breakpoints_1 = parameter[
+                            breakpoints_1 = self.parameter[
                                 parameter_value.name_breakpoints_1
                             ]
                             unit_str.append(f'\tEINHEIT_X "{breakpoints_1.unit}"')
-                            breakpoints_2 = parameter[
+                            breakpoints_2 = self.parameter[
                                 parameter_value.name_breakpoints_2
                             ]
                             unit_str.append(f'\tEINHEIT_Y "{breakpoints_2.unit}"')
                             unit_str.append(f'\tEINHEIT_W "{parameter_value.unit}"')
                             value_str.extend(
-                                ParamDCMinterface._dcm_array1d_str(
-                                    "ST/X", breakpoints_1.value
-                                )
+                                ParamDCM._dcm_array1d_str("ST/X", breakpoints_1.value)
                             )
-                            temp_values = ParamDCMinterface._dcm_array2d_str(
+                            temp_values = ParamDCM._dcm_array2d_str(
                                 "WERT", parameter_value.value
                             )
                             for temp_value in temp_values:
                                 value_str.extend(temp_value)
                         case "GRUPPENKENNLINIE":
                             dim_str = f"{len(parameter_value.value)}"
-                            breakpoints_1 = parameter[
+                            breakpoints_1 = self.parameter[
                                 parameter_value.name_breakpoints_1
                             ]
                             unit_str.append(f'\tEINHEIT_X "{breakpoints_1.unit}"')
@@ -412,22 +399,18 @@ class ParamDCMinterface:
                                 f"* SSTX {parameter_value.name_breakpoints_1}"
                             )
                             value_str.extend(
-                                ParamDCMinterface._dcm_array1d_str(
-                                    "ST/X", breakpoints_1.value
-                                )
+                                ParamDCM._dcm_array1d_str("ST/X", breakpoints_1.value)
                             )
                             value_str.extend(
-                                ParamDCMinterface._dcm_array1d_str(
-                                    "WERT", parameter_value.value
-                                )
+                                ParamDCM._dcm_array1d_str("WERT", parameter_value.value)
                             )
                         case "GRUPPENKENNFELD":
                             dim_str = f"{len(parameter_value.value[0])} {len(parameter_value.value)}"
-                            breakpoints_1 = parameter[
+                            breakpoints_1 = self.parameter[
                                 parameter_value.name_breakpoints_1
                             ]
                             unit_str.append(f'\tEINHEIT_X "{breakpoints_1.unit}"')
-                            breakpoints_2 = parameter[
+                            breakpoints_2 = self.parameter[
                                 parameter_value.name_breakpoints_2
                             ]
                             unit_str.append(f'\tEINHEIT_Y "{breakpoints_2.unit}"')
@@ -439,11 +422,9 @@ class ParamDCMinterface:
                                 f"* SSTY {parameter_value.name_breakpoints_2}"
                             )
                             value_str.extend(
-                                ParamDCMinterface._dcm_array1d_str(
-                                    "ST/X", breakpoints_1.value
-                                )
+                                ParamDCM._dcm_array1d_str("ST/X", breakpoints_1.value)
                             )
-                            tmp_values = ParamDCMinterface._dcm_array2d_str(
+                            tmp_values = ParamDCM._dcm_array2d_str(
                                 "WERT", parameter_value.value
                             )
                             for tmp_brkpt, tmp_value in zip(
@@ -461,9 +442,7 @@ class ParamDCMinterface:
                             dim_str = f"{len(parameter_value.value)}"
                             unit_str.append(f'\tEINHEIT_X "{parameter_value.unit}"')
                             value_str.extend(
-                                ParamDCMinterface._dcm_array1d_str(
-                                    "ST/X", parameter_value.value
-                                )
+                                ParamDCM._dcm_array1d_str("ST/X", parameter_value.value)
                             )
                         case _:
                             pass
@@ -488,16 +467,16 @@ class ParamDCMinterface:
                 f"Error writing DCM file '{output_path}': Missing write permissions or "
                 f"an invalid path.\nDetails: {e}"
             )
-            logger.error(error_msg)
+            print(error_msg)
         except KeyError as e:
             error_msg = (
                 f"Metadata error: The expected key {e} is missing. Please ensure "
                 f"'version' and 'username' are included in `meta_data`."
             )
-            logger.error(error_msg)
+            print(error_msg)
         except Exception as e:
             error_msg = f"An unexpected error occurred while writing the DCM file '{output_path}': {e}"
-            logger.error(error_msg)
+            print(error_msg)
 
     @staticmethod
     @typechecked
@@ -512,8 +491,8 @@ class ParamDCMinterface:
             List[str]: A list of formatted string lines for the DCM file.
         """
         output_array = [
-            [str(n) for n in input_array[i : i + ParamDCMinterface.DCMValueLength]]
-            for i in range(0, len(input_array), ParamDCMinterface.DCMValueLength)
+            [str(n) for n in input_array[i : i + ParamDCM.DCMValueLength]]
+            for i in range(0, len(input_array), ParamDCM.DCMValueLength)
         ]
         output_array = [[f"\t{title}"] + sublist for sublist in output_array]
         output_array = ["\t" + " ".join(sublist) for sublist in output_array]
@@ -541,7 +520,7 @@ class ParamDCMinterface:
         """
         output_array = []
         for sublist in input_array:
-            formatted_lines = ParamDCMinterface._dcm_array1d_str(title, sublist)
+            formatted_lines = ParamDCM._dcm_array1d_str(title, sublist)
             output_array.append(formatted_lines)
 
         return output_array
@@ -550,7 +529,7 @@ class ParamDCMinterface:
     @typechecked
     def _eval_dcm_keyword(
         parameter_name: str,
-        parameter_value: ParameterElement,
+        parameter_value: Any,
     ) -> Optional[str]:
         """Evaluates the DCM keyword from a ParameterElement object.
 
@@ -563,11 +542,15 @@ class ParamDCMinterface:
             str or None: The DCM keyword if found, otherwise None.
         """
         try:
-            keyword = parameter_value.dcm_keyword
+            keyword = None
+
+            if hasattr(parameter_value, "dcm_keyword"):
+                keyword = parameter_value.dcm_keyword
+
             return keyword
 
         except Exception as e:
-            logger.error(
+            print(
                 f"Failed to evaluate DCM keyword of parameter {parameter_name}: {e}",
             )
             return None

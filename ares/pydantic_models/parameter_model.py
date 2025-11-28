@@ -40,31 +40,9 @@ from typing import Annotated, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, RootModel
 
-from ares.core.simunit import SimUnit
+from ares.plugins.simunit import SimUnit
 
 DataType = Enum("DataType", list(SimUnit.DATATYPES.keys()))
-
-
-class DCMKeywordScalar(str, Enum):
-    FESTWERT = "FESTWERT"
-    TEXTSTRING = "TEXTSTRING"
-
-
-class DCMKeywordArray1D(str, Enum):
-    TEXTSTRING = "TEXTSTRING"
-    FESTWERTEBLOCK = "FESTWERTEBLOCK"
-    FESTKENNLINIE = "FESTKENNLINIE"
-    KENNLINIE = "KENNLINIE"
-    GRUPPENKENNLINIE = "GRUPPENKENNLINIE"
-    STUETZSTELLENVERTEILUNG = "STUETZSTELLENVERTEILUNG"
-
-
-class DCMKeywordArray2D(str, Enum):
-    TEXTSTRING = "TEXTSTRING"
-    FESTWERTEBLOCK = "FESTWERTEBLOCK"
-    FESTKENNFELD = "FESTKENNFELD"
-    KENNFELD = "KENNFELD"
-    GRUPPENKENNFELD = "GRUPPENKENNFELD"
 
 
 class BaseParameter(BaseModel):
@@ -76,21 +54,18 @@ class BaseParameter(BaseModel):
 
 
 class ScalarParameter(BaseParameter):
-    type: Literal["scalar"] = Field("scalar", exclude=True)
-    dcm_keyword: Optional[DCMKeywordScalar] = Field(None, exclude=True)
+    type: Literal["scalar"] = Field("scalar")
     value: Union[int, float, str, bool]
 
 
 class Array1DParameter(BaseParameter):
-    type: Literal["array1d"] = Field("array1d", exclude=True)
-    dcm_keyword: Optional[DCMKeywordArray1D] = Field(None, exclude=True)
+    type: Literal["array1d"] = Field("array1d")
     name_breakpoints_1: Optional[str] = None
     value: List[Union[int, float]]
 
 
 class Array2DParameter(BaseParameter):
-    type: Literal["array2d"] = Field("array2d", exclude=True)
-    dcm_keyword: Optional[DCMKeywordArray2D] = Field(None, exclude=True)
+    type: Literal["array2d"] = Field("array2d")
     name_breakpoints_1: Optional[str] = None
     name_breakpoints_2: Optional[str] = None
     value: List[List[Union[int, float]]]
