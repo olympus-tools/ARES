@@ -40,6 +40,58 @@ format: setup_venv
 .PHONY: format_check
 format_check: setup_venv
 	@"$(VENV_DIR)/bin/python" -m ruff format --check . --exclude ares/core/version.py --exclude .venv
+	twine check dist/*
+
+.PHONY: release-checklist
+release-checklist:
+	@echo "ARES Release Checklist:"
+	@VERSION=$$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/'); \
+	echo ""; \
+	printf "Are all tests passing? [y/n] "; \
+	read -r REPLY; \
+	if [ "$$REPLY" != "y" ] && [ "$$REPLY" != "Y" ]; then exit 1; fi; \
+	printf "Is the version \"$$VERSION\" in pyproject.toml correct? [y/n] "; \
+	read -r REPLY; \
+	if [ "$$REPLY" != "y" ] && [ "$$REPLY" != "Y" ]; then exit 1; fi; \
+	printf "Are all changes committed and pushed to GitHub? [y/n] "; \
+	read -r REPLY; \
+	if [ "$$REPLY" != "y" ] && [ "$$REPLY" != "Y" ]; then exit 1; fi; \
+	printf "Is git tag \"v$$VERSION\" created and pushed? [y/n] "; \
+	read -r REPLY; \
+	if [ "$$REPLY" != "y" ] && [ "$$REPLY" != "Y" ]; then exit 1; fi
+
+.PHONY: release-changelog
+release-changelog:
+	@echo ""
+	@echo "Generating CHANGELOG.md from git history..."
+	@"$(VENV_DIR)/bin/python" scripts/generate_changelog.py
+	@echo "CHANGELOG.md generated."
+
+.PHONY: release-build
+release-build:
+	@echo ""
+	@echo "Building release packages..."
+	@rm -rf dist/
+	@"$(VENV_DIR)/bin/python" -m build
+	@"$(VENV_DIR)/bin/python" -m twine check dist/*
+	@echo ""
+	@echo "Release build complete."
+
+.PHONY: release-upload
+release-upload:
+	@echo ""
+	@printf "Do you want to upload the release to PyPI? [y/n] "; \
+	read -r REPLY; \
+	if [ "$$REPLY" != "y" ] && [ "$$REPLY" != "Y" ]; then exit 1; fi
+	@"$(VENV_DIR)/bin/python" -m twine upload dist/*
+	@echo ""
+	@echo "Release uploaded to PyPI."
+
+.PHONY: release
+release: release-checklist release-changelog release-build release-upload
+	@echo ""
+	@echo "Release process complete!"
+
 
 .PHONY: clean
 clean:
