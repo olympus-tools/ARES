@@ -38,8 +38,8 @@ from typeguard import typechecked
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.signal import AresSignal
-from ares.interface.parameter.ares_param_interface import AresParamInterface
 from ares.interface.parameter.ares_parameter import AresParameter
+from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.datadictionary_model import DataDictionaryModel
 from ares.utils.logger import create_logger
 

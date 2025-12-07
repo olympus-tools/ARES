@@ -56,23 +56,21 @@ class ParamDCM:
     DCMValueLength = 6
 
     @typechecked
-    def __init__(self, file_path: Optional[str] = None):
+    def __init__(self, file_path: str):
         """Initialize ParamDCM and optionally load a DCM file.
+
+        DAMOS DCM format is defined on:
+        https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
         Args:
             file_path: Optional path to the DCM file to load. If None, an empty
                 parameter dictionary is created.
         """
-        self.file_path: Optional[str] = file_path
-        self.parameter: Dict[str, Any] = {}
-        if file_path is not None:
-            self.parameter = self._load()
+        self.file_path: str = file_path
+        self.parameter: Dict[str, Any] = self._load()
 
     def _load(self) -> Dict[str, Any]:
         """Parses a DCM file and converts it to a validated ParameterModel object.
-
-        DAMOS DCM format is defined on:
-        https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
         Returns:
             Dict[str, Any]: Validated parameter dictionary. Returns empty dict on error.

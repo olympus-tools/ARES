@@ -34,7 +34,7 @@ from typing import Any, Dict, List
 from ares.core.workflow import Workflow
 
 # from ares.interface.parameter.ares_data_interface import AresDataInterface
-from ares.interface.parameter.ares_param_interface import AresParamInterface
+from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.interface.plugin.ares_plugin_interface import AresPluginInterface
 from ares.utils.logger import create_logger
 

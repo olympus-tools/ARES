@@ -32,8 +32,8 @@ from typing import List, Optional
 
 from typeguard import typechecked
 
-from ares.interface.parameter.ares_param_interface import AresParamInterface
 from ares.interface.parameter.ares_parameter import AresParameter
+from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.utils.logger import create_logger
 from packages.param_dcm.param_dcm.param_dcm import ParamDCM
 
