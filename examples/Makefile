@@ -14,3 +14,11 @@ example1:
 		-wf workflow/workflow_example_1.json \
 		--output output/ \
 		--log-level=10
+
+.PHONY: example2
+example2:
+	@echo "Running workflow example 2..."
+	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+		-wf workflow/workflow_example_2.json \
+		--output output/ \
+		--log-level=10

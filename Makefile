@@ -4,6 +4,7 @@
 #   - make examples
 #   - make test
 #   - make format
+#   - make format_check
 #   - make clean
 
 VENV_DIR := .venv
@@ -23,8 +24,13 @@ setup_venv:
 examples: setup_venv
 	$(MAKE) -C examples
 
-.PHONY: test
-test: setup_venv
+.PHONY: test_examples
+test_examples: setup_venv
+	$(MAKE) -C examples/sim_unit all
+	@"$(VENV_DIR)/bin/python" -m pytest test/examples
+
+.PHONY: test_requirements
+test_requirements: setup_venv
 	@"$(VENV_DIR)/bin/python" -m pytest test/ --ignore=test/examples
 
 .PHONY: format

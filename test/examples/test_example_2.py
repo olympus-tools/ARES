@@ -28,65 +28,59 @@ ________________________________________________________________________
 
 """
 
-import getpass
-import logging
-
-import click
-
-from ares.core.pipeline import pipeline
-from ares.utils.logger import create_logger
-from ares.version import __version__
-
-meta_data = {"username": getpass.getuser(), "version": __version__}
+import os
+import re
+import subprocess
+from pathlib import Path
 
 
-@click.group()
-@click.option(
-    "-v",
-    "--version",
-    is_flag=True,
-    is_eager=True,
-    expose_value=False,
-    callback=lambda ctx, param, value: (
-        click.echo(f"ARES version {__version__}") or ctx.exit()
+def test_ares_pipeline_example_2(tmp_path, caplog):
+    """
+    Executes an ARES pipeline example and asserts its successful completion
+    and the absence of errors.
+    """
+
+    project_root = Path(__file__).resolve().parent.parent.parent
+    python_executable = (
+        project_root / ".venv" / ("Scripts" if os.name == "nt" else "bin") / "python"
     )
-    if value
-    else None,
-    help="Show the installed ARES version.",
-)
-def cli():
-    """Automated Rapid Embedded Simulation (ARES) CLI"""
-    pass
+    workflow_file = project_root / "examples/workflow/workflow_example_2.json"
 
+    output_dir = tmp_path / "output"
+    output_dir.mkdir()
 
-@cli.command(name="pipeline", help="Starts the ARES simulation pipeline.")
-@click.option(
-    "-wf",
-    "--workflow",
-    required=True,
-    type=click.Path(exists=True, dir_okay=False),
-    help="Absolute file path of to the workflow *.json file.",
-)
-@click.option(
-    "-o",
-    "--output",
-    default=None,
-    type=click.Path(file_okay=False),
-    help="Absolute path to the output directory.",
-)
-@click.option(
-    "--log-level",
-    default=logging.WARNING,
-    help="""\b
-    Setting log level for root logger via integer value:
-    10 = DEBUG
-    20 = INFO
-    30 = WARNING (default)
-    40 = ERROR
-    50 = CRITICAL
-    """,
-)
-def pipeline_command(workflow, output, log_level):
-    ares_logger = create_logger(level=log_level)
+    command = [
+        str(python_executable),
+        "-m",
+        "ares",
+        "pipeline",
+        "--workflow",
+        str(workflow_file),
+        "--output",
+        str(output_dir),
+        "--log-level",
+        "10",
+    ]
 
-    pipeline(wf_path=workflow, output_dir=output, meta_data=meta_data)
+    env = dict(**os.environ)
+    env["PYTHONPATH"] = str(project_root)
+
+    with caplog.at_level("DEBUG"):
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            cwd=project_root,
+            env=env,
+            check=True,
+        )
+
+    clean_stdout = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+
+    assert "ERROR" not in clean_stdout, f"Pipeline reported ERRORs:\n{clean_stdout}"
+
+    success_string = "ARES pipeline successfully finished."
+    assert success_string in clean_stdout, (
+        f"Success string '{success_string}' not found in output.\n{clean_stdout}"
+    )

@@ -28,65 +28,35 @@ ________________________________________________________________________
 
 """
 
-import getpass
-import logging
-
-import click
-
-from ares.core.pipeline import pipeline
-from ares.utils.logger import create_logger
-from ares.version import __version__
-
-meta_data = {"username": getpass.getuser(), "version": __version__}
+import datetime
+import os
 
 
-@click.group()
-@click.option(
-    "-v",
-    "--version",
-    is_flag=True,
-    is_eager=True,
-    expose_value=False,
-    callback=lambda ctx, param, value: (
-        click.echo(f"ARES version {__version__}") or ctx.exit()
-    )
-    if value
-    else None,
-    help="Show the installed ARES version.",
-)
-def cli():
-    """Automated Rapid Embedded Simulation (ARES) CLI"""
-    pass
+def eval_output_path(
+    output_hash: str,
+    output_dir: str,
+    output_format: str,
+    element_name: str,
+) -> str:
+    """Generate output file path with timestamp to prevent overwriting.
 
+    Creates a timestamped filename in the format: {element_name}_{hash}_{YYYYMMDDHHMMSS}.{format}
+    and ensures the output directory exists.
 
-@cli.command(name="pipeline", help="Starts the ARES simulation pipeline.")
-@click.option(
-    "-wf",
-    "--workflow",
-    required=True,
-    type=click.Path(exists=True, dir_okay=False),
-    help="Absolute file path of to the workflow *.json file.",
-)
-@click.option(
-    "-o",
-    "--output",
-    default=None,
-    type=click.Path(file_okay=False),
-    help="Absolute path to the output directory.",
-)
-@click.option(
-    "--log-level",
-    default=logging.WARNING,
-    help="""\b
-    Setting log level for root logger via integer value:
-    10 = DEBUG
-    20 = INFO
-    30 = WARNING (default)
-    40 = ERROR
-    50 = CRITICAL
-    """,
-)
-def pipeline_command(workflow, output, log_level):
-    ares_logger = create_logger(level=log_level)
+    Args:
+        hash: Content hash to include in filename
+        output_dir: Output directory path (will be created if not exists)
+        output_format: File format/extension (without dot, e.g., 'dcm', 'json')
+        element_name: Element name to include in filename
 
-    pipeline(wf_path=workflow, output_dir=output, meta_data=meta_data)
+    Returns:
+        str: Complete absolute file path
+    """
+    os.makedirs(
+        output_dir, exist_ok=True
+    )  # TODO: should it be somewheere else? => Jonas says yes
+    timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    new_file_name = f"{element_name}_{output_hash[:8]}_{timestamp}.{output_format}"
+    output_path = os.path.join(output_dir, new_file_name)
+
+    return output_path

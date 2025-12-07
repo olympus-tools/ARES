@@ -1,7 +1,7 @@
 {
     "data_1": {
         "type": "data",
-        "path": [
+        "file_path": [
             "../data/data_example_1.mf4",
             "../data/data_example_1.mf4"
         ],
@@ -10,7 +10,7 @@
     },
     "data_2": {
         "type": "data",
-        "path": [
+        "file_path": [
             "../data/data_example_1.mf4"
         ],
         "source": ["source_1"],
@@ -18,7 +18,7 @@
     },
     "sw_component_1": {
         "type": "sim_unit",
-        "path": "../sim_unit/inout_handling/inout_handling.so",
+        "file_path": "../sim_unit/inout_handling/inout_handling.so",
         "parameter": ["parameterset_1"],
         "cycle_time": 5,
         "input": ["data_1"],
@@ -26,7 +26,7 @@
     },
     "sw_component_3": {
         "type": "sim_unit",
-        "path": "../sim_unit/derivation/derivation.so",
+        "file_path": "../sim_unit/derivation/derivation.so",
         "parameter": ["parameterset_1"],
         "cycle_time": 10,
         "input": [
@@ -43,7 +43,7 @@
     },
     "sw_component_2": {
         "type": "sim_unit",
-        "path": "../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.so",
+        "file_path": "../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.so",
         "parameter": [
             "parameterset_1",
             "parameterset_2"
@@ -54,7 +54,7 @@
     },
     "parameterset_1": {
         "type": "parameter",
-        "path": ["../parameter/parameterset_example_1.dcm"],
+        "file_path": ["../parameter/parameterset_example_1.dcm"],
         "mode": "read"
     },
     "data_4": {
@@ -65,7 +65,7 @@
     },
     "parameterset_2": {
         "type": "parameter",
-        "path": [
+        "file_path": [
             "../parameter/parameterset_example_1.dcm",
             "../parameter/parameterset_example_1.json"
         ],

@@ -20,6 +20,25 @@
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "prepare-example1",
             "postDebugTask": "clean"
+        },
+        {
+            "name": "ARES example 2",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/workflow_example_2.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean"
         }
     ]
 }
