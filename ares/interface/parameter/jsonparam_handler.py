@@ -34,7 +34,7 @@ from typing import Any, Dict, List, Optional
 from typeguard import typechecked
 
 from ares.interface.parameter.ares_param_interface import AresParamInterface
-from ares.interface.parameter.parameter import AresParameter
+from ares.interface.parameter.ares_parameter import AresParameter
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)

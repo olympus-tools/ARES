@@ -35,7 +35,7 @@ from typing import ClassVar, Dict, List, Optional
 
 from typeguard import typechecked
 
-from ares.interface.parameter.parameter import AresParameter
+from ares.interface.parameter.ares_parameter import AresParameter
 from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import sha256_string
