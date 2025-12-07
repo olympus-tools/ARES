@@ -2,9 +2,30 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "prepare-example1",
+            "label": "prepare-simunit-all",
+            "dependsOn": [
+                "prepare-simunit-derivation",
+                "prepare-simunit-lowpassfilterfirstorder",
+                "prepare-simunit-inout-handling"
+            ],
+            "dependsOrder": "sequence"
+        },
+        {
+            "label": "prepare-simunit-derivation",
             "type": "shell",
-            "command": "make -C examples/sim_unit derivation && make -C examples/sim_unit lowpassfilterfirstorder && make -C examples/sim_unit inout_handling",
+            "command": "make -C examples/sim_unit derivation",
+            "problemMatcher": []
+        },
+        {
+            "label": "prepare-simunit-lowpassfilterfirstorder",
+            "type": "shell",
+            "command": "make -C examples/sim_unit lowpassfilterfirstorder",
+            "problemMatcher": []
+        },
+        {
+            "label": "prepare-simunit-inout-handling",
+            "type": "shell",
+            "command": "make -C examples/sim_unit inout_handling",
             "problemMatcher": []
         },
         {
