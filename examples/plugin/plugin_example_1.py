@@ -34,7 +34,7 @@ import numpy as np
 
 # TODO: also implement AresDataInterface: from ares.interface.parameter.ares_data_interface import AresDataInterface
 from ares.interface.parameter.ares_param_interface import AresParamInterface
-from ares.interface.parameter.parameter import AresParameter
+from ares.interface.parameter.ares_parameter import AresParameter
 
 
 def ares_plugin(plugin_input: Dict[str, Any]):
