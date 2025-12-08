@@ -28,230 +28,143 @@ ________________________________________________________________________
 
 """
 
-from typing import Any, Dict, List, Optional, Tuple
+import datetime
+from typing import Any, Literal, override
 
 import numpy as np
-from asammdf import MDF, Signal, Source
-from typeguard import typechecked
+from asammdf import MDF, Signal
 
+from ares.interface.data.ares_data_interface import AresDataInterface
+from ares.interface.data.ares_signal import signal
+from ares.utils.hash import sha256_string
 from ares.utils.logger import create_logger
 
-logger = create_logger(__name__)
+# initialize logger
+logger = create_logger("mf4_interface")
+
+# define obsolete channels that are ALWAYS skipped
+OBSOLETE_CHANNEL = ["time"]
 
 
-# TODO: make DataMF4Interface an asammdf object? -> asammdf.MDF OR create other class: mf4_loader or so that takes over the job
-# TODO: another idea: create a "data-class" (general API data in ARES) -> this data class can inherit from mf4,mat, etc. classes that provide api for read,writing
-#       this would make if,elif, etc. in data.py unnecessary
-class DataMF4interface:
-    @staticmethod
-    @typechecked
-    def load_mf4(
+class mf4_handler(MDF, AresDataInterface):  # pyright: ignore[reportUnsafeMultipleInheritance]
+    """A extension of the asammdf.MDF class to allow ARES to interact with mf4's.
+    see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
+    """
+
+    _instances = {}
+
+    # TODO: first singleton implementation -> adapt hash calculation
+    def __new__(
+        cls,
+        name: str,
         file_path: str,
-        source: List[str],
-        step_size_init_ms: Optional[float] = None,
-    ) -> Optional[Dict[str, Any]]:
-        """Loads an .mf4 file, extracts signals, and preprocesses them.
-
-        Preprocessing includes finding a common time basis, resampling, and storing the
-        results in `data`.
-
-        Args:
-            file_path (str): The path to the .mf4 file.
-            source (list[str]): The list of sources to load from the file. Use ['all']
-                to load all available sources.
-            step_size_init_ms (float, optional): The target resampling step size in
-                milliseconds.
-
-        Returns:
-            dict or None: The updated data dictionary, or None if an error occurs.
-        """
-        try:
-            data: Dict[str, Any] = {}
-
-            with MDF(file_path) as datasource:
-                data_raw: Dict[str, Tuple[np.ndarray, np.ndarray]] = {}
-                for signal in datasource.iter_channels():
-                    signal_source_name = (
-                        signal.source.path if hasattr(signal.source, "path") else None
-                    )
-                    if not signal_source_name and hasattr(signal.source, "path"):
-                        signal_source_name = signal.source.path
-
-                    # Filter signals based on specified source
-                    if "all" in source or (
-                        signal_source_name and signal_source_name in source
-                    ):
-                        data_raw[signal.name] = (signal.timestamps, signal.samples)
-
-                if not data_raw:
-                    logger.warning(
-                        f"No signals found matching the specified source {source} in {file_path}.",
-                    )
-
-                time_vector, data_resampled = DataMF4interface._preprocessing_mf4(
-                    data_raw=data_raw,
-                    step_size_init_ms=step_size_init_ms,
-                )
-
-                data["timestamps"] = time_vector
-                data.update(data_resampled)
-
-                logger.debug(
-                    f"Source '{source}' from .mf4 file {file_path} loaded successfully."
-                )
-                return data
-
-        except Exception as e:
-            logger.error(f"Error loading .mf4 file {file_path}: {e}")
-            return None
-
-    @staticmethod
-    @typechecked
-    def _preprocessing_mf4(
-        data_raw: Dict[str, Tuple[np.ndarray, np.ndarray]],
-        step_size_init_ms: float,
-    ) -> Tuple[Optional[np.ndarray], Dict[str, np.ndarray]]:
-        """Resamples loaded signals from an MF4 file to a uniform time basis.
-
-        This function finds the latest start time and earliest end time to create a global
-        time vector. It then resamples all numeric signals to this time basis using linear
-        interpolation. Non-numeric or invalid signals are handled by creating an array of `None`
-        values.
-
-        Args:
-            data_raw (dict[str, tuple[np.ndarray, np.ndarray]]): A dictionary where keys
-                are signal names and values are tuples containing `(timestamps, samples)`.
-            step_size_init_ms (float): The target resampling step size in milliseconds.
-
-        Returns:
-            tuple[np.ndarray or None, dict[str, np.ndarray]]: A tuple containing:
-                1. The global time vector (`np.ndarray`) for the resampled data, or `None`
-                   if no valid data range is found.
-                2. A dictionary where keys are signal names and values are the resampled
-                   sample arrays (`np.ndarray`).
-        """
-        try:
-            latest_start_time = 0.0
-            earliest_end_time = np.inf
-
-            # Find the latest start time and the earliest end time across all numeric signals
-            for timestamps, _ in data_raw.values():
-                if (
-                    isinstance(timestamps, np.ndarray)
-                    and np.issubdtype(timestamps.dtype, np.number)
-                    and len(timestamps) > 0
-                ):
-                    latest_start_time = max(latest_start_time, timestamps[0])
-                    earliest_end_time = min(earliest_end_time, timestamps[-1])
-
-            target_rate_hz = 1000.0 / step_size_init_ms
-            global_time_vector = np.arange(
-                0,
-                (earliest_end_time - latest_start_time) + (1 / target_rate_hz),
-                1 / target_rate_hz,
-            )
-
-            data_resampled: Dict[str, np.ndarray] = {}
-            for signal_name, (timestamps, samples) in data_raw.items():
-                if (
-                    isinstance(timestamps, np.ndarray)
-                    and np.issubdtype(timestamps.dtype, np.number)
-                    and isinstance(samples, np.ndarray)
-                    and np.issubdtype(samples.dtype, np.number)
-                    and len(timestamps) > 0
-                ):
-                    # Make timestamps relative to the latest start time
-                    relative_timestamps = timestamps - latest_start_time
-                    resampled_samples = np.interp(
-                        global_time_vector, relative_timestamps, samples
-                    )
-                    data_resampled[signal_name] = resampled_samples
-                else:
-                    num_samples = (
-                        len(global_time_vector) if global_time_vector is not None else 0
-                    )
-                    none_array = np.array([None] * num_samples, dtype=object)
-                    data_resampled[signal_name] = none_array
-                    logger.info(
-                        f"Signal '{signal_name}' could not be read from measurement file.",
-                    )
-
-            logger.info("Data source file successfully resampled.")
-            return global_time_vector, data_resampled
-
-        except Exception as e:
-            logger.error(f"Error during preprocessing mf4 data source file: {e}")
-            return None, {}
-
-    @staticmethod
-    @typechecked
-    def write_out_mf4(
-        file_path: str,
-        data: dict,
-        meta_data: Dict[str, str],
+        mode: Literal["write", "read"] = "read",
+        **kwargs: Any,
     ):
-        """Writes data from the specified sources in `data` to an .mf4 file.
+        instance_hash = sha256_string(name + file_path)
+        if instance_hash not in cls._instances:
+            logger.info(f"Creating new instance of mf4-handler: {instance_hash}")
+            cls._instances[instance_hash] = super().__new__(cls)
 
-        It iterates through the provided `data` keys, creates `asammdf.Signal` objects,
-        and appends them to a new `asammdf.MDF` file.
+        return cls._instances[instance_hash]
 
-        Args:
-            file_path (str): The path to the output file.
-            data (dict[str, Any]): The data dictionary containing sources to export.
-            meta_data (dict): A dictionary containing metadata such as the ARES
-                version and the current username.
-        """
-        try:
-            all_signals_to_write = []
+    def __init__(
+        self,
+        name: str,
+        file_path: str,
+        mode: Literal["write", "read"] = "read",
+        **kwargs: Any,
+    ):
+        """Initialize MDF and get all available channels."""
+        if len(self.__dict__) == 0 or (
+            len(self.__dict__) > 0 and not hasattr(self, "_initialized")
+        ):
+            if mode == "read":
+                super().__init__(file_path, **kwargs)
+            elif mode == "write":
+                super().__init__("", **kwargs)
 
-            with MDF() as output_file_mf4:
-                for source_key, data_value in data.items():
-                    timestamps: np.ndarray = data_value["timestamps"]
+            self._mode = mode
+            self._name = name
+            self._file_path: str = "" if file_path is None else file_path
 
-                    src = Source(
-                        name=source_key,
-                        path=source_key,
-                        comment=f"Data from {source_key}",
-                        source_type=1,
-                        bus_type=1,
-                    )
+            self._available_channels: list[str] = list(self.channels_db.keys())
+            for obs_channel in OBSOLETE_CHANNEL:
+                if obs_channel in self._available_channels:
+                    self._available_channels.remove(obs_channel)
 
-                    for signal_name, samples in data_value.items():
-                        if signal_name == "timestamps":
-                            continue
-
-                        try:
-                            # Convert to float64 for compatibility with asammdf
-                            samples_float = samples.astype(np.float64)
-                        except (ValueError, TypeError):
-                            logger.warning(
-                                f"Error: Signal '{signal_name}' in source '{source_key}' could not be converted to float64. Skipping.",
-                            )
-                            continue
-
-                        signal = Signal(
-                            samples=samples_float,
-                            timestamps=timestamps,
-                            name=signal_name,
-                            source=src,
-                            comment="",
-                        )
-                        all_signals_to_write.append(signal)
-
-                if not all_signals_to_write:
-                    logger.warning(
-                        f"No valid signals found to write for source(s) to {file_path}.",
-                    )
-                else:
-                    output_file_mf4.append(
-                        all_signals_to_write, comment="ares simulation result"
-                    )
-                    output_file_mf4.save(file_path, overwrite=False)
-                    logger.info(
-                        f"Output .mf4 file written successfully to {file_path}.",
-                    )
-
-        except Exception as e:
-            logger.error(
-                f"Error saving .mf4 file to {file_path} with source(s): {e}",
+            self.hash: str = sha256_string(
+                self.name + self._file_path + str(self._available_channels)
             )
+            self._initialized = True
+        else:
+            logger.info(
+                "Clone detected! Using already existent mf4-handler! Be smart, don't do things twice!"
+            )
+
+    @override
+    def save_file(self, **kwargs: Any):
+        """Wrapper for MDF save() to print message and adding timestamp."""
+
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.header.comment = f"File last saved on: {timestamp}"
+        result_path = self.save(self._file_path, **kwargs)
+        logger.debug(f"Data was written to: {result_path}")
+
+    @override
+    def get(self, channels: list[str] | None = None, **kwargs: Any) -> list[signal]:
+        """ares get signal function"""
+        stepsize_ms = kwargs.pop("stepsize_ms", None)
+        tmp_data = (
+            self.get_signals(self._available_channels)
+            if channels is None
+            else self.get_signals(channels, **kwargs)
+        )
+
+        if stepsize_ms is None:
+            return tmp_data
+        else:
+            return self._resample(tmp_data, stepsize_ms=stepsize_ms)
+
+    def get_signals(self, channels: list[str], **kwargs: Any) -> list[signal]:
+        # check signals for multiple occurences using "whereis"
+        occurences = [self.whereis(c) for c in channels]
+        not_found = np.array([i for i, x in enumerate(occurences) if len(x) == 0])
+        if len(not_found) > 0:
+            raise ValueError(
+                f"Selection of the following channels not possible. Existence is not given: {','.join(channels[not_found])}"
+            )
+
+        single_occ = np.array([i for i, x in enumerate(occurences) if len(x) == 1])
+        multi_occ = np.array([i for i, x in enumerate(occurences) if len(x) > 1])
+
+        data = np.full(len(channels), None)
+        if len(single_occ) > 0:
+            data[single_occ] = super().select(
+                [channels[idx] for idx in single_occ], **kwargs
+            )
+            for i in multi_occ:
+                sel_signal = [
+                    (None, gp_idx, cn_idx) for gp_idx, cn_idx in occurences[i]
+                ]
+                all_signals = super().select(sel_signal, **kwargs)
+                len_samples = [len(s.samples) for s in all_signals]
+                idx = len_samples.index(max(len_samples))
+                data[i] = all_signals[idx]
+
+            data = data.tolist()
+        else:
+            data = super().select(channels, **kwargs)
+
+        return [
+            signal(label=d.name, timestamps=d.timestamps, data=d.samples) for d in data
+        ]
+
+    @override
+    def write(self, data: list[signal]) -> None:
+        """Basic function to write ares signals to mf4 using 'append()'"""
+        signals_to_write = [
+            Signal(samples=sig.data, timestamps=sig.timestamps, name=sig.label)
+            for sig in data
+        ]
+        self.append(signals_to_write)
