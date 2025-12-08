@@ -1,5 +1,6 @@
 # folders
 **/examples/output/*
+**/dist/*
 
 # python
 **/.venv/*
