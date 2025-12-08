@@ -5,13 +5,14 @@ ARES is licensed under the MIT License — see the [LICENSE.md](https://github.c
 We are committed to a welcoming and inclusive community. Please read our [Code of Conduct](https://github.com/AndraeCarotta/ARES/blob/master/CODE_OF_CONDUCT.md) before contributing.
 
 * [1. Installation](#1-installation)
-* [2. Bug & Feature Report](#2-send-us-an-issue)
-* [3. Contributing](#3-contribution-to-the-ares-project)
-* [4. Workflows](#4-workflows)
-    * [4.1. General Workflow Rules](#41-general-workflow-rules)
-    * [4.2. Function Blocks](#42-function-blocks)
-    * [4.3. Example Workflows](#43-example-workflows)
-* [5. Examples](#5-examples)
+* [2. Architecture](#2-architecture)
+* [3. Bug & Feature Report](#3-get-in-touch-with-us)
+* [4. Contributing](#4-contribution-to-the-ares-project)
+* [5. Workflows](#5-workflows)
+    * [5.1. General Workflow Rules](#51-general-workflow-rules)
+    * [5.2. Workflow Elements](#52-workflow-elements)
+    * [5.3. Example Workflows](#53-example-workflows)
+* [6. Examples](#6-examples)
 
 ## 1. Installation
 
@@ -29,24 +30,37 @@ What the make command does:
 
 **⚠️ NOTE:** Currently ARES is only supported for Linux.
 
-## 2. Get in touch with us
+## 2. Architecture
+
+ARES is built on a four-layer architecture that enables flexible, extensible simulation workflows:
+
+1. **Orchestration** - Pipeline orchestrates workflow execution from JSON definitions
+2. **Plugins** - Extensible processing units (SimUnit for C/C++ simulations, custom plugins)
+3. **Interfaces** - Format-agnostic I/O with automatic handler selection and caching
+4. **Base Types** - Core data structures (Signal, Parameter)
+
+The architecture uses design patterns like **Flyweight** (hash-based caching), **Factory** (automatic format detection), and **Strategy** (pluggable handlers) to achieve high performance and maintainability.
+
+📖 **For detailed architecture documentation** including system diagrams, class structures, and design decisions, see [architecture.md](./architecture.md).
+
+## 3. Get in touch with us
 
 - [Support Request](https://github.com/AndraeCarotta/ares/issues/new?template=support_request.md)
 - [Bug Report](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md)
 - [Feature Request](https://github.com/AndraeCarotta/ares/issues/new?template=feature_request.md)
 
-## 3. Contribution to the ares project
+## 4. Contribution to the ares project
 
 To contribute to the ARES project, please see the [CONTRIBUTING.md](https://github.com/AndraeCarotta/ARES/blob/master/CONTRIBUTING.md) file for details.
 
-## 4. Workflows
+## 5. Workflows
 
-### 4.1. General Workflow Rules
+### 5.1. General Workflow Rules
 
 TODO: Workflows have to be implemented like...
 - a workflow should never have more than one data element as a sink (if you need more => write a feature)
 
-### 4.2. Workflow Elements
+### 5.2. Workflow Elements
 
 #### data
 
@@ -64,7 +78,7 @@ TODO: Simulation unit of some software. Could be an executable, fmu,...
 
 TODO: e.g. Optimization, Plotting, Testing
 
-### 4.3. Example Workflows
+### 5.3. Example Workflows
 
 #### Open-Loop Simulation
 
@@ -103,6 +117,6 @@ flowchart LR
     class SWU5 SW_Unit;
 ```
 
-## 5. Examples
+## 6. Examples
 
 For a detailed explanation of the example applications, please refer to [README.md](https://github.com/AndraeCarotta/ARES/blob/master/examples/README.md).
