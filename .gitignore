@@ -12,11 +12,15 @@
 *.pyc
 *.pyo
 **/build/*
+**/.zed/*
 
 # datasource
 *.mf4
 *.mat
 *.parquet
+
+# compilation artefacts
+**/*.so
 
 # others
 *.log
