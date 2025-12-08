@@ -40,7 +40,6 @@ format: setup_venv
 .PHONY: format_check
 format_check: setup_venv
 	@"$(VENV_DIR)/bin/python" -m ruff format --check . --exclude ares/core/version.py --exclude .venv
-	twine check dist/*
 
 .PHONY: release-checklist
 release-checklist:
@@ -73,7 +72,7 @@ release-build:
 	@echo "Building release packages..."
 	@rm -rf dist/
 	@"$(VENV_DIR)/bin/python" -m build
-	@"$(VENV_DIR)/bin/python" -m twine check dist/*
+	@"$(VENV_DIR)/bin/twine" check dist/*
 	@echo ""
 	@echo "Release build complete."
 
@@ -83,9 +82,9 @@ release-upload:
 	@printf "Upload to TestPyPI, PyPI, or skip? [test/pypi/skip] "; \
 	read -r REPO; \
 	if [ "$$REPO" = "test" ]; then \
-		"$(VENV_DIR)/bin/python" -m twine upload --repository testpypi dist/*; \
+		"$(VENV_DIR)/bin/twine" upload --repository testpypi dist/*; \
 	elif [ "$$REPO" = "pypi" ]; then \
-		"$(VENV_DIR)/bin/python" -m twine upload dist/*; \
+		"$(VENV_DIR)/bin/twine" upload dist/*; \
 	elif [ "$$REPO" = "skip" ]; then \
 		echo "Upload skipped."; \
 	else \
