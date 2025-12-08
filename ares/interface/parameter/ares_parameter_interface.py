@@ -113,6 +113,7 @@ class AresParamInterface(ABC):
         self.dependencies: List[str] = kwargs.get("dependencies", [])
 
     @classmethod
+    @typechecked
     def register(
         cls, extension: str, handler_class: type["AresParamInterface"]
     ) -> None:
@@ -184,6 +185,7 @@ class AresParamInterface(ABC):
                 return None
 
     @classmethod
+    @typechecked
     def create(cls, file_path: Optional[str] = None, **kwargs) -> "AresParamInterface":
         """Create parameter handler with automatic format detection.
 
@@ -208,6 +210,7 @@ class AresParamInterface(ABC):
         return handler_class(file_path=file_path, **kwargs)
 
     @staticmethod
+    @typechecked
     def _calculate_hash(
         parameters: List[AresParameter],
         **kwargs,

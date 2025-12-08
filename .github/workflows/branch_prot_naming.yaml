@@ -1,0 +1,20 @@
+name: Check Branch Name
+on:
+  push:
+    branches:
+      - '*'
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check regex for branch name
+        run: |
+          BRANCH_NAME="${{ github.ref_name }}"
+          REGEXP="^([a-z0-9-]+/)?(feature|bugfix|refactor|doc|test)/[a-z0-9-]+$"
+
+          if [[ ! $BRANCH_NAME =~ $REGEXP ]]; then
+            echo "::error file=BranchName::ERROR: Branch name '$BRANCH_NAME' does not match the required format: $REGEXP"
+            exit 1 # Fails the action
+          else
+            echo "SUCCESS: Branch name '$BRANCH_NAME' meets the required format."
+          fi
