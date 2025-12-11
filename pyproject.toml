@@ -14,17 +14,34 @@ license = {file = "LICENSE"}
 requires-python = ">=3.12"
 keywords = ["embedded", "simulation", "automotive", "sil", "ares"]
 classifiers = [
+    # Intended Audience
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Manufacturing",
+
+    # Topic
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: System :: Emulators",
+
+    # Programming Language
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+
+    # License
     "License :: OSI Approved :: MIT License",
+
+    # Operating System
     "Operating System :: POSIX :: Linux",
     "Operating System :: Microsoft :: Windows",
+
+    # Environment
     "Environment :: Console",
-    "Development Status :: 1 - Planning",
 ]
 
 dependencies = [
-    "argparse==1.4.0",
     "numpy==2.2.4",
     "asammdf==8.2.9",
     "jsonschema==4.24.0",
@@ -42,16 +59,27 @@ test = [
 ]
 dev = [
     "ruff==0.12.11",
+    "build==1.3.0",
+    "twine==6.2.0",
+    "gitpython==3.1.45",
     "ares[test]",
 ]
 
 [project.urls]
 "Homepage" = "https://github.com/AndraeCarotta/ares"
+"Documentation" = "https://github.com/AndraeCarotta/ares#readme"
 "Bug Tracker" = "https://github.com/AndraeCarotta/ares/issues"
 "Repository" = "https://github.com/AndraeCarotta/ares"
+"Changelog" = "https://github.com/AndraeCarotta/ares/releases"
+"Source" = "https://github.com/AndraeCarotta/ares"
+"Security Policy" = "https://github.com/AndraeCarotta/ares/security/policy"
+"Contributing" = "https://github.com/AndraeCarotta/ares/blob/master/CONTRIBUTING.md"
 
 [tool.setuptools]
 packages = ["ares"]
+
+[tool.setuptools.package-data]
+ares = ["py.typed"]
 
 [tool.setuptools_scm]
 write_to = "ares/core/version.py"
@@ -70,11 +98,8 @@ indent-style = "space"
 
 [tool.pyright]
 # Pyright will analyze files in this directory.
-include = ["ares"]
+include = ["ares", "packages", "test"]
 reportAny = "none"
 reportExplicitAny = "none"
-
-
-# Point to virtual environment.
 venvPath = "."
 venv = ".venv"
