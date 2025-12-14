@@ -1,4 +1,4 @@
-r"""
+"""
 ________________________________________________________________________
 |                                                                      |
 |               $$$$$$\  $$$$$$$\  $$$$$$$$\  $$$$$$\                  |
@@ -56,6 +56,20 @@ class AresSignal:
     timestamps: npt.NDArray[np.floating]
     description: Optional[str] = None
     unit: Optional[str] = None
+
+    def __post_init__(self):
+        """
+        Validate the data types after initialization.
+        """
+
+        if not np.issubdtype(self.timestamps.dtype, np.floating):
+            raise TypeError("The 'timestamps' array must have a float datatype.")
+        if self.timestamps.ndim != 1 or (
+            self.value.ndim >= 0 and self.timestamps.shape[0] != self.value.shape[0]
+        ):
+            raise ValueError(
+                "Both 'timestamps' and 'data' arrays must be at least 1-dimensional."
+            )
 
     @property
     def dtype(self) -> np.dtype:
