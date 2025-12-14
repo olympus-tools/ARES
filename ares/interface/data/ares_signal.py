@@ -1,4 +1,4 @@
-"""
+r"""
 ________________________________________________________________________
 |                                                                      |
 |               $$$$$$\  $$$$$$$\  $$$$$$$$\  $$$$$$\                  |
@@ -33,9 +33,11 @@ from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
+from typeguard import typechecked
 
 
 @dataclass
+@typechecked
 class AresSignal:
     """A class to handle time-series signals in ARES.
 
@@ -53,7 +55,7 @@ class AresSignal:
 
     label: str
     value: npt.NDArray
-    timestamps: npt.NDArray[np.floating]
+    timestamps: npt.NDArray[np.float32]
     description: Optional[str] = None
     unit: Optional[str] = None
 
@@ -76,7 +78,7 @@ class AresSignal:
         """Returns the numpy dtype of the signal value.
 
         Returns:
-            np.dtype: The data type of the underlying numpy array (e.g., float64, int32).
+            np.dtype: The data type of the underlying numpy array (e.g., float32, int32).
         """
         return self.value.dtype
 
@@ -100,17 +102,18 @@ class AresSignal:
         """
         return self.value.ndim
 
-    def resample(self, timestamps_resampled: npt.NDArray[np.floating]) -> None:
+    @typechecked
+    def resample(self, timestamps_resampled: npt.NDArray[np.float32]) -> None:
         """Resample the signal to new timestamps using linear interpolation.
 
         Args:
-            timestamps_resampled (npt.NDArray[np.floating]): New timestamp values
+            timestamps_resampled (npt.NDArray[np.float32]): New timestamp values
                 for resampling. Must be a 1D numpy array with floating point dtype.
 
         Returns:
             None: Modifies the signal in-place, updating timestamps and value.
         """
         self.value = np.interp(
-            timestamps_resampled, self.timestamps, self.value.astype(np.floating)
+            timestamps_resampled, self.timestamps, self.value.astype(np.float32)
         ).astype(self.dtype)
         self.timestamps = timestamps_resampled
