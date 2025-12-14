@@ -11,13 +11,22 @@ VENV_DIR := .venv
 
 .PHONY: setup_venv
 setup_venv:
+setup_venv:
 	@if [ -d "$(VENV_DIR)" ]; then \
 		echo "Virtual environment '$(VENV_DIR)' already exists."; \
 	else \
 		echo "Creating virtual environment '$(VENV_DIR)'..."; \
 		python3 -m venv "$(VENV_DIR)" || { echo "Error: Failed to create virtual environment."; exit 1; }; \
-		echo "Installing ARES dependencies in virtual environment '$(VENV_DIR)'..."; \
-		"$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies."; exit 1; }; \
+		echo "Installing project dependencies in virtual environment '$(VENV_DIR)'..."; \
+		\
+		# Check if .git exists to decide on versioning strategy for editable install \
+		if [ ! -d ".git" ]; then \
+			echo "NOTE: .git directory not found. Setting pretend version for installation."; \
+			SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+		else \
+			echo "NOTE: .git directory found. Using setuptools_scm for versioning."; \
+			"$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
+		fi; \
 	fi
 
 .PHONY: examples
