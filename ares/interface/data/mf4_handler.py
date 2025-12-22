@@ -29,145 +29,145 @@ ________________________________________________________________________
 """
 
 import datetime
-from typing import Any, Literal, override
+import os
+from typing import Literal, override
 
 import numpy as np
 from asammdf import MDF, Signal
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
-from ares.utils.hash import sha256_string
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
 
+# define obsolete channels that are ALWAYS skipped
+OBSOLETE_CHANNEL = ["time"]
+
 
 class MF4Handler(MDF, AresDataInterface):
-    pass
+    """A extension of the asammdf.MDF class to allow ARES to interact with mf4's.
+    see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
+    """
 
+    def __init__(
+        self,
+        file_path: str,
+        mode: Literal["write", "read"] = "read",
+        **kwargs,
+    ):
+        """Initialize MDF and get all available channels. Check if asammdf was already initialized.
 
-# # define obsolete channels that are ALWAYS skipped
-# OBSOLETE_CHANNEL = ["time"]
+        Args:
+            file_path ( str ): Path to the signals file to load
+            mode ( ["write", "read"]): mode to access file, defaults to: "read"
 
-# class MF4Handler(MDF, AresDataInterface):  # pyright: ignore[reportUnsafeMultipleInheritance]
-#     """A extension of the asammdf.MDF class to allow ARES to interact with mf4's.
-#     see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
-#     """
+            **kwargs: Additional arguments passed to subclass
+        """
+        if len(self.__dict__) == 0 or (
+            len(self.__dict__) > 0 and not hasattr(self, "_initialized")
+        ):
+            if mode == "read":
+                if not os.path.isfile(file_path):
+                    raise FileNotFoundError(
+                        "The signal file requested to read doesn't exist. File requested: {file_path}"
+                    )
+                super().__init__(file_path, **kwargs)
+            elif mode == "write":
+                super().__init__("", **kwargs)
 
-#     _instances = {}
+            self._mode = mode
+            self._file_path: str = "" if file_path is None else file_path
 
-#     # TODO: first singleton implementation -> adapt hash calculation
-#     def __new__(
-#         cls,
-#         name: str,
-#         file_path: str,
-#         mode: Literal["write", "read"] = "read",
-#         **kwargs: Any,
-#     ):
-#         instance_hash = sha256_string(name + file_path)
-#         if instance_hash not in cls._instances:
-#             logger.info(f"Creating new instance of mf4-handler: {instance_hash}")
-#             cls._instances[instance_hash] = super().__new__(cls)
+            self._available_channels: list[str] = list(self.channels_db.keys())
+            for obs_channel in OBSOLETE_CHANNEL:
+                if obs_channel in self._available_channels:
+                    self._available_channels.remove(obs_channel)
 
-#         return cls._instances[instance_hash]
+            self._initialized = True
+        else:
+            logger.info(
+                "Clone detected! Using already existent mf4-handler! We are smart, doing things twice is not!"
+            )
 
-#     def __init__(
-#         self,
-#         name: str,
-#         file_path: str,
-#         mode: Literal["write", "read"] = "read",
-#         **kwargs: Any,
-#     ):
-#         """Initialize MDF and get all available channels."""
-#         if len(self.__dict__) == 0 or (
-#             len(self.__dict__) > 0 and not hasattr(self, "_initialized")
-#         ):
-#             if mode == "read":
-#                 super().__init__(file_path, **kwargs)
-#             elif mode == "write":
-#                 super().__init__("", **kwargs)
+    @override
+    # TODO: safely_run function candidate?
+    def write(self, output_path: str, **kwargs) -> None:
+        """Wrapper for MDF save() to print message and adding timestamp.
 
-#             self._mode = mode
-#             self._name = name
-#             self._file_path: str = "" if file_path is None else file_path
+        Args:
+            **kwargs: Additional format-specific arguments
+        """
 
-#             self._available_channels: list[str] = list(self.channels_db.keys())
-#             for obs_channel in OBSOLETE_CHANNEL:
-#                 if obs_channel in self._available_channels:
-#                     self._available_channels.remove(obs_channel)
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.header.comment = f"File last saved on: {timestamp}"
+        result_path = self.save(self._file_path, **kwargs)
+        logger.debug(f"Data was successfully written to: {result_path}")
 
-#             self.hash: str = sha256_string(
-#                 self.name + self._file_path + str(self._available_channels)
-#             )
-#             self._initialized = True
-#         else:
-#             logger.info(
-#                 "Clone detected! Using already existent mf4-handler! Be smart, don't do things twice!"
-#             )
+    @override
+    def get(self, signal: list[str] | None = None, **kwargs) -> list[AresSignal]:
+        """Ares get signal function
 
-#     @override
-#     def save_file(self, **kwargs: Any):
-#         """Wrapper for MDF save() to print message and adding timestamp."""
+        Args:
+            signals (list[str] | None): List of channels/signals to read from mf4-file. In case of None all signals are read. default = None.
+            **kwargs: Additional arguments. Currently not in use.
 
-#         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-#         self.header.comment = f"File last saved on: {timestamp}"
-#         result_path = self.save(self._file_path, **kwargs)
-#         logger.debug(f"Data was written to: {result_path}")
+        Returns:
+            list[AresSignal]: List of resampled AresSignal objects with common time vector.
+        """
+        stepsize_ms = kwargs.pop("stepsize_ms", None)
+        tmp_data = (
+            self.get_signals(self._available_channels)
+            if channels is None
+            else self.get_signals(channels, **kwargs)
+        )
 
-#     @override
-#     def get(self, channels: list[str] | None = None, **kwargs: Any) -> list[signal]:
-#         """ares get signal function"""
-#         stepsize_ms = kwargs.pop("stepsize_ms", None)
-#         tmp_data = (
-#             self.get_signals(self._available_channels)
-#             if channels is None
-#             else self.get_signals(channels, **kwargs)
-#         )
+        if stepsize_ms is None:
+            return tmp_data
+        else:
+            return self._resample(tmp_data, stepsize_ms=stepsize_ms)
 
-#         if stepsize_ms is None:
-#             return tmp_data
-#         else:
-#             return self._resample(tmp_data, stepsize_ms=stepsize_ms)
+    def get_signals(self, channels: list[str], **kwargs) -> list[AresSignal]:
+        """Helper function for 'get'. Function handles multiple occurences of signals in mf4's via 'whereis' function provided in asammdf."""
 
-#     def get_signals(self, channels: list[str], **kwargs: Any) -> list[signal]:
-#         # check signals for multiple occurences using "whereis"
-#         occurences = [self.whereis(c) for c in channels]
-#         not_found = np.array([i for i, x in enumerate(occurences) if len(x) == 0])
-#         if len(not_found) > 0:
-#             raise ValueError(
-#                 f"Selection of the following channels not possible. Existence is not given: {','.join(channels[not_found])}"
-#             )
+        # check signals for multiple occurences using "whereis"
+        occurences = [self.whereis(c) for c in channels]
+        not_found = np.array([i for i, x in enumerate(occurences) if len(x) == 0])
+        if len(not_found) > 0:
+            raise ValueError(
+                f"Selection of the following channels not possible. Existence is not given: {','.join(channels[not_found])}"
+            )
+        single_occ = np.array([i for i, x in enumerate(occurences) if len(x) == 1])
+        multi_occ = np.array([i for i, x in enumerate(occurences) if len(x) > 1])
 
-#         single_occ = np.array([i for i, x in enumerate(occurences) if len(x) == 1])
-#         multi_occ = np.array([i for i, x in enumerate(occurences) if len(x) > 1])
+        data: list[Signal | None] = [None] * len(channels)
+        if len(single_occ) > 0:
+            selected_signals = super().select(
+                [channels[idx] for idx in single_occ], **kwargs
+            )
+            for i, idx in enumerate(single_occ):
+                data[idx] = selected_signals[i]
+        for i in multi_occ:
+            sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurences[i]]
+            all_signals = super().select(sel_signal, **kwargs)
+            len_samples = [len(s.samples) for s in all_signals]
+            idx = len_samples.index(max(len_samples))
+            data[i] = all_signals[idx]
 
-#         data = np.full(len(channels), None)
-#         if len(single_occ) > 0:
-#             data[single_occ] = super().select(
-#                 [channels[idx] for idx in single_occ], **kwargs
-#             )
-#             for i in multi_occ:
-#                 sel_signal = [
-#                     (None, gp_idx, cn_idx) for gp_idx, cn_idx in occurences[i]
-#                 ]
-#                 all_signals = super().select(sel_signal, **kwargs)
-#                 len_samples = [len(s.samples) for s in all_signals]
-#                 idx = len_samples.index(max(len_samples))
-#                 data[i] = all_signals[idx]
+        return [
+            AresSignal(label=d.name, timestamps=d.timestamps, value=d.samples)
+            for d in data
+        ]
 
-#             data = data.tolist()
-#         else:
-#             data = super().select(channels, **kwargs)
-
-#         return [
-#             signal(label=d.name, timestamps=d.timestamps, data=d.samples) for d in data
-#         ]
-
-#     @override
-#     def write(self, data: list[signal]) -> None:
-#         """Basic function to write ares signals to mf4 using 'append()'"""
-#         signals_to_write = [
-#             Signal(samples=sig.data, timestamps=sig.timestamps, name=sig.label)
-#             for sig in data
-#         ]
-#         self.append(signals_to_write)
+    @override
+    def add(self, signals: list[AresSignal], **kwargs) -> None:
+        """Basic function to write ares signals to mf4 using 'append()'
+        Args:
+            signals (list[AresSignal]): List of AresSignal objects to to append to mf4-file.
+            **kwargs: Additional arguments. Currently not in use.
+        """
+        signals_to_write = [
+            Signal(samples=sig.value, timestamps=sig.timestamps, name=sig.label)
+            for sig in signals
+        ]
+        self.append(signals_to_write)

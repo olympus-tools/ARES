@@ -30,8 +30,9 @@ ________________________________________________________________________
 
 import os
 from abc import ABC, abstractmethod
-from typing import Any, ClassVar, Dict, List, Literal, Optional
+from typing import ClassVar, Dict, List, Optional
 
+import numpy as np
 from typeguard import typechecked
 
 from ares.interface.data.ares_signal import AresSignal
@@ -60,8 +61,7 @@ class AresDataInterface(ABC):
     @typechecked
     def __new__(
         cls,
-        file_path: Optional[str] = None,
-        signals: Optional[List[AresSignal]] = None,
+        file_path: str | None = None,
         **kwargs,
     ):
         """Implement flyweight pattern based on content hash.
@@ -70,45 +70,47 @@ class AresDataInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path: Path to the signals file to load
-            signals: Optional list of AresSignal objects for initialization
+            file_path ( str ): Path to the signals file to load
             **kwargs: Additional arguments for subclass initialization
 
         Returns:
             New or cached instance based on content hash
         """
         # Neither file_path nor signals provided - create uncached instance
-        if file_path is None and signals is None:
+        if file_path is None:
             return super().__new__(cls)
 
         # Load signals from file if file_path provided
-        if file_path is not None:
-            temp_instance = object.__new__(cls)
-            cls.__init__(temp_instance, file_path=file_path, **kwargs)
-            signals = temp_instance.get(**kwargs)
+        temp_instance = object.__new__(cls)
+        cls.__init__(temp_instance, file_path=file_path, **kwargs)
 
-        # Calculate hash from signals
-        content_hash = cls._calculate_hash(signals=signals, **kwargs)
+        # Calculate  from signals
+        content_hash = cls._calculate_hash(file_path, **kwargs)
 
         # Return cached instance if hash already exists
         if content_hash in cls.cache:
             return cls.cache[content_hash]
 
         # Create new instance and add to cache
-        instance = super().__new__(cls)
-        instance.hash = content_hash
-        cls.cache[content_hash] = instance
-        return instance
+        cls.cache[content_hash] = temp_instance
+        return temp_instance
 
     @typechecked
-    def __init__(self, **kwargs):
+    def __init__(self, file_path: str | None, **kwargs):
         """Initialize base attributes for all data handlers.
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
+            file_path ( str ): Path to the signals file to load
             **kwargs: Additional arguments passed to subclass
         """
+        self._file_path = file_path if file_path is not None else ""
         self.dependencies: List[str] = kwargs.get("dependencies", [])
+
+    @property
+    def file_path(self) -> str | None:
+        """File path to element to read/write. File can NOT exist."""
+        return self._file_path
 
     @classmethod
     @typechecked
@@ -123,6 +125,7 @@ class AresDataInterface(ABC):
 
     @classmethod
     @typechecked
+    # TODO: safely_run function candidate?
     def wf_element_handler(
         cls,
         element_name: str,
@@ -182,14 +185,14 @@ class AresDataInterface(ABC):
 
     @classmethod
     @typechecked
-    def create(cls, file_path: Optional[str] = None, **kwargs) -> "AresDataInterface":
-        """Create parameter handler with automatic format detection.
+    def create(cls, file_path: str | None = None, **kwargs) -> "AresDataInterface":
+        """Create data handler with automatic format detection.
 
         Uses file extension to select appropriate handler.
         All handlers share the same flyweight cache.
 
         Args:
-            file_path: Path to the parameter file to load. If None, defaults to MF4 handler.
+            file_path ( str ): Path to the measurement file to load. If None, defaults to MF4 handler.
             **kwargs: Additional format-specific arguments
 
         Returns:
@@ -205,12 +208,15 @@ class AresDataInterface(ABC):
         handler_class = cls._handlers[ext]
         return handler_class(file_path=file_path, **kwargs)
 
-    @staticmethod
+    # XXX: Idea for later, should the hash function be abstact and calculated based on infromations provided by the intherited class after init?
+    # + uniqueness of hash is easier applicable since attributes of the obj itself can be used, avaialable signals, lenght, timestamps
+    # - for each new element type an implementation is necessary
     @typechecked
+    @staticmethod
     def _calculate_hash(
-        signals: List[AresSignal],
+        file_path: str,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Calculate hash from signal list.
 
         This method is used for cache lookup. It always calculates hash
@@ -221,24 +227,13 @@ class AresDataInterface(ABC):
         identical signal content.
 
         Args:
-            signals: List of AresSignal objects
+            file_path ( str ) : Path to the measurement file to load. If None, defaults to MF4 handler.
             **kwargs: Additional format-specific arguments (unused)
 
         Returns:
-            SHA256 hash string of the content, or None on error
+            SHA256 hash string of the content
         """
-        # temp_param_dict = {}
-        # for param in signals:
-        #     temp_param_dict[param.label] = {
-        #         "description": param.description
-        #         if param.description is not None
-        #         else "",
-        #         "unit": param.unit if param.unit is not None else "",
-        #         "value": param.value.tolist(),
-        #     }
-        # param_json = json.dumps(temp_param_dict, sort_keys=True)
-        # return sha256_string(param_json)
-        return None  # TODO
+        return sha256_string(file_path)
 
     @staticmethod
     @typechecked
@@ -252,25 +247,24 @@ class AresDataInterface(ABC):
         Returns:
             list[AresSignal]: List of resampled AresSignal objects with common time vector.
         """
-        # latest_start_time = float(0.0)
-        # earliest_end_time = np.inf
+        latest_start_time = float(0.0)
+        earliest_end_time = np.inf
 
-        # # get timevector
-        # for sig in data:
-        #     if len(sig.timestamps) > 0:
-        #         latest_start_time = max(latest_start_time, sig.timestamps[0])
-        #         earliest_end_time = min(earliest_end_time, sig.timestamps[-1])
+        # get timevector
+        for sig in data:
+            if len(sig.timestamps) > 0:
+                latest_start_time = max(latest_start_time, sig.timestamps[0])
+                earliest_end_time = min(earliest_end_time, sig.timestamps[-1])
 
-        # timestamps_resample = np.arange(
-        #     0,
-        #     (earliest_end_time - latest_start_time) + (stepsize_ms / 1000.0),
-        #     stepsize_ms / 1000.0,
-        # )
+        timestamps_resample = np.arange(
+            0,
+            (earliest_end_time - latest_start_time) + (stepsize_ms / 1000.0),
+            stepsize_ms / 1000.0,
+        )
 
-        # # resampling of each element
-        # [sig.resample(timestamps_resample) for sig in data]
-        # return data
-        return None  # TODO
+        # resampling of each element based on resample function of signal
+        [sig.resample(timestamps_resample) for sig in data]
+        return data
 
     @abstractmethod
     def get(self, **kwargs) -> List[AresSignal]:
@@ -294,12 +288,14 @@ class AresDataInterface(ABC):
         """
         pass
 
+    # XXX: do we want to define the output_path during calling the write function
+    # or is it already defined during creation?
     @abstractmethod
-    def _save(self, output_path: str, **kwargs) -> None:
+    def write(self, output_path: str, **kwargs) -> None:
         """Write signals to file.
 
         Args:
-            output_path: Absolute path where the parameter file should be written
+            output_path: Absolute path where the signal file should be written
             **kwargs: Additional format-specific arguments
         """
         pass
