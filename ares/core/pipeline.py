@@ -32,8 +32,7 @@ import os
 from typing import Any, Dict, List
 
 from ares.core.workflow import Workflow
-
-# from ares.interface.parameter.ares_data_interface import AresDataInterface
+from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.interface.plugin.ares_plugin_interface import AresPluginInterface
 from ares.utils.logger import create_logger
@@ -62,7 +61,7 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
         ares_wf = Workflow(file_path=wf_path)
 
         param_storage: List[AresParamInterface] = AresParamInterface.cache
-        # data_storage: List[AresDataInterface]  = AresDataInterface.cache
+        data_storage: List[AresDataInterface] = AresDataInterface.cache
 
         if output_dir is None:
             output_dir = os.path.dirname(wf_path)
@@ -84,7 +83,7 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
                     tmp_param_hash_list.append(
                         list(ares_wf.workflow[parameter].hash_list.keys())
                     )
-                # tmp_data_hash_list: List[List[str]] = []
+                tmp_data_hash_list: List[List[str]] = []
                 # for data in getattr(wf_element_value, "input", []):
                 #     tmp_param_hash_list.append(
                 #         list(ares_wf.workflow[input].hash_list.keys())
@@ -93,7 +92,11 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
                 # handle workflow elements based on their type
                 match wf_element_value.type:
                     case "data":
-                        pass
+                        AresDataInterface.wf_element_handler(
+                            element_name=wf_element_name,
+                            element_value=wf_element_value,
+                            input_hash_list=tmp_data_hash_list,
+                        )
 
                     case "parameter":
                         AresParamInterface.wf_element_handler(
