@@ -97,7 +97,7 @@ class AresParamInterface(ABC):
 
         # create new instance and add to cache
         instance = super().__new__(cls)
-        instance.hash = content_hash  # TODO: see data interface
+        object.__setattr__(instance, "hash", content_hash)
         cls.cache[content_hash] = instance
         return instance
 
