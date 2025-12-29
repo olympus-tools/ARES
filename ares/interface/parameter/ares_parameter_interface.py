@@ -78,7 +78,7 @@ class AresParamInterface(ABC):
         Returns:
             New or cached instance based on content hash
         """
-        # Neither file_path nor parameters provided - create uncached instance
+        # neither file_path nor parameters provided - create uncached instance
         if file_path is None and parameters is None:
             return super().__new__(cls)
 
@@ -88,29 +88,31 @@ class AresParamInterface(ABC):
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
             parameters = temp_instance.get(**kwargs)
 
-        # Calculate hash from parameters
+        # calculate hash from parameters
         content_hash = cls._calculate_hash(parameters=parameters, **kwargs)
 
-        # Return cached instance if hash already exists
+        # return cached instance if hash already exists
         if content_hash in cls.cache:
             return cls.cache[content_hash]
 
-        # Create new instance and add to cache
+        # create new instance and add to cache
         instance = super().__new__(cls)
-        instance.hash = content_hash
+        instance.hash = content_hash  # TODO: see data interface
         cls.cache[content_hash] = instance
         return instance
 
     @typechecked
-    def __init__(self, **kwargs):
+    def __init__(self, file_path: Optional[str], **kwargs):
         """Initialize base attributes for all parameter handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
+            file_path: Path to the parameter file to load
             **kwargs: Additional arguments passed to subclass
         """
-        self.dependencies: List[str] = kwargs.get("dependencies", [])
+        object.__setattr__(self, "_file_path", file_path)
+        object.__setattr__(self, "dependencies", kwargs.get("dependencies", []))
 
     @classmethod
     @typechecked
@@ -150,7 +152,7 @@ class AresParamInterface(ABC):
         match element_value.mode:
             case "read":
                 for fp in element_value.file_path:
-                    cls.create(fp, **kwargs)
+                    cls.create(file_path=fp, **kwargs)
                 return None
 
             case "write":
@@ -162,25 +164,30 @@ class AresParamInterface(ABC):
 
                 for wf_element_hash_list in input_hash_list:
                     for output_hash in wf_element_hash_list:
-                        source_instance = cls.cache.get(output_hash)
+                        if output_hash in cls.cache:
+                            source_instance = cls.cache.get(output_hash)
 
-                        parameters = source_instance.get(**kwargs)
+                            parameters = source_instance.get(
+                                label_filter=element_value.label_filter, **kwargs
+                            )
 
-                        target_instance = target_handler_class.__new__(
-                            target_handler_class, file_path=None
-                        )
-                        target_handler_class.__init__(target_instance, file_path=None)
+                            target_instance = target_handler_class.__new__(
+                                target_handler_class, file_path=None
+                            )
+                            target_handler_class.__init__(
+                                target_instance, file_path=None
+                            )
 
-                        target_instance.add(parameters, **kwargs)
+                            target_instance.add(parameters=parameters, **kwargs)
 
-                        output_path = eval_output_path(
-                            output_hash=output_hash,
-                            output_dir=output_dir,
-                            output_format=element_value.output_format,
-                            element_name=element_name,
-                        )
+                            output_path = eval_output_path(
+                                output_hash=output_hash,
+                                output_dir=output_dir,
+                                output_format=element_value.output_format,
+                                element_name=element_name,
+                            )
 
-                        target_instance._save(output_path=output_path, **kwargs)
+                            target_instance._save(output_path=output_path, **kwargs)
 
                 return None
 
@@ -232,6 +239,7 @@ class AresParamInterface(ABC):
             SHA256 hash string of the content, or None on error
         """
         temp_param_dict = {}
+        temp_param_dict["metadata"] = {"type": "AresParamInterface"}
         for param in parameters:
             temp_param_dict[param.label] = {
                 "description": param.description
@@ -244,11 +252,14 @@ class AresParamInterface(ABC):
         return sha256_string(param_json)
 
     @abstractmethod
-    def get(self, **kwargs) -> List[AresParameter]:
+    def get(
+        self, label_filter: list[str] | None = None, **kwargs
+    ) -> List[AresParameter]:
         """Get parameters from the interface.
 
         Args:
-            **kwargs: Additional format-specific arguments (e.g., filter criteria)
+            label_filter (list[str] | None): List of parameter names to retrieve from the interface.
+            **kwargs: Additional format-specific arguments
 
         Returns:
             List[AresParameter]: List of all AresParameter objects stored in the interface
