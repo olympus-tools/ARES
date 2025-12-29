@@ -6,6 +6,11 @@
 #   - make format
 #   - make format_check
 #   - make clean
+#   - make release-checklist
+#   - make release-changelog
+#   - make release-build
+#   - make release-upload
+#   - make release
 
 VENV_DIR := .venv
 
@@ -85,6 +90,10 @@ release-build:
 	@echo ""
 	@echo "Release build complete."
 
+.PHONY: release-thirdpartycheck
+release-thirdpartycheck:
+	@echo ""
+
 .PHONY: release-upload
 release-upload:
 	@echo ""
@@ -101,16 +110,31 @@ release-upload:
 	fi
 
 .PHONY: release
-release: release-checklist release-changelog release-build release-upload
+release: release-checklist release-changelog release-thirdpartycheck release-build release-upload
 	@echo ""
 	@echo "Release process complete!"
 
-
 .PHONY: clean
 clean:
-	find . -type f -name "*.pyc" | xargs rm -fr
-	find . -type d -name __pycache__ | xargs rm -fr
-	find . -type d -name log | xargs rm -fr
-	find . -type d -name .pytest_cache | xargs rm -fr
-	find . -type d -name .ruff_cache | xargs rm -fr
-	$(MAKE) -C examples/sim_unit clean
+	@printf "WARNING: This will permanently delete all generated files, caches, and logs. Continue? [y/n] "; \
+	read -r REPLY; \
+	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
+		echo "Cleaning project in mode full..."; \
+		$(MAKE) clean_light; \
+		rm -rf logs; \
+		rm -rf examples/output; \
+		echo "Project cleaned successfully in mode full."; \
+	else \
+		echo "Clean cancelled."; \
+	fi
+
+.PHONY: clean_light
+clean_light:
+	echo "Cleaning project in mode light..."; \
+	find . -type f -name "*.pyc" | xargs rm -fr; \
+	find . -type d -name __pycache__ | xargs rm -fr; \
+	find . -type d -name log | xargs rm -fr; \
+	find . -type d -name .pytest_cache | xargs rm -fr; \
+	find . -type d -name .ruff_cache | xargs rm -fr; \
+	$(MAKE) -C examples/sim_unit clean; \
+	echo "Project cleaned successfully in mode light."; \

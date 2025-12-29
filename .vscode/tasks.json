@@ -29,9 +29,9 @@
             "problemMatcher": []
         },
         {
-            "label": "clean",
+            "label": "clean_light",
             "type": "shell",
-            "command": "make clean",
+            "command": "make clean_light",
             "problemMatcher": []
         }
     ]
