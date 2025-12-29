@@ -5,7 +5,6 @@
             "../data/data_example_1.mf4",
             "../data/data_example_1.mf4"
         ],
-        "source": ["source_1"],
         "mode": "read"
     },
     "data_2": {
@@ -13,14 +12,13 @@
         "file_path": [
             "../data/data_example_1.mf4"
         ],
-        "source": ["source_1"],
         "mode": "read"
     },
     "sw_component_1": {
         "type": "sim_unit",
         "file_path": "../sim_unit/inout_handling/inout_handling.so",
         "parameter": ["parameterset_1"],
-        "cycle_time": 5,
+        "stepsize": 5,
         "input": ["data_1"],
         "data_dictionary": "../sim_unit/inout_handling/inout_handling.dd.json"
     },
@@ -28,7 +26,7 @@
         "type": "sim_unit",
         "file_path": "../sim_unit/derivation/derivation.so",
         "parameter": ["parameterset_1"],
-        "cycle_time": 10,
+        "stepsize": 10,
         "input": [
             "sw_component_1",
             "sw_component_2"
@@ -48,7 +46,7 @@
             "parameterset_1",
             "parameterset_2"
         ],
-        "cycle_time": 20,
+        "stepsize": 20,
         "input": ["data_1"],
         "data_dictionary": "../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.dd.json"
     },

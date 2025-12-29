@@ -19,7 +19,7 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "prepare-simunit-all",
-            "postDebugTask": "clean"
+            "postDebugTask": "clean_light"
         },
         {
             "name": "ARES example 2",
@@ -38,27 +38,7 @@
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
-            "postDebugTask": "clean"
-        },
-        {
-            "name": "ARES example 3",
-            "type": "debugpy",
-            "request": "launch",
-            "python": "${workspaceFolder}/.venv/bin/python",
-            "module": "ares",
-            "args": [
-                "pipeline",
-                "--workflow",
-                "${workspaceFolder}/examples/workflow/workflow_example_3.json",
-                "--output",
-                "${workspaceFolder}/examples/output/",
-                "--log-level",
-                "10"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "preLaunchTask": "prepare-simunit-inout-handling",
-            "postDebugTask": "clean"
+            "postDebugTask": "clean_light"
         }
     ]
 }
