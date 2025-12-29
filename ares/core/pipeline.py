@@ -76,7 +76,7 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
                 wf_element_value = ares_wf.workflow[wf_element_name]
 
                 prev_param_hash_list: List[str] = list(param_storage.keys())
-                # prev_data_hash_list: List[str] = list(data_storage.keys())
+                prev_data_hash_list: List[str] = list(data_storage.keys())
 
                 tmp_param_hash_list: List[List[str]] = []
                 for parameter in getattr(wf_element_value, "parameter", []):
@@ -84,10 +84,10 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
                         list(ares_wf.workflow[parameter].hash_list.keys())
                     )
                 tmp_data_hash_list: List[List[str]] = []
-                # for data in getattr(wf_element_value, "input", []):
-                #     tmp_param_hash_list.append(
-                #         list(ares_wf.workflow[input].hash_list.keys())
-                #     )
+                for data in getattr(wf_element_value, "input", []):
+                    tmp_data_hash_list.append(
+                        list(ares_wf.workflow[data].hash_list.keys())
+                    )
 
                 # handle workflow elements based on their type
                 match wf_element_value.type:
@@ -96,6 +96,7 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
                             element_name=wf_element_name,
                             element_value=wf_element_value,
                             input_hash_list=tmp_data_hash_list,
+                            output_dir=output_dir,
                         )
 
                     case "parameter":
@@ -130,11 +131,15 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
                             ]
                             for hash_list in tmp_param_hash_list
                         ]
-                        # # filtering relevant data for plugin element
-                        # plugin_input["data"] = [
-                        #     [data_storage[key] for key in hash_list if key in data_storage]
-                        #     for hash_list in tmp_data_hash_list
-                        # ]
+                        # filtering relevant data for plugin element
+                        plugin_input["input"] = [
+                            [
+                                data_storage[key]
+                                for key in hash_list
+                                if key in data_storage
+                            ]
+                            for hash_list in tmp_data_hash_list
+                        ]
 
                         AresPluginInterface(
                             plugin_input=plugin_input,
@@ -146,19 +151,16 @@ def pipeline(wf_path: str, output_dir: str, meta_data: Dict[str, Any]) -> None:
                     for hash_key in param_storage.keys()
                     if hash_key not in prev_param_hash_list
                 ]
+                new_data_hash_list = [
+                    hash_key
+                    for hash_key in data_storage.keys()
+                    if hash_key not in prev_data_hash_list
+                ]
+
                 for hash_key in new_param_hash_list:
-                    wf_element_value.hash_list[hash_key] = param_storage[
-                        hash_key
-                    ].dependencies
-                # new_data_hash_list = [
-                #     hash_key
-                #     for hash_key in data_storage.keys()
-                #     if hash_key not in prev_data_hash_list
-                # ]
-                # for hash_key in new_data_hash_list:
-                #     wf_element_value.hash_list[hash_key] = data_storage[
-                #         hash_key
-                #     ].dependencies
+                    wf_element_value.hash_list[hash_key] = param_storage[hash_key].dependencies
+                for hash_key in new_data_hash_list:
+                    wf_element_value.hash_list[hash_key] = data_storage[hash_key].dependencies
 
         # TODO: if parameter/measurement not needed anymore => drop it
 
