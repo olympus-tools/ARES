@@ -49,9 +49,9 @@ class DataElement(BaseElement):
     mode: Literal["read", "write"]
     file_path: Optional[List[str]] = []
     input: Optional[List[str]] = []
-    output_format: Optional[Literal["json", "mf4"]] = None
-    source: Optional[List[str]] = []
-    cycle_time: Optional[int] = None
+    label_filter: Optional[List[str]] = None
+    output_format: Optional[Literal["mf4"]] = None
+    stepsize: Optional[int] = None
 
     class Config:
         extra = "forbid"
@@ -70,6 +70,7 @@ class ParameterElement(BaseElement):
     mode: Literal["read", "write"]
     file_path: Optional[List[str]] = []
     parameter: Optional[List[str]] = []
+    label_filter: Optional[List[str]] = None
     output_format: Optional[Literal["json", "dcm"]] = None
 
     class Config:
@@ -101,7 +102,7 @@ class SimUnitElement(PluginElement):
         )
     )
     file_path: str
-    cycle_time: int
+    stepsize: int
     input: List[str]
     parameter: Optional[List[str]] = []
     data_dictionary: str
