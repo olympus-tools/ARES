@@ -29,7 +29,7 @@ ________________________________________________________________________
 """
 
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, override
 
 from typeguard import typechecked
 
@@ -63,7 +63,7 @@ class JSONParamHandler(AresParamInterface):
             file_path: Optional absolute path to the JSON file to load
             parameters: Optional list of AresParameter objects to initialize with
         """
-        super().__init__(**kwargs)
+        super().__init__(file_path=file_path, **kwargs)
         self.parameter: Dict[str, Dict[str, Any]] = {}
 
         if file_path:
@@ -83,6 +83,7 @@ class JSONParamHandler(AresParamInterface):
                 )
 
     @typechecked
+    @override
     def _save(self, output_path: str, **kwargs) -> None:
         """Write parameters to JSON file.
 
@@ -109,6 +110,7 @@ class JSONParamHandler(AresParamInterface):
             return None
 
     @typechecked
+    @override
     def add(self, parameters: List[AresParameter], **kwargs) -> None:
         """Add parameters to the JSON interface.
 
@@ -132,24 +134,26 @@ class JSONParamHandler(AresParamInterface):
             logger.error(f"Error adding parameters: {e}")
 
     @typechecked
-    def get(self, **kwargs) -> List[AresParameter]:
+    @override
+    def get(
+        self, label_filter: list[str] | None = None, **kwargs
+    ) -> List[AresParameter]:
         """Get parameters from the JSON interface.
 
         Converts internal JSON parameter dictionary to list of AresParameter objects.
         Uses safe dictionary access to handle missing optional fields.
 
         Args:
+            label_filter (list[str] | None): List of parameter names to retrieve from the interface.
+                If None, all parameters are returned. Defaults to None.
             **kwargs: Additional format-specific arguments
-                - filter_labels (List[str]): Optional list of labels to filter
 
         Returns:
             List[AresParameter]: List of AresParameter objects, or empty list on error
         """
         try:
-            filter_labels = kwargs.get("filter_labels", None)
-
-            if filter_labels:
-                items = {k: v for k, v in self.parameter.items() if k in filter_labels}
+            if label_filter:
+                items = {k: v for k, v in self.parameter.items() if k in label_filter}
             else:
                 items = self.parameter
 
