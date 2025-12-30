@@ -29,7 +29,7 @@ ________________________________________________________________________
 """
 
 from enum import Enum
-from typing import Annotated, Dict, List, Literal, TypeAlias, Union
+from typing import Annotated, Literal, TypeAlias
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -49,12 +49,12 @@ class Datatype(str, Enum):
     uint64 = "uint64"
 
 
-InputAlternatives: TypeAlias = List[Union[str, float, List[float], List[List[float]]]]
+InputAlternatives: TypeAlias = list[str | float | list[float] | list[list[float]]]
 
 
 class BaseDDModel(BaseModel):
     datatype: Datatype
-    size: List[int]
+    size: list[int]
 
     class Config:
         extra = "forbid"
@@ -62,12 +62,12 @@ class BaseDDModel(BaseModel):
 
 class InModel(BaseDDModel):
     type: Literal["in"]
-    input_alternatives: Union[InputAlternatives, None] = None
+    input_alternatives: InputAlternatives = []
 
 
 class InoutModel(BaseDDModel):
     type: Literal["inout"]
-    input_alternatives: Union[InputAlternatives, None] = None
+    input_alternatives: InputAlternatives = []
 
 
 class OutModel(BaseDDModel):
@@ -75,35 +75,27 @@ class OutModel(BaseDDModel):
 
 
 class ParameterModel(BaseDDModel):
-    type: Literal["parameter"]
+    """Parameter model without type field."""
+
+    pass
 
 
-DDElement = Union[InModel, InoutModel, OutModel, ParameterModel]
+SignalElement = InModel | InoutModel | OutModel
 
 
-class DataDictionaryModel(RootModel):
-    root: Dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], DDElement]
+class DataDictionaryModel(BaseModel):
+    """Data Dictionary Model with separate signals and parameters sections.
 
-    def __getitem__(self, key: str) -> DDElement:
-        return self.root[key]
+    Args:
+        signals (dict[str, SignalElement]): Dictionary of signal definitions (in, inout, out)
+        parameters (dict[str, ParameterModel]): Dictionary of parameter definitions
 
-    def __setitem__(self, key: str, value: DDElement) -> None:
-        self.root[key] = value
+    Returns:
+        DataDictionaryModel: Validated data dictionary instance
+    """
 
-    def __delitem__(self, key: str) -> None:
-        del self.root[key]
+    signals: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], SignalElement]
+    parameters: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], ParameterModel]
 
-    def __iter__(self):
-        return iter(self.root)
-
-    def __len__(self) -> int:
-        return len(self.root)
-
-    def items(self):
-        return self.root.items()
-
-    def values(self):
-        return self.root.values()
-
-    def keys(self):
-        return self.root.keys()
+    class Config:
+        extra = "forbid"
