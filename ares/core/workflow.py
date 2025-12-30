@@ -32,7 +32,7 @@ import json
 import os
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from jsonschema import ValidationError
 from typeguard import typechecked
@@ -49,27 +49,27 @@ class Workflow:
     @typechecked
     def __init__(
         self,
-        file_path: Optional[str] = None,
+        file_path: str | None = None,
     ):
         """Initializes a Workflow object by reading and validating a workflow JSON file.
 
         Args:
-            file_path (str, optional): Path to the workflow JSON file (*.json). Defaults to None.
+            file_path (str | None): Path to the workflow JSON file (*.json).
         """
-        self._file_path = file_path
-        self.workflow: Optional[WorkflowModel] = self._load_and_validate_wf()
+        self._file_path: str | None = file_path
+        self.workflow: WorkflowModel | None = self._load_and_validate_wf()
         self._evaluate_relative_paths()
-        self.workflow_sinks = self._find_sinks()
-        workflow_order = self._eval_workflow_order()
-        self._sort_workflow(workflow_order=workflow_order)
+        self.workflow_sinks: list[str] | None = self._find_sinks()
+        self.workflow_order: list[str] | None = self._eval_workflow_order()
+        self._sort_workflow()
         self._eval_element_workflow()
 
     @typechecked
-    def _load_and_validate_wf(self) -> Optional[WorkflowModel]:
+    def _load_and_validate_wf(self) -> WorkflowModel | None:
         """Reads and validates the workflow JSON file using Pydantic.
 
         Returns:
-            Optional[WorkflowModel]: A Pydantic object representing the workflow,
+            WorkflowModel | None: A Pydantic object representing the workflow,
                 or None in case of an error.
         """
         try:
@@ -109,7 +109,7 @@ class Workflow:
             return None
 
     @typechecked
-    def _evaluate_relative_paths(self):
+    def _evaluate_relative_paths(self) -> None:
         """Converts all relative file paths in workflow elements to absolute paths.
 
         This method iterates over all workflow elements and inspects each of their fields.
@@ -176,7 +176,7 @@ class Workflow:
             )
 
     @typechecked
-    def _find_sinks(self) -> Optional[List[str]]:
+    def _find_sinks(self) -> list[str] | None:
         """Identifies the endpoints (sinks) of the workflow.
 
         These are elements that are not referenced as `input`, `dataset`, or `init`
@@ -184,17 +184,17 @@ class Workflow:
         analysis of the execution order.
 
         Returns:
-            Optional[List[str]]: A list of strings containing the names of the endpoint elements,
+            list[str] | None: A list of strings containing the names of the endpoint elements,
                 or `None` in case of an error.
         """
         try:
-            wf_sinks: List[str] = []
+            wf_sinks: list[str] = []
 
             for wf_element_name_1, wf_element_value_1 in self.workflow.items():
                 call_count = 0
 
                 for wf_element_value_2 in self.workflow.values():
-                    ref_input_list: List[str] = []
+                    ref_input_list: list[str] = []
 
                     if (
                         hasattr(wf_element_value_2, "parameter")
@@ -251,18 +251,18 @@ class Workflow:
             return None
 
     @typechecked
-    def _eval_workflow_order(self) -> Optional[List[str]]:
+    def _eval_workflow_order(self) -> list[str] | None:
         """Determines the correct execution order of the workflow elements.
 
         This is done by recursively searching backward from the sinks to the sources.
         The function logs the determined order.
 
         Returns:
-            Optional[List[str]]: A list of strings containing the elements in their execution
+            list[str] | None: A list of strings containing the elements in their execution
                 order, or `None` in case of an error.
         """
         try:
-            workflow_order: List[str] = []
+            workflow_order: list[str] = []
 
             for wf_sink in self.workflow_sinks:
                 path = self._recursive_search(sink=wf_sink, loop=False, element=wf_sink)
@@ -291,7 +291,7 @@ class Workflow:
     @typechecked
     def _recursive_search(
         self, sink: str, loop: bool, element: str
-    ) -> Optional[List[str]]:
+    ) -> list[str] | None:
         """Recursively traces the execution path backward from a given element.
 
         The function follows connections (`input`, `parameter`, `init`, `parameter`) and detects and
@@ -305,12 +305,12 @@ class Workflow:
                 recursive search.
 
         Returns:
-            Optional[List[str]]: A list representing the backward-traced execution path, or `None`
+            list[str] | None: A list representing the backward-traced execution path, or `None`
                 if an error occurs (e.g., an infinite loop is detected).
         """
         try:
-            path: List[str] = []
-            inputs: List[str] = []
+            path: list[str] = []
+            inputs: list[str] = []
 
             if self.workflow is None:
                 return None
@@ -356,15 +356,11 @@ class Workflow:
             return None
 
     @typechecked
-    def _sort_workflow(self, workflow_order: List[str]) -> None:
-        """Sorts the workflow Pydantic object based on the determined execution order.
-
-        Args:
-            workflow_order (List[str]): The list of elements in the correct execution order.
-        """
+    def _sort_workflow(self) -> None:
+        """Sorts the workflow Pydantic object based on the determined execution order."""
         try:
-            workflow_sorted_dict: Dict[str, Any] = {}
-            for item in workflow_order:
+            workflow_sorted_dict: dict[str, Any] = {}
+            for item in self.workflow_order:
                 wf_element_obj = self.workflow.get(item)
                 if wf_element_obj:
                     workflow_sorted_dict[item] = wf_element_obj
@@ -379,7 +375,7 @@ class Workflow:
         """Assigns the workflow from a data source to each workflow element."""
         try:
             for wf_element_name, wf_element in self.workflow.items():
-                element_workflow: List[str] = []
+                element_workflow: list[str] = []
 
                 if hasattr(wf_element, "parameter") and wf_element.parameter:
                     for param_name in wf_element.parameter:
@@ -408,12 +404,10 @@ class Workflow:
                 )
 
         except Exception as e:
-            self._logfile.write(
-                f"Error while evaluating element workflow: {e}", level="ERROR"
-            )
+            logger.error(f"Error while evaluating element workflow: {e}")
 
     @typechecked
-    def save(self, output_dir: str):
+    def save(self, output_dir: str) -> None:
         """Writes the current, processed workflow object to a JSON file.
 
         Args:
@@ -435,7 +429,7 @@ class Workflow:
             )
 
     @typechecked
-    def _eval_output_path(self, dir_path: str, output_format: str) -> Optional[str]:
+    def _eval_output_path(self, dir_path: str, output_format: str) -> str | None:
         """Adds a timestamps to the filename and returns a complete, absolute file path.
 
         The timestamps prevents overwriting. The format is `*_YYYYMMDD_HHMMSS*` before
@@ -447,7 +441,7 @@ class Workflow:
                 is added automatically.
 
         Returns:
-            Optional[str]: The new, complete file path with a timestamps, or `None` if an
+            str | None: The new, complete file path with a timestamps, or `None` if an
                 error occurs.
         """
         try:
