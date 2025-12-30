@@ -8,18 +8,6 @@
         ],
         "mode": "read"
     },
-    "plugin_1": {
-        "type": "plugin",
-        "file_path": "../plugin/plugin_example_1.py",
-        "parameter": ["parameterset_1"],
-        "input": ["data_1"]
-    },
-    "parameterset_2": {
-        "type": "parameter",
-        "parameter": ["plugin_1","parameterset_1"],
-        "mode": "write",
-        "output_format": "json"
-    },
     "data_1": {
         "type": "data",
         "file_path": [
@@ -29,31 +17,34 @@
         ],
         "mode": "read"
     },
+    "simunit_1": {
+        "type": "sim_unit",
+        "file_path": "../sim_unit/derivation/derivation.so",
+        "data_dictionary": "../sim_unit/derivation/derivation.dd.json",
+        "stepsize": 1000,
+        "parameter": ["parameterset_1"],
+        "input": ["data_1"]
+    },
+    "simunit_2": {
+        "type": "sim_unit",
+        "file_path": "../sim_unit/inout_handling/inout_handling.so",
+        "data_dictionary": "../sim_unit/inout_handling/inout_handling.dd.json",
+        "stepsize": 1000,
+        "parameter": ["parameterset_1"],
+        "input": ["data_1"]
+    },
+    "simunit_3": {
+        "type": "sim_unit",
+        "file_path": "../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.so",
+        "data_dictionary": "../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.dd.json",
+        "stepsize": 1000,
+        "parameter": ["parameterset_1"],
+        "input": ["data_1"]
+    },
     "data_2": {
         "type": "data",
-        "input": ["data_1", "plugin_1"],
+        "input": ["data_1", "simunit_1", "simunit_2", "simunit_3"],
         "mode": "write",
         "output_format": "mf4"
-    },
-    "data_3": {
-        "type": "data",
-        "input": ["plugin_1"],
-        "label_filter": ["plugin_example_1_signal"],
-        "mode": "write",
-        "output_format": "mf4"
-    },
-    "data_4": {
-        "type": "data",
-        "input": ["plugin_1"],
-        "stepsize": 100,
-        "mode": "write",
-        "output_format": "mf4"
-    },
-    "parameterset_3": {
-        "type": "parameter",
-        "parameter": ["plugin_1"],
-        "label_filter": ["plugin_example_1_parameter"],
-        "mode": "write",
-        "output_format": "json"
     }
 }

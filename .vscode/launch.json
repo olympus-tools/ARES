@@ -18,7 +18,7 @@
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
-            "postDebugTask": "clean-light"
+            "postDebugTask": "clean_light"
         },
         {
             "name": "ARES example 2",
@@ -38,7 +38,7 @@
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "prepare-simunit-all",
-            "postDebugTask": "clean-light"
+            "postDebugTask": "clean_light"
         }
     ]
 }

@@ -1,41 +1,42 @@
 {
-	"parameter_scalar": {
-		"type": "parameter",
-		"datatype": "int32",
-		"size": []
+	"signals":{
+		"signal_scalar": {
+			"type": "inout",
+			"datatype": "int32",
+			"size": [],
+			"input_alternatives": [
+				1
+			]
+		},
+		"signal_array1d": {
+			"type": "inout",
+			"datatype": "uint32",
+			"size": [3],
+			"input_alternatives": [
+				[1, 1, 0]
+			]
+		},
+		"signal_array2d": {
+			"type": "inout",
+			"datatype": "float",
+			"size": [2, 3],
+			"input_alternatives": [
+				[[1, 0, 1], [1, 1, 1]]
+			]
+		}
 	},
-	"parameter_array1d": {
-		"type": "parameter",
-		"datatype": "uint32",
-		"size": [3]
-	},
-	"parameter_array2d": {
-		"type": "parameter",
-		"datatype": "float",
-		"size": [2, 3]
-	},
-	"signal_scalar": {
-		"type": "inout",
-		"datatype": "int32",
-		"size": [],
-		"input_alternatives": [
-            1
-        ]
-	},
-	"signal_array1d": {
-		"type": "inout",
-		"datatype": "uint32",
-		"size": [3],
-		"input_alternatives": [
-            [1, 1, 1]
-        ]
-	},
-	"signal_array2d": {
-		"type": "inout",
-		"datatype": "float",
-		"size": [2, 3],
-		"input_alternatives": [
-            [[1, 1, 1], [1, 1, 1]]
-        ]
+	"parameters":{
+		"parameter_scalar": {
+			"datatype": "int32",
+			"size": []
+		},
+		"parameter_array1d": {
+			"datatype": "uint32",
+			"size": [3]
+		},
+		"parameter_array2d": {
+			"datatype": "float",
+			"size": [2, 3]
+		}
 	}
 }

@@ -1,83 +1,58 @@
 {
+    "parameterset_1": {
+        "type": "parameter",
+        "file_path": [
+            "../parameter/parameterset_example_1.dcm",
+            "../parameter/parameterset_example_1.dcm",
+            "../parameter/parameterset_example_2.dcm"
+        ],
+        "mode": "read"
+    },
+    "plugin_1": {
+        "type": "plugin",
+        "file_path": "../plugin/plugin_example_1.py",
+        "parameter": ["parameterset_1"],
+        "input": ["data_1"]
+    },
+    "parameterset_2": {
+        "type": "parameter",
+        "parameter": ["plugin_1","parameterset_1"],
+        "mode": "write",
+        "output_format": "json"
+    },
     "data_1": {
         "type": "data",
         "file_path": [
             "../data/data_example_1.mf4",
-            "../data/data_example_1.mf4"
+            "../data/data_example_1.mf4",
+            "../data/data_example_2.mf4"
         ],
         "mode": "read"
     },
     "data_2": {
         "type": "data",
-        "file_path": [
-            "../data/data_example_1.mf4"
-        ],
-        "mode": "read"
-    },
-    "sw_component_1": {
-        "type": "sim_unit",
-        "file_path": "../sim_unit/inout_handling/inout_handling.so",
-        "parameter": ["parameterset_1"],
-        "stepsize": 5,
-        "input": ["data_1"],
-        "data_dictionary": "../sim_unit/inout_handling/inout_handling.dd.json"
-    },
-    "sw_component_3": {
-        "type": "sim_unit",
-        "file_path": "../sim_unit/derivation/derivation.so",
-        "parameter": ["parameterset_1"],
-        "stepsize": 10,
-        "input": [
-            "sw_component_1",
-            "sw_component_2"
-        ],
-        "data_dictionary": "../sim_unit/derivation/derivation.dd.json"
+        "input": ["data_1", "plugin_1"],
+        "mode": "write",
+        "output_format": "mf4"
     },
     "data_3": {
         "type": "data",
-        "input": ["sw_component_3"],
+        "input": ["plugin_1"],
+        "label_filter": ["plugin_example_1_signal"],
         "mode": "write",
         "output_format": "mf4"
-    },
-    "sw_component_2": {
-        "type": "sim_unit",
-        "file_path": "../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.so",
-        "parameter": [
-            "parameterset_1",
-            "parameterset_2"
-        ],
-        "stepsize": 20,
-        "input": ["data_1"],
-        "data_dictionary": "../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.dd.json"
-    },
-    "parameterset_1": {
-        "type": "parameter",
-        "file_path": ["../parameter/parameterset_example_1.dcm"],
-        "mode": "read"
     },
     "data_4": {
         "type": "data",
-        "input": ["sw_component_1"],
+        "input": ["plugin_1"],
+        "stepsize": 100,
         "mode": "write",
         "output_format": "mf4"
     },
-    "parameterset_2": {
-        "type": "parameter",
-        "file_path": [
-            "../parameter/parameterset_example_1.dcm",
-            "../parameter/parameterset_example_1.json"
-        ],
-        "mode": "read"
-    },
     "parameterset_3": {
         "type": "parameter",
-        "parameter": ["parameterset_1"],
-        "mode": "write",
-        "output_format": "dcm"
-    },
-    "parameterset_4": {
-        "type": "parameter",
-        "parameter": ["parameterset_2"],
+        "parameter": ["plugin_1"],
+        "label_filter": ["plugin_example_1_parameter"],
         "mode": "write",
         "output_format": "json"
     }
