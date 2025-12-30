@@ -30,7 +30,8 @@ ________________________________________________________________________
 
 import ctypes
 import json
-from typing import Any, ClassVar, Dict, List, Optional
+from itertools import chain
+from typing import Any, ClassVar, TypeVar
 
 import numpy as np
 from pydantic import ValidationError
@@ -45,9 +46,11 @@ from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
 
+AresBaseType = TypeVar("AresBaseType", AresSignal, AresParameter)
+
 
 class SimUnit:
-    DATATYPES: ClassVar[Dict[str, List[Any]]] = {
+    DATATYPES: ClassVar[dict[str, list[Any]]] = {
         "float": [ctypes.c_float, np.float32],
         "double": [ctypes.c_double, np.float64],
         "bool": [ctypes.c_bool, np.bool_],
@@ -68,8 +71,7 @@ class SimUnit:
         file_path: str = None,
         dd_path: str = None,
     ):
-        """
-        Initializes the simulation unit and sets up all required simulation parameters.
+        """Initializes the simulation unit and sets up all required simulation parameters.
 
         This constructor performs the following steps:
         - Loads and validates the Data Dictionary (DD) from a JSON file
@@ -78,33 +80,35 @@ class SimUnit:
         - Sets up the main simulation function
         - Stores all configuration parameters as instance variables
 
+        Args:
+            element_name (str, optional): Name of the simulation element for logging purposes.
+            file_path (str, optional): Path to the shared library file (.so, .dll, .dylib).
+            dd_path (str, optional): Path to the Data Dictionary JSON file.
         """
 
         self.element_name: str = element_name
         self.file_path: str = file_path
         self.dd_path: str = dd_path
 
-        self._dd: Optional[DataDictionaryModel] = self._load_and_validate_dd(
+        self._dd: DataDictionaryModel | None = self._load_and_validate_dd(
             dd_path=dd_path
         )
-        self._library: Optional[ctypes.CDLL] = self._load_library()
-        self._dll_interface: Optional[Dict[str, Any]] = self._setup_c_interface()
-        self._sim_function: Optional[ctypes.CFUNCTYPE] = self._setup_sim_function()
+        self._library: ctypes.CDLL | None = self._load_library()
+        self._dll_interface: dict[str, Any] | None = self._setup_c_interface()
+        self._sim_function: Any = self._setup_sim_function()
 
     @typechecked
-    def _load_and_validate_dd(
-        self, dd_path: Optional[str]
-    ) -> Optional[DataDictionaryModel]:
+    def _load_and_validate_dd(self, dd_path: str | None) -> DataDictionaryModel | None:
         """Loads the Data Dictionary from a JSON file and validates its structure using Pydantic.
 
         If the file cannot be found or parsed, or if validation fails, an error is
         logged and `None` is returned.
 
         Args:
-            dd_path (str, optional): The path to the Data Dictionary JSON file.
+            dd_path (str | None): The path to the Data Dictionary JSON file.
 
         Returns:
-            Optional[DataDictionaryModel]: The loaded and validated Data Dictionary as a Pydantic
+            DataDictionaryModel | None: The loaded and validated Data Dictionary as a Pydantic
                 object, or `None` if an error occurs.
         """
         try:
@@ -138,13 +142,13 @@ class SimUnit:
             return None
 
     @typechecked
-    def _load_library(self) -> Optional[ctypes.CDLL]:
+    def _load_library(self) -> ctypes.CDLL | None:
         """Loads a shared library file using `ctypes`.
 
         This makes the symbols (variables and functions) from the C library accessible in Python.
 
         Returns:
-            Optional[ctypes.CDLL]: The loaded `ctypes.CDLL` object, or `None` if the library cannot be loaded.
+            ctypes.CDLL | None: The loaded `ctypes.CDLL` object, or `None` if the library cannot be loaded.
         """
         try:
             library = ctypes.CDLL(self.file_path)
@@ -169,20 +173,23 @@ class SimUnit:
             return None
 
     @typechecked
-    def _setup_c_interface(self) -> Optional[Dict[str, Any]]:
+    def _setup_c_interface(self) -> dict[str, Any] | None:
         """Maps global variables defined in the Data Dictionary to their corresponding ctypes objects.
 
         This process involves translating the datatype and size information from the DD into
         `ctypes` types and mapping them to the DLL's global variables.
 
         Returns:
-            Optional[Dict[str, Any]]: A dictionary where keys are the variable names from the DD and values
+            dict[str, Any] | None: A dictionary where keys are the variable names from the DD and values
                 are the `ctypes` objects mapped to the DLL's global variables. Returns `None`
                 if an error occurs during mapping (e.g., symbol not found).
         """
-        dll_interface: Dict[str, Any] = {}
+        dll_interface: dict[str, Any] = {}
 
-        for dd_element_name, dd_element_value in self._dd.items():
+        # iterate over both signals and parameters
+        for dd_element_name, dd_element_value in chain(
+            self._dd.signals.items(), self._dd.parameters.items()
+        ):
             try:
                 datatype = dd_element_value.datatype
                 size = dd_element_value.size
@@ -225,14 +232,14 @@ class SimUnit:
         return dll_interface
 
     @typechecked
-    def _setup_sim_function(self) -> Optional[ctypes.CFUNCTYPE]:
+    def _setup_sim_function(self) -> Any:
         """Configures the main simulation function (`ares_simunit`) from the shared library.
 
         It sets the argument types (`argtypes`) and return type (`restype`) to ensure
         correct function calls via `ctypes`.
 
         Returns:
-            Optional[ctypes.CFUNCTYPE]: The `ctypes` function object for `ares_simunit`, or `None` if the
+            Any: The `ctypes` function object for `ares_simunit`, or `None` if the
                 function cannot be found in the library.
         """
         try:
@@ -255,45 +262,54 @@ class SimUnit:
             return None
 
     @typechecked
-    def run_simulation(
-        self, data: List[AresSignal], parameter: List[AresParameter]
-    ) -> Optional[Dict[str, Any]]:
+    def run(
+        self, data: list[AresSignal], parameters: list[AresParameter]
+    ) -> list[AresSignal] | None:
         """Executes the main simulation function over multiple time steps.
 
         It processes input data, writes it to the C interface, calls the simulation
-        function for each time step, and reads the output back into a dictionary.
+        function for each time step, and reads the output back as AresSignal objects.
 
         Args:
-            data: List[AresSignal] A dictionary containing all input signals, including a 'timestamps' array.
-                Example: `{"timestamps": [t0, t1], "signal_A": [v0, v1]}`.
-            parameter: List[AresParameter] A list of AresParameter objects containing simulation parameters.
+            data (list[AresSignal]): List of AresSignal objects containing input signals with timestamps.
+            parameters (list[AresParameter]): List of AresParameter objects containing simulation parameters.
 
         Returns:
-            Optional[List[AresSignal]]: A dictionary of NumPy arrays containing the output signals for all
+            list[AresSignal] | None: List of AresSignal objects containing output signals for all
                 time steps, or `None` if an error occurs during the simulation.
         """
 
         try:
             logger.info(f"{self.element_name}: Starting ares simulation...")
 
-            sim_result: Dict[str, np.ndarray] = {}
-            time_steps = len(data["timestamps"])
-            logger.info(
-                f"{self.element_name}: The simulation starts at timestamps {data['timestamps'][0]} seconds "
-                f"and ends at timestamps {data['timestamps'][-1]} seconds - duration: "
-                f"{data['timestamps'][-1] - data['timestamps'][0]} seconds",
+            sim_result: dict[str, np.ndarray] = {}
+            time_steps = len(data[0].timestamps) if data else 1
+            data_dict = self._list_to_dict(data)
+            parameter_dict = self._list_to_dict(parameters)
+
+            if data:
+                logger.info(
+                    f"{self.element_name}: The simulation starts at timestamps {min(data[0].timestamps)} seconds "
+                    f"and ends at timestamps {max(data[0].timestamps)} seconds - duration: "
+                    f"{max(data[0].timestamps) - min(data[0].timestamps)} seconds",
+                )
+            else:
+                logger.info(
+                    f"{self.element_name}: No input data provided, using single time step."
+                )
+
+            mapped_input = self._map_sim_input_data(
+                data_dict=data_dict, time_steps=time_steps
             )
 
-            self._write_dll_interface(input=parameter)
-
-            mapped_input = self._map_sim_input(input=data, time_steps=time_steps)
+            self._write_parameters_to_dll(parameters=parameter_dict)
 
             output_signals = [
-                k for k, v in self._dd.items() if v.type in ["out", "inout"]
+                k for k, v in self._dd.signals.items() if v.type in ["out", "inout"]
             ]
             for signal in output_signals:
-                size = self._dd[signal].size
-                np_dtype = self.DATATYPES[self._dd[signal].datatype][1]
+                size = self._dd.signals[signal].size
+                np_dtype = self.DATATYPES[self._dd.signals[signal].datatype][1]
                 if len(size) == 0:
                     sim_result[signal] = np.empty((time_steps,), dtype=np_dtype)
                 elif len(size) == 1:
@@ -302,22 +318,33 @@ class SimUnit:
                     sim_result[signal] = np.empty(
                         (time_steps, size[0], size[1]), dtype=np_dtype
                     )
-            sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float64)
+            sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float32)
 
             for time_step_idx in range(time_steps):
-                self._write_dll_interface(
-                    input=mapped_input, time_step_idx=time_step_idx
+                self._write_signals_to_dll(
+                    data=mapped_input, time_step_idx=time_step_idx
                 )
                 self._sim_function()
                 step_result = self._read_dll_interface()
                 for signal in output_signals:
                     sim_result[signal][time_step_idx] = step_result[signal]
-                sim_result["timestamps"][time_step_idx] = data["timestamps"][
-                    time_step_idx
-                ]
+                if data:
+                    sim_result["timestamps"][time_step_idx] = data[0].timestamps[
+                        time_step_idx
+                    ]
+                else:
+                    sim_result["timestamps"][time_step_idx] = 0.0
 
             logger.info(f"{self.element_name}: ares simulation successfully finished.")
-            return sim_result
+            return [
+                AresSignal(
+                    label=signal_name,
+                    timestamps=sim_result["timestamps"],
+                    value=signal_value,
+                )
+                for signal_name, signal_value in sim_result.items()
+                if signal_name != "timestamps"
+            ]
         except Exception as e:
             logger.error(
                 f"{self.element_name}: Error while running ares simulation: {e}"
@@ -325,32 +352,57 @@ class SimUnit:
             return None
 
     @typechecked
-    def _map_sim_input(
-        self, input: Dict[str, Any], time_steps: int = 1
-    ) -> Optional[Dict[str, Any]]:
+    def _list_to_dict(self, items: list[AresBaseType]) -> dict[str, AresBaseType]:
+        """Converts a list of AresSignal or AresParameter objects to a dictionary keyed by label.
+
+        Args:
+            items (list[AresBaseType]): List of AresSignal or AresParameter objects.
+
+        Returns:
+            dict[str, AresBaseType]: Dictionary mapping item labels to the objects.
+        """
+        result_dict = {}
+        for item in items:
+            if item.label in result_dict:
+                logger.warning(
+                    f"{self.element_name}: Duplicate label '{item.label}' found - overwriting previous value."
+                )
+            result_dict[item.label] = item
+        return result_dict
+
+    @typechecked
+    def _map_sim_input_data(
+        self, data_dict: dict[str, AresSignal], time_steps: int
+    ) -> dict[str, AresSignal] | None:
         """Maps the provided input data to the expected simulation variables from the DD.
 
         This method handles missing signals by checking for alternative names or assigning
         a default static value of 0.
 
         Args:
-            input_data (dict): The input data dictionary (e.g., from a data source).
+            data_dict (dict[str, AresSignal]): Dictionary of input signals keyed by signal label.
             time_steps (int): The total number of simulation steps.
 
         Returns:
-            Optional[Dict[str, Any]]: A dictionary of mapped input values, or `None` if a mapping error occurs.
+            dict[str, AresSignal] | None: A dictionary of mapped AresSignal objects, or `None` if a mapping error occurs.
         """
 
-        mapped_input: Dict[str, Any] = {}
-        for dd_element_name, dd_element_value in self._dd.items():
+        mapped_input: dict[str, AresSignal] = {}
+
+        timestamps = (
+            data_dict[next(iter(data_dict))].timestamps
+            if data_dict
+            else np.arange(time_steps, dtype=np.float64)
+        )
+        for dd_element_name, dd_element_value in self._dd.signals.items():
             try:
                 mapped = False
 
-                if dd_element_value.type not in ["in", "inout", "parameter"]:
+                if dd_element_value.type not in ["in", "inout"]:
                     continue
 
-                if dd_element_name in input:
-                    mapped_input[dd_element_name] = input[dd_element_name]
+                if dd_element_name in data_dict:
+                    mapped_input[dd_element_name] = data_dict[dd_element_name]
                     logger.debug(
                         f"{self.element_name}: Simulation signal '{dd_element_name}' could be mapped to the original signal.",
                     )
@@ -364,19 +416,27 @@ class SimUnit:
                         mapped = False
 
                         if isinstance(alternative_value, str):
-                            if alternative_value in input:
-                                mapped_input[dd_element_name] = input[alternative_value]
+                            if alternative_value in data_dict:
+                                mapped_input[dd_element_name] = data_dict[
+                                    alternative_value
+                                ]
                                 logger.debug(
                                     f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.",
                                 )
                                 mapped = True
                                 break
                         else:
-                            mapped_input[dd_element_name] = self._map_sim_input_static(
+                            static_value = self._map_sim_input_static(
                                 time_steps=time_steps,
                                 datatype=dd_element_value.datatype,
                                 size=dd_element_value.size,
                                 value=alternative_value,
+                            )
+                            mapped_input[dd_element_name] = AresSignal(
+                                label=dd_element_name,
+                                value=static_value,
+                                timestamps=timestamps,
+                                description=f"Static value: {alternative_value}",
                             )
                             logger.debug(
                                 f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
@@ -385,6 +445,18 @@ class SimUnit:
                             break
 
                 if not mapped:
+                    default_value = self._map_sim_input_static(
+                        time_steps=time_steps,
+                        datatype=dd_element_value.datatype,
+                        size=dd_element_value.size,
+                        value=0,
+                    )
+                    mapped_input[dd_element_name] = AresSignal(
+                        label=dd_element_name,
+                        value=default_value,
+                        timestamps=timestamps,
+                        description="Default value: 0",
+                    )
                     logger.debug(
                         f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to default constant value 0.",
                     )
@@ -400,8 +472,8 @@ class SimUnit:
 
     @typechecked
     def _map_sim_input_static(
-        self, time_steps: int, datatype: str, size: List[int], value: Any
-    ) -> Optional[np.ndarray]:
+        self, time_steps: int, datatype: str, size: list[int], value: Any
+    ) -> np.ndarray | None:
         """Creates a NumPy array of a specified size and datatype, filled with a constant value.
 
         This is used to handle simulation variables that have a static value instead of a signal.
@@ -414,7 +486,7 @@ class SimUnit:
             value (any): The constant value to assign to the variable.
 
         Returns:
-            Optional[np.ndarray]: A NumPy array containing the constant value for all time steps, or `None`
+            np.ndarray | None: A NumPy array containing the constant value for all time steps, or `None`
                 if an error occurs.
         """
         try:
@@ -438,57 +510,120 @@ class SimUnit:
             return None
 
     @typechecked
-    def _write_dll_interface(self, input: Dict[str, Any], time_step_idx: int = 0):
-        """Writes the input data for a single time step from a Python dictionary to the
-        global C variables in the shared library.
+    def _write_value_to_dll(
+        self,
+        dd_element_name: str,
+        input_value: np.ndarray | np.generic,
+        size: list[int],
+    ) -> None:
+        """Core method to write a single value to the DLL interface.
 
-        It only writes to variables marked as `'in'`, `'inout'` or `'parameter'` in the Data Dictionary.
+        Handles scalar, 1D, and 2D arrays by writing the appropriate data structure
+        to the ctypes interface. Logs warnings if write fails.
 
         Args:
-            input (dict): A dictionary with variable names and their values for the current time step.
+            dd_element_name (str): Name of the variable in the DLL interface.
+            input_value (np.ndarray | np.generic): The value to write (numpy array or numpy scalar).
+            size (list[int]): Size specification from Data Dictionary (0=scalar, 1=1D array, 2=2D array).
+        """
+        try:
+            if len(size) == 0:
+                self._dll_interface[dd_element_name].value = input_value.item()
+            elif len(size) == 1:
+                self._dll_interface[dd_element_name][:] = input_value.tolist()
+            elif len(size) == 2:
+                for i in range(size[0]):
+                    self._dll_interface[dd_element_name][i][:] = input_value[i].tolist()
+            else:
+                logger.warning(
+                    f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                )
+        except Exception as e:
+            logger.warning(
+                f"{self.element_name}: Error writing value to DLL interface for '{dd_element_name}': {e}",
+            )
+
+    @typechecked
+    def _write_signals_to_dll(
+        self, data: dict[str, AresSignal], time_step_idx: int
+    ) -> None:
+        """Writes signal values for a single time step to the DLL interface.
+
+        Args:
+            data (dict[str, AresSignal]): Dictionary with signal names as keys and AresSignal objects as values.
             time_step_idx (int): The index of the current time step.
         """
-        for dd_element_name, dd_element_value in self._dd.items():
+        for dd_element_name, dd_element_value in self._dd.signals.items():
             try:
-                if dd_element_value.type not in ["in", "inout", "parameter"]:
+                if dd_element_value.type not in ["in", "inout"]:
                     continue
 
-                elif dd_element_name in input:
-                    input_value = input[dd_element_name][time_step_idx]
+                if dd_element_name in data:
+                    input_value = data[dd_element_name].value[time_step_idx]
                     size = dd_element_value.size
-
-                    if len(size) == 0:
-                        self._dll_interface[dd_element_name].value = input_value.item()
-                    elif len(size) == 1:
-                        self._dll_interface[dd_element_name][:] = input_value.tolist()
-                    elif len(size) == 2:
-                        for i in range(size[0]):
-                            self._dll_interface[dd_element_name][i][:] = input_value[
-                                i
-                            ].tolist()
-                    else:
-                        logger.warning(
-                            f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
-                        )
-                        continue
+                    self._write_value_to_dll(dd_element_name, input_value, size)
 
             except Exception as e:
                 logger.warning(
-                    f"{self.element_name}: Warning writing input value '{dd_element_name}' to 'ares_simunit' function: {e}",
+                    f"{self.element_name}: Warning writing signal '{dd_element_name}' to 'ares_simunit' function: {e}",
                 )
 
     @typechecked
-    def _read_dll_interface(self) -> Optional[Dict[str, Any]]:
+    def _write_parameters_to_dll(self, parameters: dict[str, AresParameter]) -> None:
+        """Writes parameter values to the DLL interface.
+
+        Parameters have no time dimension and are written once.
+
+        Args:
+            parameters (dict[str, AresParameter]): Dictionary with parameter names as keys and AresParameter objects as values.
+        """
+        for dd_element_name, dd_element_value in self._dd.parameters.items():
+            try:
+                if dd_element_name in parameters:
+                    input_value = parameters[dd_element_name].value
+                    size = dd_element_value.size
+                    self._write_value_to_dll(dd_element_name, input_value, size)
+
+            except Exception as e:
+                logger.warning(
+                    f"{self.element_name}: Warning writing parameter '{dd_element_name}' to 'ares_simunit' function: {e}",
+                )
+
+    @typechecked
+    def _write_dll_interface(
+        self, input: dict[str, AresBaseType], time_step_idx: int = 0
+    ):
+        """Writes the input data for a single time step from a Python dictionary to the
+        global C variables in the shared library.
+
+        It writes both signals (marked as 'in' or 'inout') and parameters to the DLL interface.
+
+        Args:
+            input (dict[str, AresBaseType]): A dictionary with variable names as keys and AresSignal
+                or AresParameter objects as values for the current time step.
+            time_step_idx (int): The index of the current time step.
+        """
+        # Separate signals and parameters
+        signals = {k: v for k, v in input.items() if isinstance(v, AresSignal)}
+        parameters = {k: v for k, v in input.items() if isinstance(v, AresParameter)}
+
+        if signals:
+            self._write_signals_to_dll(signals, time_step_idx)
+        if parameters:
+            self._write_parameters_to_dll(parameters)
+
+    @typechecked
+    def _read_dll_interface(self) -> dict[str, Any] | None:
         """Reads the current values of the global C variables from the shared library.
 
         It only reads from variables marked as `'out'` or `'inout'` in the Data Dictionary.
 
         Returns:
-            Optional[Dict[str, Any]]: A dictionary where keys are the variable names and values are their current
+            dict[str, Any] | None: A dictionary where keys are the variable names and values are their current
                 values read from the C library for the current time step. Returns `None` if an error occurs.
         """
-        step_result: Dict[str, Any] = {}
-        for dd_element_name, dd_element_value in self._dd.items():
+        step_result: dict[str, Any] = {}
+        for dd_element_name, dd_element_value in self._dd.signals.items():
             try:
                 if dd_element_value.type not in ["out", "inout"]:
                     continue
@@ -526,6 +661,42 @@ class SimUnit:
 
         return step_result
 
+    def signal_keys(self) -> list[str]:
+        """Returns a list of signal keys defined in the Data Dictionary.
+
+        Includes both signal names from the DD and string entries from input_alternatives.
+
+        Returns:
+            list[str]: A list of signal keys and alternative signal names.
+        """
+        signal_keys = []
+
+        for dd_element_name, dd_element_value in self._dd.signals.items():
+            if dd_element_value.type in ["in", "inout"]:
+                signal_keys.append(dd_element_name)
+                if (
+                    hasattr(dd_element_value, "input_alternatives")
+                    and dd_element_value.input_alternatives
+                ):
+                    for alt in dd_element_value.input_alternatives:
+                        if isinstance(alt, str):
+                            signal_keys.append(alt)
+
+        return signal_keys
+
+    def parameter_keys(self) -> list[str]:
+        """Returns a list of parameter keys defined in the Data Dictionary.
+
+        Returns:
+            list[str]: A list of parameter keys.
+        """
+        parameter_keys = []
+
+        for parameter_name in self._dd.parameters.keys():
+            parameter_keys.append(parameter_name)
+
+        return parameter_keys
+
 
 def ares_plugin(plugin_input):
     """ARES plugin entrypoint for sim_unit elements.
@@ -540,32 +711,40 @@ def ares_plugin(plugin_input):
             - ... other fields from WorkflowElement
     """
 
-    element_parameter_lists: List[List[AresParamInterface]] = plugin_input.get(
+    element_parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
         "parameter", []
     )
-    element_data_lists: List[List[AresDataInterface]] = plugin_input.get("data", [])
+    element_data_lists: list[list[AresDataInterface]] = plugin_input.get("input", [])
 
     sim_unit = SimUnit(
+        # TODO: should we use the element name everywhere for log messages?
         element_name=plugin_input["element_name"],
         file_path=plugin_input["file_path"],
-        dd_path=plugin_input["dd_path"],
+        dd_path=plugin_input["data_dictionary"],
     )
+
+    label_filter_signal = sim_unit.signal_keys()
+    label_filter_parameter = sim_unit.parameter_keys()
 
     for element_parameter_list in element_parameter_lists:
         for element_parameter_obj in element_parameter_list:
             for element_data_list in element_data_lists:
                 for element_data_obj in element_data_list:
-                    dependencie_list = [
-                        element_parameter_obj.hash,
-                        element_data_obj.hash,
-                    ]
+                    dependencies = [element_parameter_obj.hash, element_data_obj.hash]
 
-                    sim_result = sim_unit.run_simulation(
-                        data=None,
-                        parameter=element_parameter_obj.get(),
+                    sim_result = sim_unit.run(
+                        data=element_data_obj.get(
+                            stepsize=plugin_input["stepsize"],
+                            label_filter=label_filter_signal,
+                        ),
+                        parameters=element_parameter_obj.get(
+                            label_filter=label_filter_parameter
+                        ),
                     )
 
                     if sim_result is not None:
                         AresDataInterface.create(
-                            data=sim_result, dependencies=dependencie_list
+                            signals=sim_result,
+                            dependencies=dependencies,
+                            source_name=plugin_input.get("element_name"),
                         )
