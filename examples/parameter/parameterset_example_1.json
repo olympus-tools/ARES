@@ -223,12 +223,12 @@
     "sample_time": {
         "description": "Schrittweite der Software Komponente",
         "unit": "ms",
-        "value": 10
+        "value": 1000
     },
     "cutoff_freq": {
         "description": "Eckfrequenz des PT1 Glieds",
         "unit": "Hz",
-        "value": 5.0
+        "value": 0.053
     },
     "Injektor_Timing_Map_2D": {
         "description": "Festgelegte Timing-Werte fuer Injektoren",

@@ -1,22 +1,24 @@
 {
-    "input_value": {
-        "type": "in",
-        "datatype": "float",
-        "size": [],
-        "input_alternatives": [
-            0,
-            "test_alternative"
-        ]
+    "signals":{
+        "input_value": {
+            "type": "in",
+            "datatype": "float",
+            "size": [],
+            "input_alternatives": [
+                0,
+                "test_alternative"
+            ]
+        },
+        "derivation_output": {
+            "type": "out",
+            "datatype": "float",
+            "size": []
+        }
     },
-    "sample_time": {
-        "type": "parameter",
-        "datatype": "float",
-        "size": []
-    },
-    "derivation_output": {
-        "type": "out",
-        "datatype": "float",
-        "size": []
+    "parameters": {
+        "sample_time": {
+            "datatype": "float",
+            "size": []
+        }
     }
-
 }

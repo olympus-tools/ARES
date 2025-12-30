@@ -94,14 +94,14 @@ FESTWERT sample_time
     LANGNAME "Schrittweite der Software Komponente"
     FUNKTION SWC
     EINHEIT_W "ms"
-    WERT    10
+    WERT    1000
 END
 
 FESTWERT cutoff_freq
     LANGNAME "Eckfrequenz des PT1 Glieds"
     FUNKTION Filter
     EINHEIT_W "Hz"
-    WERT    5.0
+    WERT    0.053
 END
 
 FESTWERTEBLOCK Injektor_Timing_Map_2D 3 @ 2

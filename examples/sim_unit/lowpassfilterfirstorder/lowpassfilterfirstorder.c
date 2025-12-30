@@ -9,12 +9,17 @@ float sample_time = 0.f;
  *
  * @param[in] input_value Input signal to be filtered.
  * @return Current filter value.
+ *
+ * @note sample_time is expected in milliseconds and will be converted to seconds internally.
  */
 float lowpassfilter_first_order(float input_value)
 {
+    // Convert sample_time from milliseconds to seconds
+    float sample_time_s = sample_time / 1000.0f;
+
     // Calculate filter coefficient alpha from cutoff frequency and sample time
     float RC = 1.0f / (2.0f * 3.1415f * cutoff_freq);
-    float alpha = sample_time / (RC + sample_time);
+    float alpha = sample_time_s / (RC + sample_time_s);
 
     filter_last_output = alpha * input_value + (1.0f - alpha) * filter_last_output;
     return filter_last_output;

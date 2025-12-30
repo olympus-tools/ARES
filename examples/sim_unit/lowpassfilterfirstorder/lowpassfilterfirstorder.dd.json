@@ -1,26 +1,28 @@
 {
-    "input_value": {
-        "type": "in",
-        "datatype": "float",
-        "size": [],
-        "input_alternatives": [
-            1,
-            "test_alternative"
-        ]
+    "signals": {
+        "input_value": {
+            "type": "in",
+            "datatype": "float",
+            "size": [],
+            "input_alternatives": [
+                1,
+                "test_alternative"
+            ]
+        },
+        "filter_output": {
+            "type": "out",
+            "datatype": "float",
+            "size": []
+        }
     },
-    "sample_time": {
-        "type": "parameter",
-        "datatype": "float",
-        "size": []
-    },
-   "cutoff_freq": {
-        "type": "parameter",
-        "datatype": "float",
-        "size": []
-    },
-    "filter_output": {
-        "type": "out",
-        "datatype": "float",
-        "size": []
+    "parameters": {
+        "sample_time": {
+            "datatype": "float",
+            "size": []
+        },
+        "cutoff_freq": {
+            "datatype": "float",
+            "size": []
+        }
     }
 }
