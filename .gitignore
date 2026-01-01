@@ -1,6 +1,7 @@
 # folders
-**/examples/output/*
-**/dist/*
+examples/output/*
+dist/*
+logs/
 
 # python
 **/.venv/*

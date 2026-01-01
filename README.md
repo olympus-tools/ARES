@@ -129,8 +129,6 @@ This project is licensed under the Apache License 2.0 — see the [LICENSE](http
 
 This project includes or depends on third-party software components. All dependencies and their respective licenses are documented in the [NOTICE](https://github.com/AndraeCarotta/ARES/blob/master/NOTICE) file in accordance with Apache License 2.0 requirements.
 
-Copyright 2025 Andrä Carotta
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at

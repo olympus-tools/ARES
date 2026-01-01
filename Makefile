@@ -89,9 +89,12 @@ release-build:
 	@echo ""
 	@echo "Release build complete."
 
-.PHONY: release-thirdpartycheck
-release-thirdpartycheck:
+.PHONY: thirdpartycheck
+thirdpartycheck: setup-venv
 	@echo ""
+	@echo "Running third-party dependency analysis..."
+	@"$(VENV_DIR)/bin/python" scripts/analyze_dependencies.py --format json --generate-notice --check-compatibility
+	@echo "Third-party dependency check complete."
 
 .PHONY: release-upload
 release-upload:
@@ -109,7 +112,7 @@ release-upload:
 	fi
 
 .PHONY: release
-release: release-checklist release-changelog release-thirdpartycheck release-build release-upload
+release: release-checklist release-changelog thirdpartycheck release-build release-upload
 	@echo ""
 	@echo "Release process complete!"
 
