@@ -142,7 +142,8 @@ class MF4Handler(MDF, AresDataInterface):
         """Helper function for get() that handles multiple occurrences of signals in MF4 files.
 
         Uses asammdf's whereis() function to locate signals and selects the signal
-        with the most samples when multiple occurrences exist.
+        with the most samples when multiple occurrences exist. Missing signals are
+        skipped with a warning instead of causing errors.
 
         Args:
             label_filter (list[str]): List of signal names to retrieve from the MF4 file.
@@ -150,37 +151,41 @@ class MF4Handler(MDF, AresDataInterface):
 
         Returns:
             list[AresSignal]: List of AresSignal objects extracted from the MF4 file.
+                Only contains signals that were actually found.
         """
 
         occurences = [self.whereis(c) for c in label_filter]
-        not_found = np.array([i for i, x in enumerate(occurences) if len(x) == 0])
+        not_found = [i for i, x in enumerate(occurences) if len(x) == 0]
         if len(not_found) > 0:
-            missing_channels = ",".join([label_filter[i] for i in not_found])
-            logger.error(
+            missing_channels = ", ".join([label_filter[i] for i in not_found])
+            logger.warning(
                 f"Selection of the following channels not possible. Existence is not given: {missing_channels}"
             )
-        single_occ = np.array([i for i, x in enumerate(occurences) if len(x) == 1])
-        multi_occ = np.array([i for i, x in enumerate(occurences) if len(x) > 1])
+        
+        single_occ = [i for i, x in enumerate(occurences) if len(x) == 1]
+        multi_occ = [i for i, x in enumerate(occurences) if len(x) > 1]
 
-        data: list[Signal | None] = [None] * len(label_filter)
+        # Collect only found signals (no static list with None values)
+        found_signals: list[Signal] = []
+        
         if len(single_occ) > 0:
             selected_signals = super().select(
                 [label_filter[idx] for idx in single_occ], **kwargs
             )
-            for i, idx in enumerate(single_occ):
-                data[idx] = selected_signals[i]
+            found_signals.extend(selected_signals)
+        
         for i in multi_occ:
             sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurences[i]]
             all_signals = super().select(sel_signal, **kwargs)
             len_samples = [len(s.samples) for s in all_signals]
             idx = len_samples.index(max(len_samples))
-            data[i] = all_signals[idx]
+            found_signals.append(all_signals[idx])
 
         return [
             AresSignal(
                 label=signal.name, timestamps=signal.timestamps, value=signal.samples
             )
-            for signal in data
+            for signal in found_signals
         ]
 
     @typechecked
