@@ -1,0 +1,52 @@
+name: License Check Pipeline
+
+on:
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'pyproject.toml'
+      - 'NOTICE'
+      - 'scripts/analyze_dependencies.py'
+  push:
+    branches:
+      - master
+
+jobs:
+  check-notice:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Print system information
+        run: |
+          echo "Running on Linux"
+          uname -a
+
+      - name: Run dependency analysis and generate NOTICE
+        run: |
+          make thirdpartycheck
+
+      - name: Compare generated NOTICE with remote master
+        run: |
+          # Ensure local copy of origin/master is up to date
+          git fetch origin master
+
+          # Compare the freshly generated file on disk with the blob from origin/master
+          # Using --no-index to compare a process substitution stream with a physical file
+          if git diff --no-index --exit-code <(git show origin/master:NOTICE) NOTICE > /dev/null 2>&1; then
+            echo "✓ The generated NOTICE matches the current remote master."
+          else
+            echo "::error::NOTICE mismatch detected against master!"
+            echo "The generated NOTICE is different from the one on origin/master."
+            echo ""
+            echo "Detailed Differences:"
+
+            # Display the actual diff for debugging purposes
+            git diff --no-index <(git show origin/master:NOTICE) NOTICE
+
+            # Fail the build
+            exit 1
+          fi
