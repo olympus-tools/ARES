@@ -21,7 +21,7 @@ To use ARES until the first release or for development the recommended way to us
 To simplify the process of creating and configuring the virtualenv the following make command can be used:
 
 ```bash
-make setup_venv
+make setup-venv
 ``` 
 
 What the make command does:

@@ -23,7 +23,7 @@ jobs:
 
       - name: Test examples
         run: |
-          make test_examples
+          make test-examples
 
       - name: Clean up
         run: |
