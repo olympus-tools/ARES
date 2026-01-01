@@ -102,8 +102,13 @@ Before you start coding, please create a new issue for your planned work. This h
 2.  **Make your changes.** Ensure your code is well-commented and follows our coding style defined in `.github/instructions/` (e.g., `python.instructions.md` for Python files, `markdown.instructions.md` for Markdown).
 3.  **Format your code** using `make format`. Verify formatting compliance with `make format-check` before committing.
 4.  **Test your changes.** Verify that your code works as expected and doesn't introduce any new bugs.
-5.  **Sign your commits.** All commits must be signed using GPG or SSH keys to verify authorship. See [GitHub's guide on commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) for setup instructions.
-6.  **Write clear and structured commit messages.** We use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
+5.  **Update dependencies documentation.** If you added or modified dependencies in `pyproject.toml`, regenerate the NOTICE file:
+    ```bash
+    make thirdpartycheck
+    ```
+    This ensures all third-party licenses are properly documented and Apache 2.0 compatible.
+6.  **Sign your commits.** All commits must be signed using GPG or SSH keys to verify authorship. See [GitHub's guide on commit signing](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits) for setup instructions.
+7.  **Write clear and structured commit messages.** We use the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification.
 
 **In your pull request, please:**
 
