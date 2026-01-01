@@ -9,7 +9,8 @@ applyTo: '**/*.py'
 
 - Write clear and concise comments for each function in English.
 - Ensure functions have descriptive names and include type hints.
-- Use the `typing` module for type annotations (e.g., `Union[int, float]`, `List[str]`, `Dict[str, int]`).
+- **Prefer built-in Python types** for type annotations (e.g., `int | float`, `list[str]`, `dict[str, int]`, `tuple[int, ...]`).
+- **Use the `typing` module when no suitable built-in type exists** for the required type annotation (e.g., `Callable`, `TypeVar`, `Protocol`, `Any`, `ClassVar`).
 - Break down complex functions into smaller, more manageable functions.
 - Use @typechecked decorator for methods and functions.
 - Use **Pydantic models** for input validation when working with structured data.
@@ -42,41 +43,42 @@ applyTo: '**/*.py'
 
 - Always use **Google style** for documentation.
 - Include `Args`, `Returns` and when relevant => other sections (e.g. Examples,...) should not be included.
-- Use **typing** for all arguments and return values.
+- Use **built-in types** for all arguments and return values where possible.
 - Decorate with `@typechecked` and use **Pydantic models** if applicable.
 - Imports should always be listed together at the beginning of the Python file.
 
 ```python
-from typing import Union
-from typeguard import typechecked
 import math
+
 from pydantic import BaseModel, Field
+from typeguard import typechecked
+
 
 class Circle(BaseModel):
     """Pydantic model for circle input validation."""
-    radius: Union[int, float] = Field(..., gt=0, description="Radius of the circle, must be > 0")
+
+    radius: int | float = Field(
+        ..., gt=0, description="Radius of the circle, must be > 0"
+    )
 
 
 @typechecked
-def calculate_area(radius: Union[int, float]) -> float:
-    """
-    Calculate the area of a circle given the radius.
+def calculate_area(radius: int | float) -> float:
+    """Calculate the area of a circle given the radius.
 
     Args:
-        radius (Union[int, float]): The radius of the circle. Must be positive.
-    
+        radius (int | float): The radius of the circle. Must be positive.
+
     Returns:
         float: The area of the circle, calculated as π * radius^2.
     """
     if radius <= 0:
         raise ValueError("Radius must be greater than zero.")
-    return math.pi * radius ** 2
+    return math.pi * radius**2
 
 
 def test_calculate_area():
-    """
-    Unit tests for calculate_area function.
-    """
+    """Unit tests for calculate_area function."""
     assert abs(calculate_area(1) - math.pi) < 1e-9
     assert abs(calculate_area(2.5) - (math.pi * 2.5**2)) < 1e-9
 
