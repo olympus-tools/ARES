@@ -1,10 +1,10 @@
 # makefile to manage project
 # commands:
-#   - make setup_venv
+#   - make setup-venv
 #   - make examples
 #   - make test
 #   - make format
-#   - make format_check
+#   - make format-check
 #   - make clean
 #   - make release-checklist
 #   - make release-changelog
@@ -14,9 +14,8 @@
 
 VENV_DIR := .venv
 
-.PHONY: setup_venv
-setup_venv:
-setup_venv:
+.PHONY: setup-venv
+setup-venv:
 	@if [ -d "$(VENV_DIR)" ]; then \
 		echo "Virtual environment '$(VENV_DIR)' already exists."; \
 	else \
@@ -35,24 +34,24 @@ setup_venv:
 	fi
 
 .PHONY: examples
-examples: setup_venv
+examples: setup-venv
 	$(MAKE) -C examples
 
-.PHONY: test_examples
-test_examples: setup_venv
+.PHONY: test-examples
+test-examples: setup-venv
 	$(MAKE) -C examples/sim_unit all
 	@"$(VENV_DIR)/bin/python" -m pytest test/examples
 
-.PHONY: test_requirements
-test_requirements: setup_venv
+.PHONY: test-requirements
+test-requirements: setup-venv
 	@"$(VENV_DIR)/bin/python" -m pytest test/ --ignore=test/examples
 
 .PHONY: format
-format: setup_venv
+format: setup-venv
 	@"$(VENV_DIR)/bin/python" -m ruff format . --exclude ares/core/version.py --exclude .venv
 
-.PHONY: format_check
-format_check: setup_venv
+.PHONY: format-check
+format-check: setup-venv
 	@"$(VENV_DIR)/bin/python" -m ruff format --check . --exclude ares/core/version.py --exclude .venv
 
 .PHONY: release-checklist
@@ -120,7 +119,7 @@ clean:
 	read -r REPLY; \
 	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
 		echo "Cleaning project in mode full..."; \
-		$(MAKE) clean_light; \
+		$(MAKE) clean-light; \
 		rm -rf logs; \
 		rm -rf examples/output; \
 		echo "Project cleaned successfully in mode full."; \
@@ -128,8 +127,8 @@ clean:
 		echo "Clean cancelled."; \
 	fi
 
-.PHONY: clean_light
-clean_light:
+.PHONY: clean-light
+clean-light:
 	echo "Cleaning project in mode light..."; \
 	find . -type f -name "*.pyc" | xargs rm -fr; \
 	find . -type d -name __pycache__ | xargs rm -fr; \

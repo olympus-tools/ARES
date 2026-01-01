@@ -25,13 +25,13 @@
         {
             "label": "prepare-simunit-inout-handling",
             "type": "shell",
-            "command": "make -C examples/sim_unit inout_handling",
+            "command": "make -C examples/sim_unit inout-handling",
             "problemMatcher": []
         },
         {
-            "label": "clean_light",
+            "label": "clean-light",
             "type": "shell",
-            "command": "make clean_light",
+            "command": "make clean-light",
             "problemMatcher": []
         }
     ]

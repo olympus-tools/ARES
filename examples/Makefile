@@ -8,7 +8,7 @@ VENV_DIR ?= ../.venv
 example1:
 	$(MAKE) -C sim_unit derivation
 	$(MAKE) -C sim_unit lowpassfilterfirstorder
-	$(MAKE) -C sim_unit inout_handling
+	$(MAKE) -C sim_unit inout-handling
 	@echo "Running workflow example 1..."
 	@"$(VENV_DIR)/bin/python" -m ares pipeline \
 		-wf workflow/workflow_example_1.json \

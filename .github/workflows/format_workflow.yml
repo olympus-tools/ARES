@@ -23,7 +23,7 @@ jobs:
 
       - name: Run ruff for format checking
         run: |
-          make format_check
+          make format-check
 
       - name: Clean up
         run: |
