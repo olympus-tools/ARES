@@ -1,7 +1,6 @@
 # ARES
 The **A**utomated **R**apid **E**mbedded **S**imulation project is a tool for performing open- and closed-loop simulations of software components. The primary application area is the development of software components for embedded applications.
 
-ARES is licensed under the MIT License — see the [LICENSE.md](https://github.com/AndraeCarotta/ARES/blob/master/LICENSE) file for details.
 We are committed to a welcoming and inclusive community. Please read our [Code of Conduct](https://github.com/AndraeCarotta/ARES/blob/master/CODE_OF_CONDUCT.md) before contributing.
 
 * [1. Installation](#1-installation)
@@ -13,6 +12,7 @@ We are committed to a welcoming and inclusive community. Please read our [Code o
     * [5.2. Workflow Elements](#52-workflow-elements)
     * [5.3. Example Workflows](#53-example-workflows)
 * [6. Examples](#6-examples)
+* [7. License](#7-license)
 
 ## 1. Installation
 
@@ -120,3 +120,25 @@ flowchart LR
 ## 6. Examples
 
 For a detailed explanation of the example applications, please refer to [README.md](https://github.com/AndraeCarotta/ARES/blob/master/examples/README.md).
+
+## 7. License
+
+This project is licensed under the Apache License 2.0 — see the [LICENSE](https://github.com/AndraeCarotta/ARES/blob/master/LICENSE) file for details.
+
+### Third-Party Dependencies
+
+This project includes or depends on third-party software components. All dependencies and their respective licenses are documented in the [NOTICE](https://github.com/AndraeCarotta/ARES/blob/master/NOTICE) file in accordance with Apache License 2.0 requirements.
+
+Copyright 2025 Andrä Carotta
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

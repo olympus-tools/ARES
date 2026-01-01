@@ -13,19 +13,21 @@ ________________________________________________________________________
 |              Automated Rapid Embedded Simulation (c)                 |
 |______________________________________________________________________|
 
-# Copyright (c) 2025 Andrä Carotta
-#
-# Licensed under the MIT License. See the LICENSE file for details.
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-# You may obtain a copy of the License at
-# https://github.com/AndraeCarotta/ares/blob/master/LICENSE
+Copyright 2025 Andrä Carotta
 
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
 import datetime
@@ -161,19 +163,19 @@ class MF4Handler(MDF, AresDataInterface):
             logger.warning(
                 f"Selection of the following channels not possible. Existence is not given: {missing_channels}"
             )
-        
+
         single_occ = [i for i, x in enumerate(occurences) if len(x) == 1]
         multi_occ = [i for i, x in enumerate(occurences) if len(x) > 1]
 
         # Collect only found signals (no static list with None values)
         found_signals: list[Signal] = []
-        
+
         if len(single_occ) > 0:
             selected_signals = super().select(
                 [label_filter[idx] for idx in single_occ], **kwargs
             )
             found_signals.extend(selected_signals)
-        
+
         for i in multi_occ:
             sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurences[i]]
             all_signals = super().select(sel_signal, **kwargs)
