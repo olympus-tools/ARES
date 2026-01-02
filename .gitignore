@@ -1,7 +1,9 @@
 # folders
 examples/output/*
 dist/*
-logs/
+logs/*
+dist/*
+build/*
 
 # python
 **/.venv/*
@@ -12,7 +14,6 @@ logs/
 **/ARES.egg-info/*
 *.pyc
 *.pyo
-**/build/*
 **/.zed/*
 
 # datasource
@@ -25,6 +26,7 @@ logs/
 
 # others
 *.log
+*.spec
 
 # vim dev
 .session.vim
