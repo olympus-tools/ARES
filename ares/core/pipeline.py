@@ -38,6 +38,7 @@ from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.interface.plugin.ares_plugin_interface import AresPluginInterface
 from ares.utils.logger import create_logger
+from ares.utils.paths import get_project_root
 
 logger = create_logger(__name__)
 
@@ -104,7 +105,8 @@ def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
 
                     if wf_element_value.type == "sim_unit":
                         plugin_input["plugin_path"] = os.path.join(
-                            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                            get_project_root(),
+                            "ares",
                             "plugins",
                             "simunit.py",
                         )
