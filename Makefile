@@ -2,7 +2,8 @@
 # commands:
 #   - make setup-venv
 #   - make examples
-#   - make test
+#   - make test-requirements
+#   - make test-examples
 #   - make format
 #   - make format-check
 #   - make clean

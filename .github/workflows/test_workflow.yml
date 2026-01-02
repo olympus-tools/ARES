@@ -21,9 +21,13 @@ jobs:
           echo "Running on Linux"
           uname -a
 
-      - name: Run tests
+      - name: Run requirements tests
         run: |
-          make test
+          make test-requirements
+
+      - name: Run example tests
+        run: |
+          make test-examples
 
       - name: Clean up
         run: |
