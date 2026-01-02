@@ -1,4 +1,4 @@
-name: Format Check Pipeline
+name: Check Format Pipeline
 
 on:
   push:
