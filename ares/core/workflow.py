@@ -37,7 +37,7 @@ from datetime import datetime
 from typing import Any
 
 from jsonschema import ValidationError
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.pydantic_models.workflow_model import WorkflowModel
 from ares.utils.logger import create_logger

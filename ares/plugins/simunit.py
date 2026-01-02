@@ -37,7 +37,7 @@ from typing import Any, ClassVar, TypeVar
 
 import numpy as np
 from pydantic import ValidationError
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal

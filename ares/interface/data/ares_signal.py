@@ -35,7 +35,7 @@ from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 
 @dataclass

@@ -36,7 +36,7 @@ from abc import ABC, abstractmethod
 from typing import ClassVar, Dict, List, Optional
 
 import numpy as np
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.pydantic_models.workflow_model import DataElement

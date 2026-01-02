@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict
 
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.utils.logger import create_logger
 
