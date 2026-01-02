@@ -2,13 +2,15 @@
 # commands:
 #   - make setup-venv
 #   - make examples
-#   - make test-requirements
 #   - make test-examples
+#   - make test-requirements
 #   - make format
 #   - make format-check
 #   - make clean
+#   - make clean-light
 #   - make release-checklist
 #   - make release-changelog
+#   - make thirdpartycheck
 #   - make release-build
 #   - make release-upload
 #   - make release

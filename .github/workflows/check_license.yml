@@ -1,4 +1,4 @@
-name: License Check Pipeline
+name: Check License Pipeline
 
 on:
   pull_request:

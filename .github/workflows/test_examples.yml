@@ -1,4 +1,4 @@
-name: Test Pipeline
+name: Test Examples Pipeline
 
 on:
   push:
@@ -20,10 +20,6 @@ jobs:
         run: |
           echo "Running on Linux"
           uname -a
-
-      - name: Run requirements tests
-        run: |
-          make test-requirements
 
       - name: Run example tests
         run: |
