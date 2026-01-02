@@ -6,12 +6,12 @@
 #   - make test-requirements
 #   - make format
 #   - make format-check
+#   - make build-executable
 #   - make clean
 #   - make clean-light
 #   - make release-checklist
 #   - make release-changelog
 #   - make thirdpartycheck
-#   - make release-build
 #   - make release-upload
 #   - make release
 
@@ -20,20 +20,27 @@ VENV_DIR := .venv
 .PHONY: setup-venv
 setup-venv:
 	@if [ -d "$(VENV_DIR)" ]; then \
-		echo "Virtual environment '$(VENV_DIR)' already exists."; \
-	else \
-		echo "Creating virtual environment '$(VENV_DIR)'..."; \
-		python3 -m venv "$(VENV_DIR)" || { echo "Error: Failed to create virtual environment."; exit 1; }; \
-		echo "Installing project dependencies in virtual environment '$(VENV_DIR)'..."; \
-		\
-		# Check if .git exists to decide on versioning strategy for editable install \
-		if [ ! -d ".git" ]; then \
-			echo "NOTE: .git directory not found. Setting pretend version for installation."; \
-			SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+		printf "Virtual environment '$(VENV_DIR)' already exists. Recreate it? [y/n] "; \
+		read -r REPLY; \
+		if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
+			echo "Removing existing virtual environment '$(VENV_DIR)'..."; \
+			rm -rf "$(VENV_DIR)"; \
 		else \
-			echo "NOTE: .git directory found. Using setuptools_scm for versioning."; \
-			"$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
+			echo "Using existing virtual environment '$(VENV_DIR)'."; \
+			exit 0; \
 		fi; \
+	fi; \
+	echo "Creating virtual environment '$(VENV_DIR)'..."; \
+	python3 -m venv "$(VENV_DIR)" || { echo "Error: Failed to create virtual environment."; exit 1; }; \
+	echo "Installing project dependencies in virtual environment '$(VENV_DIR)'..."; \
+	\
+	# Check if .git exists to decide on versioning strategy for editable install \
+	if [ ! -d ".git" ]; then \
+		echo "NOTE: .git directory not found. Setting pretend version for installation."; \
+		SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+	else \
+		echo "NOTE: .git directory found. Using setuptools_scm for versioning."; \
+		"$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
 	fi
 
 .PHONY: examples
@@ -56,6 +63,13 @@ format: setup-venv
 .PHONY: format-check
 format-check: setup-venv
 	@"$(VENV_DIR)/bin/python" -m ruff format --check . --exclude ares/core/version.py --exclude .venv
+
+.PHONY: build-executable
+build-executable: setup-venv
+	@echo "Building executable with PyInstaller..."
+	@"$(VENV_DIR)/bin/pyinstaller" --onefile --name ares --paths . --add-data "ares/plugins/simunit.py:ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" ares/__main__.py
+	@echo ""
+	@echo "Executable created in dist/ares"
 
 .PHONY: release-checklist
 release-checklist:
@@ -82,16 +96,6 @@ release-changelog:
 	@"$(VENV_DIR)/bin/python" scripts/generate_changelog.py
 	@echo "CHANGELOG.md generated."
 
-.PHONY: release-build
-release-build:
-	@echo ""
-	@echo "Building release packages..."
-	@rm -rf dist/
-	@"$(VENV_DIR)/bin/python" -m build
-	@"$(VENV_DIR)/bin/twine" check dist/*
-	@echo ""
-	@echo "Release build complete."
-
 .PHONY: thirdpartycheck
 thirdpartycheck: setup-venv
 	@echo ""
@@ -115,7 +119,7 @@ release-upload:
 	fi
 
 .PHONY: release
-release: release-checklist release-changelog thirdpartycheck release-build release-upload
+release: release-checklist release-changelog thirdpartycheck build-executable release-upload
 	@echo ""
 	@echo "Release process complete!"
 
