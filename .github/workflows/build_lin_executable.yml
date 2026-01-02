@@ -1,0 +1,48 @@
+name: Build Linux Executable Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build-executable:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Print system information
+        run: |
+          echo "Running on Linux"
+          uname -a
+
+      - name: Build executable
+        run: |
+          make build-executable
+
+      - name: Verify executable
+        run: |
+          ./dist/ares --version
+
+      - name: Build simulation units
+        run: |
+          make -C examples/sim_unit all
+
+      - name: Run Example 1 with Executable
+        run: |
+          ./dist/ares pipeline --workflow examples/workflow/workflow_example_1.json --output examples/output/ --log-level 10
+
+      - name: Run Example 2 with Executable
+        run: |
+          ./dist/ares pipeline --workflow examples/workflow/workflow_example_2.json --output examples/output/ --log-level 10
+
+      - name: Clean up
+        run: |
+          make clean
