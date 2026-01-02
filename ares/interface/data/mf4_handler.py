@@ -29,6 +29,7 @@ ________________________________________________________________________
 """
 
 import datetime
+import os
 from typing import override
 
 import numpy as np
@@ -60,7 +61,8 @@ class MF4Handler(MDF, AresDataInterface):
         """Initialize MF4Handler and load available channels.
 
         Checks if asammdf MDF is already initialized to avoid duplicate initialization.
-        In read mode, loads the MF4 file. In write mode, creates an empty MDF instance.
+        In read mode, loads the MF4 file.
+        In write mode, creates an empty MDF instance plus adds signals if any are given.
 
         Args:
             file_path (str | None): Path to the MF4 file to load or write.
@@ -69,22 +71,23 @@ class MF4Handler(MDF, AresDataInterface):
 
         AresDataInterface.__init__(self, file_path=file_path, **kwargs)
 
-        if file_path:
-            try:
-                super().__init__(file_path, **kwargs)
-            except Exception as e:
-                logger.error(f"Error initializing MF4Handler with {file_path}: {e}")
-        else:
+        signals = kwargs.pop("signals", [])
+        if file_path is None or file_path == "":
             super().__init__(**kwargs)
 
-        signals = kwargs.pop("signals", [])
-        if signals:
-            try:
-                self.add(signals=signals, **kwargs)
-            except Exception as e:
-                logger.warning(
-                    f"Warning: loading signals to MF4Handler not possible: {e}"
+            if signals is None:
+                self._available_channels: list[str] = []
+                return
+        else:
+            if not os.path.isfile(file_path):
+                raise FileNotFoundError(
+                    "The signal file requested to read doesn't exist. File requested: {file_path}"
                 )
+            super().__init__(file_path, **kwargs)
+
+        if signals:
+            self.add(signals=signals, **kwargs)
+            return
 
         self._available_signals: list[str] = list(self.channels_db.keys())
         for obs_channel in OBSOLETE_SIGNALS:
@@ -182,6 +185,7 @@ class MF4Handler(MDF, AresDataInterface):
 
     @typechecked
     @override
+    # TODO: safely_run function candidate?
     def add(self, signals: list[AresSignal], **kwargs) -> None:
         """Add AresSignal objects to MF4 file.
 
@@ -214,3 +218,4 @@ class MF4Handler(MDF, AresDataInterface):
             for sig in signals
         ]
         self.append(signals_to_write)
+        [self._available_channels.append(sig.label) for sig in signals]
