@@ -33,7 +33,7 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 import json
 from typing import Any, Dict, List, Optional, override
 
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface

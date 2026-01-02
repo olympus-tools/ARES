@@ -34,7 +34,7 @@ import re
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 
 class ParamDCM:

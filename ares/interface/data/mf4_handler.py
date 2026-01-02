@@ -36,7 +36,7 @@ from typing import override
 
 import numpy as np
 from asammdf import MDF, Signal, Source
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal

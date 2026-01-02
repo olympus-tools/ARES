@@ -31,6 +31,8 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
 # standard includes
+import os
+import sys
 from functools import wraps
 
 # ares includes
@@ -68,3 +70,25 @@ def safely_run(
         return wrapper
 
     return wrap
+
+
+def typechecked_dev(func):
+    """Applies typeguard's @typechecked only in development mode.
+
+    In production or frozen environments (PyInstaller), this decorator
+    does nothing, allowing the code to run without runtime type checking.
+
+    Use ARES_DISABLE_TYPEGUARD=1 to disable type checking explicitly.
+    """
+    # Check if we're in a frozen (PyInstaller) environment or if explicitly disabled
+    is_frozen = getattr(sys, "frozen", False)
+    is_disabled = os.environ.get("ARES_DISABLE_TYPEGUARD", "0") == "1"
+
+    if is_frozen or is_disabled:
+        # Return function unchanged
+        return func
+    else:
+        # Apply typeguard in development
+        from typeguard import typechecked
+
+        return typechecked(func)

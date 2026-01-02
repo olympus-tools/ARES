@@ -35,7 +35,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import ClassVar, Dict, List, Optional
 
-from typeguard import typechecked
+from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.pydantic_models.workflow_model import ParameterElement
