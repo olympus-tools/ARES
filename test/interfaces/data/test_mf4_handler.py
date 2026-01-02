@@ -52,21 +52,23 @@ def test_ares_mf4handler_file_init_read():
 
 def test_ares_mf4handler_file_init_write():
     """
-    Test if mf4handler can be initialized with mf4-file mode "write".
+    Test if mf2handler can be initialized with mf4-file mode "write".
     """
     mf4_filepath = os.path.join(os.path.dirname(__file__), "test_file.mf4")
-    test_data_write = MF4Handler(file_path=mf4_filepath, mode="write")
-    test_data_write.write(mf4_filepath)
+    test_data_write01 = MF4Handler(file_path=None)
+    test_data_write01._save(mf4_filepath)
+    test_data_write02 = MF4Handler(file_path="")
+    test_data_write02._save(mf4_filepath)
 
     if not os.path.isfile(mf4_filepath):
-        assert "Argh. No mf4-file was created. Check mf4_handler implementation."
+        assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
     else:
         os.remove(mf4_filepath)
 
     # WARN: The following part in the test leads to an recursion in asammdf. This is on purpose!
     with pytest.raises(FileNotFoundError):
-        test_data_read = MF4Handler(file_path=mf4_filepath, mode="read")
+        test_data_read = MF4Handler(file_path=mf4_filepath)
 
 
 if __name__ == "__main__":
-    test_ares_mf4handler_file_init_read()
+    test_ares_mf4handler_file_init_write()
