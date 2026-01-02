@@ -76,8 +76,12 @@ class MF4Handler(MDF, AresDataInterface):
             super().__init__(**kwargs)
 
             if signals is None:
-                self._available_channels: list[str] = []
+                self._available_signals: list[str] = []
                 return
+            else:
+                self._available_signals: list[str] = [
+                    signal.label for signal in signals
+                ]
         else:
             if not os.path.isfile(file_path):
                 raise FileNotFoundError(
@@ -218,4 +222,4 @@ class MF4Handler(MDF, AresDataInterface):
             for sig in signals
         ]
         self.append(signals_to_write)
-        [self._available_channels.append(sig.label) for sig in signals]
+        [self._available_signals.append(signal.label) for signal in signals]
