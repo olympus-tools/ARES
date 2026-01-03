@@ -74,29 +74,25 @@ class MF4Handler(MDF, AresDataInterface):
         signals = kwargs.pop("signals", [])
         if file_path is None or file_path == "":
             super().__init__(**kwargs)
+            self._available_signals: list[str] = []
 
             if signals is None:
-                self._available_signals: list[str] = []
                 return
             else:
-                self._available_signals: list[str] = [
-                    signal.label for signal in signals
-                ]
+                self.add(signals=signals, **kwargs)
+                return
+
         else:
             if not os.path.isfile(file_path):
                 raise FileNotFoundError(
                     "The signal file requested to read doesn't exist. File requested: {file_path}"
                 )
             super().__init__(file_path, **kwargs)
+            self._available_signals = list(self.channels_db.keys())
 
-        if signals:
-            self.add(signals=signals, **kwargs)
-            return
-
-        self._available_signals: list[str] = list(self.channels_db.keys())
-        for obs_channel in OBSOLETE_SIGNALS:
-            if obs_channel in self._available_signals:
-                self._available_signals.remove(obs_channel)
+            for obs_channel in OBSOLETE_SIGNALS:
+                if obs_channel in self._available_signals:
+                    self._available_signals.remove(obs_channel)
 
     @typechecked
     @override
@@ -222,4 +218,4 @@ class MF4Handler(MDF, AresDataInterface):
             for sig in signals
         ]
         self.append(signals_to_write)
-        [self._available_signals.append(signal.label) for signal in signals]
+        [self._available_signals.append(sig.label) for sig in signals]
