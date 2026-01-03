@@ -34,18 +34,17 @@ import datetime
 import os
 from typing import override
 
-import numpy as np
 from asammdf import MDF, Signal, Source
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
+from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
 
 # define obsolete channels that are ALWAYS skipped
-# TODO: do we need that?
 OBSOLETE_SIGNALS = ["time"]
 
 
@@ -98,7 +97,11 @@ class MF4Handler(MDF, AresDataInterface):
 
     @typechecked
     @override
-    # TODO: safely_run function candidate?
+    @safely_run(
+        default_return=[],
+        message="Error during writing mf4-file. Validate output_path also consider write rights.",
+        log=logger,
+    )
     def _save(self, output_path: str, **kwargs) -> None:
         """Save MF4 file with timestamp in header comment.
 
@@ -192,7 +195,6 @@ class MF4Handler(MDF, AresDataInterface):
 
     @typechecked
     @override
-    # TODO: safely_run function candidate?
     def add(self, signals: list[AresSignal], **kwargs) -> None:
         """Add AresSignal objects to MF4 file.
 
