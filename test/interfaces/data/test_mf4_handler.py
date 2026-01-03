@@ -30,8 +30,10 @@ ________________________________________________________________________
 
 import os
 
+import numpy as np
 import pytest
 
+from ares.interface.data.ares_signal import AresSignal
 from ares.interface.data.mf4_handler import MF4Handler
 
 
@@ -52,11 +54,17 @@ def test_ares_mf4handler_file_init_read():
 
 def test_ares_mf4handler_file_init_write():
     """
-    Test if mf2handler can be initialized with mf4-file mode "write".
+    Test if mf4handler can be initialized with mf4-file mode "write".
     """
     mf4_filepath = os.path.join(os.path.dirname(__file__), "test_file.mf4")
     test_data_write01 = MF4Handler(file_path=None)
     test_data_write01._save(mf4_filepath)
+
+    if not os.path.isfile(mf4_filepath):
+        assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
+    else:
+        os.remove(mf4_filepath)
+
     test_data_write02 = MF4Handler(file_path="")
     test_data_write02._save(mf4_filepath)
 
@@ -70,5 +78,50 @@ def test_ares_mf4handler_file_init_write():
         test_data_read = MF4Handler(file_path=mf4_filepath)
 
 
-if __name__ == "__main__":
-    test_ares_mf4handler_file_init_write()
+def test_ares_mf4handler_file_read_get():
+    """
+    Test if mf4handler can read signals from mf4-files.
+    """
+    mf4_filepath = os.path.join(
+        os.path.dirname(__file__),
+        "../../../examples/data/data_example_1.mf4",
+    )
+
+    if os.path.isfile(mf4_filepath):
+        test_data = MF4Handler(
+            file_path=mf4_filepath,
+        )
+
+    test_signals = test_data.get(["input_value"])
+
+    assert len(test_signals) == 1, "Wrong number of signals were extracted."
+    assert test_signals[0].label == "input_value", "The wrong signal was extracted."
+
+
+def test_ares_mf4handler_file_write_get():
+    """
+    Test if mf4handler can read signals from created mf4-file.
+    """
+    mf4_filepath = os.path.join(os.path.dirname(__file__), "test_file.mf4")
+
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([1, 2, 3, 4], dtype=np.float32),
+        value=np.array([1, 2, 3, 4], dtype=np.int64),
+    )
+
+    test_data_write = MF4Handler(file_path=None, signals=[test_signal])
+    test_signal_read = test_data_write.get()
+
+    assert len(test_signal_read) == 1, (
+        "Wrong number of signals were extracted after write."
+    )
+    assert test_signal_read[0].label == "test_signal", (
+        "The wrong signal label was written."
+    )
+
+    test_data_write._save(mf4_filepath)
+    if not os.path.isfile(mf4_filepath):
+        assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
+    else:
+        os.remove(mf4_filepath)
