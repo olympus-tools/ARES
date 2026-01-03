@@ -130,7 +130,6 @@ class AresDataInterface(ABC):
 
     @classmethod
     @typechecked
-    # TODO: safely_run function candidate?
     def wf_element_handler(
         cls,
         element_name: str,
