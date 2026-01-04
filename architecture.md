@@ -26,37 +26,42 @@ ARES (Automated Rapid Embedded Simulation) is structured in four main layers:
 ## 2. System Architecture
 
 ```mermaid
-architecture-beta
-    group ares_orchestration(server)[Orchestration Layer]
-    service pipeline(server)[Pipeline] in ares_orchestration
-    service workflow(disk)[Workflow] in ares_orchestration
+graph TD
+    subgraph Orchestration [Orchestration Layer]
+        Pipeline[Pipeline]
+        Workflow[(Workflow)]
+    end
 
-    group ares_base(server)[Base Layer]
-    service data_element(disk)[Signal] in ares_base
-    service parameter_element(disk)[Parameter] in ares_base
+    subgraph Plugin [Plugin Layer]
+        SimUnit[SimUnit]
+        CustomPlugins[Custom Plugins]
+    end
 
-    group ares_interface(server)[Interface Layer]
-    service data_interface(server)[Data Handler] in ares_interface
-    service parameter_interface(server)[Parameter Handler] in ares_interface
+    subgraph Interface [Interface Layer]
+        DataInterface[Data Handler]
+        ParamInterface[Parameter Handler]
+    end
 
-    group ares_plugin(server)[Plugin Layer]
-    service sim_unit(database)[SimUnit] in ares_plugin
-    service custom_plugins(database)[Custom Plugins] in ares_plugin
+    subgraph Base [Base Layer]
+        Signal[(Signal)]
+        Parameter[(Parameter)]
+    end
 
-    pipeline:L -- R:workflow
-    pipeline:T -- B:parameter_interface
-    pipeline:T -- B:data_interface
-    pipeline:T -- B:sim_unit
-    data_interface:L -- R:data_element
-    parameter_interface:L -- R:parameter_element
-    sim_unit:T -- B:data_interface
-    sim_unit:T -- B:parameter_interface
+    %% Orchestration Flow
+    Pipeline -->|Reads| Workflow
+    Pipeline -->|Orchestrates| DataInterface
+    Pipeline -->|Orchestrates| ParamInterface
+    Pipeline -->|Executes| SimUnit
+    Pipeline -->|Executes| CustomPlugins
+
+    %% Plugin Usage
+    SimUnit -->|Uses| DataInterface
+    SimUnit -->|Uses| ParamInterface
+
+    %% Data Access
+    DataInterface -->|Manages| Signal
+    ParamInterface -->|Manages| Parameter
 ```
-
-**Legend:**
-- 🖥️ **server**: Processing components
-- 💾 **disk**: Data storage/files
-- 🗄️ **database**: Executable plugins
 
 **Architecture Layers:**
 1. **Orchestration**: Pipeline executes workflow definitions
@@ -77,7 +82,7 @@ title: Orchestration Layer
 classDiagram
     class Pipeline{
         <<function>>
-        +execute(str wf_path, str output_dir, Dict meta_data)
+        +pipeline(str wf_path, str output_dir, Dict meta_data)
     }
 
     class Workflow{
@@ -122,12 +127,12 @@ classDiagram
         +CDLL _library
         +Dict _dll_interface
         +CFUNCTYPE _sim_function
-        +run_simulation(List~AresSignal~ data, List~AresParameter~ parameter) Dict
+        +run(List~AresSignal~ data, List~AresParameter~ parameters) List~AresSignal~
         -_load_and_validate_dd(str dd_path) DataDictionaryModel
         -_load_library() CDLL
         -_setup_c_interface() Dict
         -_setup_sim_function() CFUNCTYPE
-        -_map_sim_input(Dict input, int time_steps) Dict
+        -_map_sim_input_data(Dict data_dict, int time_steps) Dict
         -_write_dll_interface(Dict input, int time_step_idx)
         -_read_dll_interface() Dict
     }
@@ -171,7 +176,11 @@ title: Interface Layer
 classDiagram
     class ares_data_interface{
         <<interface>>
+        +Dict~str, ares_data_interface~ cache$
+        +Dict~str, type~ _handlers$
         +create(str file_path)$
+        +register(str extension, type handler)$
+        +wf_element_handler(str element_name, DataElement element_value)$
         +get() list~ares_signal~*
         +add(list~ares_signal~)*
         +save(str output_path)*
@@ -216,9 +225,9 @@ classDiagram
         <<base type>>
         +String label
         +Array~float~ timestamps
-        +Array~Any~ values
+        +Array~Any~ value
         +String unit
-        +resample(int step_size_ms)
+        +resample(Array~float~ timestamps_resampled)
     }
 
     class ares_parameter{
