@@ -131,6 +131,8 @@ clean:
 		echo "Cleaning project in mode full..."; \
 		$(MAKE) clean-light; \
 		rm -rf logs; \
+		rm -rf build; \
+		rm -rf dist; \
 		rm -rf examples/output; \
 		echo "Project cleaned successfully in mode full."; \
 	else \
