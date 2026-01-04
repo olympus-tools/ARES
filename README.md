@@ -4,33 +4,117 @@ The **A**utomated **R**apid **E**mbedded **S**imulation project is a tool for pe
 We are committed to a welcoming and inclusive community. Please read our [Code of Conduct](https://github.com/AndraeCarotta/ARES/blob/master/CODE_OF_CONDUCT.md) before contributing.
 
 * [1. Installation](#1-installation)
-* [2. Architecture](#2-architecture)
-* [3. Bug & Feature Report](#3-get-in-touch-with-us)
-* [4. Contributing](#4-contribution-to-the-ares-project)
-* [5. Workflows](#5-workflows)
-    * [5.1. General Workflow Rules](#51-general-workflow-rules)
-    * [5.2. Workflow Elements](#52-workflow-elements)
-    * [5.3. Example Workflows](#53-example-workflows)
-* [6. Examples](#6-examples)
-* [7. License](#7-license)
+* [2. Usage](#2-usage)
+* [3. Architecture](#3-architecture)
+* [4. Bug & Feature Report](#4-get-in-touch-with-us)
+* [5. Contributing](#5-contribution-to-the-ares-project)
+* [6. Workflows](#6-workflows)
+    * [6.1. General Workflow Rules](#61-general-workflow-rules)
+    * [6.2. Workflow Elements](#62-workflow-elements)
+* [7. Examples](#7-examples)
+    * [7.1. Open-Loop Simulation](#71-open-loop-simulation)
+    * [7.2. Detailed Examples](#72-detailed-examples)
+* [8. Future Developments](#8-future-developments)
+* [9. License](#9-license)
 
 ## 1. Installation
 
-ARES is currently under active development. Therefore no compiled program exists. 
-To use ARES until the first release or for development the recommended way to use ARES is via a python virtual environment.
-To simplify the process of creating and configuring the virtualenv the following make command can be used:
+ARES is currently under active development and is distributed as a source package. The recommended way to use ARES is within a Python virtual environment.
+
+### 1.1. Prerequisites
+
+Before setting up ARES, ensure your system meets the following requirements:
+
+*   **Operating System**: Linux (currently the only supported OS)
+*   **Python**: Version 3.12 or higher
+*   **Build Tools**: `make` (only required for **Option A: Automated Setup**)
+
+### 1.2. Installation in Virtual Environment (Recommended)
+
+Using a virtual environment is recommended to avoid conflicts with system packages. You can set this up automatically or manually.
+
+#### Option A: Automated Setup (via Makefile)
+
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/AndraeCarotta/ares.git
+    cd ares
+    ```
+
+2.  **Create and configure the environment:**
+    This command creates a `.venv` directory and installs dependencies:
+    ```bash
+    make setup-venv
+    ```
+
+3.  **Activate the environment:**
+    ```bash
+    source .venv/bin/activate
+    ```
+
+#### Option B: Manual Setup
+
+If you prefer to configure the virtual environment manually:
+
+1.  **Create a virtual environment:**
+    ```bash
+    python3 -m venv .venv
+    ```
+
+2.  **Activate the environment:**
+    ```bash
+    source .venv/bin/activate
+    ```
+
+3.  **Install ARES:**
+    ```bash
+    pip install .
+    ```
+
+### 1.3. Installation in System Python
+
+You can also install ARES directly into your global Python environment. Note that this might require `sudo` permissions and could conflict with other packages.
+
+1.  **Navigate to the project root:**
+    ```bash
+    cd ares
+    ```
+
+2.  **Install the package:**
+    For standard installation:
+    ```bash
+    pip install .
+    ```
+    For development (editable mode):
+    ```bash
+    pip install -e .
+    ```
+
+## 2. Usage
+
+ARES is primarily used via its Command Line Interface (CLI). The main command is `pipeline`, which executes a simulation workflow defined in a JSON file.
+
+### Basic Command
 
 ```bash
-make setup-venv
-``` 
+python -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
+```
 
-What the make command does:
-- creating virtual environment in directory '.venv'
-- installing project dependencies from 'pyproject.toml'
+### Options
 
-**⚠️ NOTE:** Currently ARES is only supported for Linux.
+| Option | Short | Description | Required | Default |
+| :--- | :--- | :--- | :--- | :--- |
+| `--workflow` | `-wf` | Path to the workflow JSON file. | Yes | - |
+| `--output` | `-o` | Directory where output files will be saved. | No | Workflow directory |
+| `--log-level` | | Logging verbosity (10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR). | No | 20 (INFO) |
 
-## 2. Architecture
+### Example
+
+```bash
+python -m ares pipeline -wf ./my_workflow.json -o ./results --log-level 10
+```
+
+## 3. Architecture
 
 ARES is built on a four-layer architecture that enables flexible, extensible simulation workflows:
 
@@ -43,44 +127,87 @@ The architecture uses design patterns like **Flyweight** (hash-based caching), *
 
 📖 **For detailed architecture documentation** including system diagrams, class structures, and design decisions, see [architecture.md](./architecture.md).
 
-## 3. Get in touch with us
+## 4. Get in touch with us
 
 - [Support Request](https://github.com/AndraeCarotta/ares/issues/new?template=support_request.md)
 - [Bug Report](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md)
 - [Feature Request](https://github.com/AndraeCarotta/ares/issues/new?template=feature_request.md)
 
-## 4. Contribution to the ares project
+## 5. Contribution to the ares project
 
 To contribute to the ARES project, please see the [CONTRIBUTING.md](https://github.com/AndraeCarotta/ARES/blob/master/CONTRIBUTING.md) file for details.
 
-## 5. Workflows
+## 6. Workflows
 
-### 5.1. General Workflow Rules
+### 6.1. General Workflow Rules
 
-TODO: Workflows have to be implemented like...
-- a workflow should never have more than one data element as a sink (if you need more => write a feature)
+ARES pipelines are defined using a JSON file, referred to as a **Workflow**. The workflow structure is a dictionary where:
+*   **Keys**: Unique identifiers (names) for each workflow element.
+*   **Values**: Configuration objects defining the element's properties.
 
-### 5.2. Workflow Elements
+Elements can define dependencies on other elements. The ARES pipeline analyzes these dependencies to determine the correct execution order automatically.
 
-#### data
+### 6.2. Workflow Elements
 
-TODO: Reading and writing data sources in different file formats (currently only mf4 is implemented)
+Each element in the workflow must adhere to a specific schema defined by the ARES Pydantic models. The `type` field is mandatory and determines the validation rules.
 
-#### parameter
+#### Data Element (`type="data"`)
 
-TODO: Reading and writing datasets in different file formats (currently only dcm is implemented)
+Handles time-dependent signal data (e.g., measurement files, time-series). These signals are typically fed into simulation units step-by-step during execution.
 
-#### sim_unit
+| Field              | Required   | Type        | Supported Values    | Description                                         |
+| :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
+| `type`             | Yes        | `str`       | `"data"`            | Unique identifier for the element type.             |
+| `mode`             | Yes        | `str`       | `"read"`, `"write"` | Operation mode.                                     |
+| `file_path`        | If `read`  | `list[str]` |                     | Path(s) to input data files (e.g., `.mf4`).         |
+| `input`            | If `write` | `list[str]` |                     | List of element names to write to file.             |
+| `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
+| `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name.                    |
+| `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
 
-TODO: Simulation unit of some software. Could be an executable, fmu,...
+#### Parameter Element (`type="parameter"`)
 
-#### custom
+Handles parameter sets that remain constant throughout the simulation duration. These are used to configure, trim, or calibrate software components (e.g., characteristic curves, scalar values).
 
-TODO: e.g. Optimization, Plotting, Testing
+| Field              | Required   | Type        | Supported Values    | Description                                         |
+| :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
+| `type`             | Yes        | `str`       | `"parameter"`       | Unique identifier for the element type.             |
+| `mode`             | Yes        | `str`       | `"read"`, `"write"` | Operation mode.                                     |
+| `file_path`        | If `read`  | `list[str]` |                     | Path(s) to parameter files (e.g., `.dcm`, `.json`). |
+| `parameter`        | If `write` | `list[str]` |                     | List of element names to write to file.             |
+| `output_format`    | If `write` | `str`       | `"dcm"`, `"json"`   | Target file format.                                 |
+| `label_filter`     | No         | `list[str]` |                     | Filter specific parameters by name.                 |
 
-### 5.3. Example Workflows
+#### Simulation Unit (`type="sim_unit"`)
 
-#### Open-Loop Simulation
+Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent any software component, such as a controller algorithm or a physical plant model.
+
+| Field              | Required   | Type        | Supported Values    | Description                                         |
+| :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
+| `type`             | Yes        | `str`       | `"sim_unit"`        | Unique identifier for the element type.             |
+| `file_path`        | Yes        | `str`       |                     | Path to the compiled library (`.dll`, `.so`).       |
+| `data_dictionary`  | Yes        | `str`       |                     | Path to the data dictionary definition.             |
+| `stepsize`         | Yes        | `int`       |                     | Simulation step size in ms.                         |
+| `input`            | Yes        | `list[str]` |                     | List of data element names providing inputs.        |
+| `parameter`        | No         | `list[str]` |                     | List of parameter element names.                    |
+| `init`             | No         | `list[str]` |                     | List of elements for initialization.                |
+| `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
+
+#### Custom Plugin (`type="plugin"`)
+
+Allows users to execute custom Python scripts within the workflow. Plugins can depend on other elements or serve as dependencies for others. They are versatile and can be used for tasks such as data manipulation, optimization loops, plotting, or automated testing.
+
+| Field              | Required   | Type        | Supported Values    | Description                                         |
+| :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
+| `type`             | Yes        | `str`       | `"plugin"`          | Unique identifier for the element type.             |
+| `file_path`        | Yes        | `str`       |                     | Path to the Python plugin script.                   |
+| *Custom*           | No         | `Any`       |                     | Additional fields as required by the plugin.        |
+
+## 7. Examples
+
+### 7.1. Open-Loop Simulation
+
+The following diagram illustrates an example of an open-loop simulation workflow. It demonstrates how parameters and data are fed into simulation units, and how the output of one unit can serve as input for another.
 
 ```mermaid
 flowchart LR
@@ -96,32 +223,42 @@ flowchart LR
     PARAM2 --> SWU5(SW Unit 5)
     MEAS1(Data 1) --> SWU3
     SWU3 --> SWU4
-    SWU4 --> MEAS2
+    SWU4 --> MEAS3(Data 3)
     SWU4 --> SWU5
+    SWU5 --> PLUGIN1(Plugin 1)
 
-    classDef Parameters        color:#a44300, stroke:#a44300;
-    classDef Data        color:#1e9bec, stroke:#1e9bec;
-    classDef SW_Unit           color:#d30000, stroke:#d30000;
-    classDef Test              color:#2eb400, stroke:#2eb400;
-    classDef Plot              color:#ad00d0, stroke:#ad00d0;
-    classDef Optimization      color:#e5d300, stroke:#e5d300;
+    classDef Parameters     color:#a44300, stroke:#a44300;
+    classDef Data           color:#1e9bec, stroke:#1e9bec;
+    classDef SW_Unit        color:#d30000, stroke:#d30000;
+    classDef Plugin         color:#e5d300, stroke:#e5d300;
 
     class PARAM1 Parameters;
     class PARAM2 Parameters;
     class MEAS1 Data;
     class MEAS2 Data;
+    class MEAS3 Data;
     class SWU1 SW_Unit;
     class SWU2 SW_Unit;
     class SWU3 SW_Unit;
     class SWU4 SW_Unit;
     class SWU5 SW_Unit;
+    class PLUGIN1 Plugin;
 ```
 
-## 6. Examples
+### 7.2. Detailed Examples
 
 For a detailed explanation of the example applications, please refer to [README.md](https://github.com/AndraeCarotta/ARES/blob/master/examples/README.md).
 
-## 7. License
+## 8. Future Developments
+
+ARES is constantly evolving. Future developments will focus on:
+*   **Closed-Loop Simulation**: Enabling feedback loops where the output of a simulation unit influences its own input in subsequent steps.
+*   **Expanded Simulation Support**: Integration of the FMI standard to support Functional Mock-up Units (FMUs).
+*   **Additional File Formats**: Support for more data and parameter formats (e.g., CSV, MAT).
+*   **Enhanced Plugin System**: More built-in plugins for common tasks like plotting and reporting.
+*   **Performance Optimization**: Parallel execution of independent workflow branches.
+
+## 9. License
 
 This project is licensed under the Apache License 2.0 — see the [LICENSE](https://github.com/AndraeCarotta/ARES/blob/master/LICENSE) file for details.
 
