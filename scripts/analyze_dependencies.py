@@ -31,6 +31,7 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
 import argparse
+import importlib.metadata
 import json
 import subprocess
 import sys
@@ -98,11 +99,11 @@ def install_required_packages() -> None:
 
 
 @typechecked
-def get_license_info(output_format: str = "table") -> str:
+def get_license_info(output_format: str = "plain") -> str:
     """Retrieve license information for all installed packages.
 
     Args:
-        output_format (str): Output format - 'table', 'json', 'csv', or 'markdown'.
+        output_format (str): Output format - 'plain', 'json', 'csv', or 'markdown'.
 
     Returns:
         str: License information in the specified format.
@@ -174,32 +175,59 @@ def save_to_file(content: str, filepath: Path) -> None:
 
 
 @typechecked
+def get_parsed_license_info() -> list[dict[str, str]]:
+    """Retrieve and enrich license information.
+
+    Returns:
+        list[dict[str, str]]: List of package information dictionaries.
+    """
+    json_str = get_license_info(output_format="json")
+    if not json_str:
+        return []
+
+    try:
+        packages = json.loads(json_str)
+        for pkg in packages:
+            if pkg.get("License", "UNKNOWN") == "UNKNOWN":
+                name = pkg.get("Name")
+                if name:
+                    try:
+                        meta = importlib.metadata.metadata(name)
+                        # Try License-Expression first, then fallback to License
+                        new_license = meta.get("License-Expression") or meta.get(
+                            "License"
+                        )
+                        if new_license:
+                            pkg["License"] = new_license
+                    except importlib.metadata.PackageNotFoundError:
+                        pass
+        return packages
+    except json.JSONDecodeError:
+        return []
+
+
+@typechecked
 def analyze_license_compliance() -> dict[str, list[str]]:
     """Analyze licenses and categorize them by type.
 
     Returns:
         dict[str, list[str]]: Dictionary mapping license types to package names.
     """
-    license_info = get_license_info(output_format="json")
-    if not license_info:
+    packages = get_parsed_license_info()
+    if not packages:
         return {}
 
-    try:
-        packages = json.loads(license_info)
-        license_map: dict[str, list[str]] = {}
+    license_map: dict[str, list[str]] = {}
 
-        for pkg in packages:
-            license_name = pkg.get("License", "UNKNOWN")
-            package_name = pkg.get("Name", "UNKNOWN")
+    for pkg in packages:
+        license_name = pkg.get("License", "UNKNOWN")
+        package_name = pkg.get("Name", "UNKNOWN")
 
-            if license_name not in license_map:
-                license_map[license_name] = []
-            license_map[license_name].append(package_name)
+        if license_name not in license_map:
+            license_map[license_name] = []
+        license_map[license_name].append(package_name)
 
-        return license_map
-    except json.JSONDecodeError as e:
-        print(f"✗ Error parsing license JSON: {e}", file=sys.stderr)
-        return {}
+    return license_map
 
 
 @typechecked
@@ -211,47 +239,38 @@ def check_license_compatibility() -> tuple[bool, list[dict[str, str]]]:
             is_compatible is True if all licenses are compatible.
             Incompatible packages list contains dicts with 'name', 'version', and 'license'.
     """
-    license_info = get_license_info(output_format="json")
-    if not license_info:
+    packages = get_parsed_license_info()
+    if not packages:
         return True, []
 
-    try:
-        packages = json.loads(license_info)
-        incompatible_packages: list[dict[str, str]] = []
+    incompatible_packages: list[dict[str, str]] = []
 
-        for pkg in packages:
-            license_name = pkg.get("License", "UNKNOWN")
-            package_name = pkg.get("Name", "UNKNOWN")
-            version = pkg.get("Version", "UNKNOWN")
+    for pkg in packages:
+        license_name = pkg.get("License", "UNKNOWN")
+        package_name = pkg.get("Name", "UNKNOWN")
+        version = pkg.get("Version", "UNKNOWN")
 
-            # Check if license is in incompatible list
-            for incompatible in INCOMPATIBLE_LICENSES:
-                if incompatible.lower() in license_name.lower():
-                    incompatible_packages.append(
-                        {
-                            "name": package_name,
-                            "version": version,
-                            "license": license_name,
-                        }
-                    )
-                    break
-
-            # Warn about unknown licenses
-            if license_name == "UNKNOWN":
-                print(
-                    f"⚠️  Warning: Package '{package_name}' has UNKNOWN license - manual review required.",
-                    file=sys.stderr,
+        # Check if license is in incompatible list
+        for incompatible in INCOMPATIBLE_LICENSES:
+            if incompatible.lower() in license_name.lower():
+                incompatible_packages.append(
+                    {
+                        "name": package_name,
+                        "version": version,
+                        "license": license_name,
+                    }
                 )
+                break
 
-        is_compatible = len(incompatible_packages) == 0
-        return is_compatible, incompatible_packages
+        # Warn about unknown licenses
+        if license_name == "UNKNOWN":
+            print(
+                f"⚠️  Warning: Package '{package_name}' has UNKNOWN license - manual review required.",
+                file=sys.stderr,
+            )
 
-    except json.JSONDecodeError as e:
-        print(
-            f"✗ Error parsing license JSON for compatibility check: {e}",
-            file=sys.stderr,
-        )
-        return True, []
+    is_compatible = len(incompatible_packages) == 0
+    return is_compatible, incompatible_packages
 
 
 @typechecked
@@ -261,83 +280,69 @@ def generate_notice_file() -> str:
     Returns:
         str: Content of the NOTICE file with third-party license information.
     """
-    license_info = get_license_info(output_format="json")
-    if not license_info:
+    packages = get_parsed_license_info()
+    if not packages:
         return ""
 
-    try:
-        packages = json.loads(license_info)
+    notice_content = [
+        "ARES (Automated Rapid Embedded Simulation)",
+        "Copyright 2025 Andrä Carotta",
+        "",
+        "This file is automatically generated.",
+        "For complete license texts, please visit the respective project URLs.",
+        "",
+        "=" * 78,
+        "",
+        "This product contains dependencies with the following licenses:",
+        "",
+    ]
 
-        notice_content = [
-            "ARES (Automated Rapid Embedded Simulation)",
-            "Copyright 2025 Andrä Carotta",
-            "",
-            "=" * 78,
-            "",
-            "This product contains dependencies with the following licenses:",
-            "",
-        ]
+    # Group packages by license
+    license_groups: dict[str, list[dict]] = {}
+    for pkg in packages:
+        license_name = pkg.get("License", "UNKNOWN")
+        if license_name not in license_groups:
+            license_groups[license_name] = []
+        license_groups[license_name].append(pkg)
 
-        # Group packages by license
-        license_groups: dict[str, list[dict]] = {}
-        for pkg in packages:
-            license_name = pkg.get("License", "UNKNOWN")
-            if license_name not in license_groups:
-                license_groups[license_name] = []
-            license_groups[license_name].append(pkg)
+    # Sort by license type
+    for license_type in sorted(license_groups.keys()):
+        pkgs = license_groups[license_type]
+        notice_content.append(f"{license_type} License:")
+        notice_content.append("-" * 78)
 
-        # Sort by license type
-        for license_type in sorted(license_groups.keys()):
-            pkgs = license_groups[license_type]
-            notice_content.append(f"{license_type} License:")
-            notice_content.append("-" * 78)
+        for pkg in sorted(pkgs, key=lambda x: x.get("Name", "")):
+            name = pkg.get("Name", "UNKNOWN")
+            version = pkg.get("Version", "UNKNOWN")
+            author = pkg.get("Author", "N/A")
+            url = pkg.get("URL", "N/A")
 
-            for pkg in sorted(pkgs, key=lambda x: x.get("Name", "")):
-                name = pkg.get("Name", "UNKNOWN")
-                version = pkg.get("Version", "UNKNOWN")
-                author = pkg.get("Author", "N/A")
-                url = pkg.get("URL", "N/A")
-
-                notice_content.append(f"  * {name} {version}")
-                if author != "N/A":
-                    notice_content.append(f"    Author: {author}")
-                if url != "N/A":
-                    notice_content.append(f"    URL: {url}")
-                notice_content.append("")
-
+            notice_content.append(f"  * {name} {version}")
+            if author != "N/A":
+                notice_content.append(f"    Author: {author}")
+            if url != "N/A":
+                notice_content.append(f"    URL: {url}")
             notice_content.append("")
 
-        # Add warning for unknown licenses
-        if "UNKNOWN" in license_groups:
-            notice_content.extend(
-                [
-                    "!" * 78,
-                    "WARNING: The following packages have UNKNOWN licenses.",
-                    "Please verify their license terms manually:",
-                    "",
-                ]
-            )
-            for pkg in license_groups["UNKNOWN"]:
-                name = pkg.get("Name", "UNKNOWN")
-                notice_content.append(f"  * {name}")
-            notice_content.append("!" * 78)
-            notice_content.append("")
+        notice_content.append("")
 
+    # Add warning for unknown licenses
+    if "UNKNOWN" in license_groups:
         notice_content.extend(
             [
-                "=" * 78,
+                "!" * 78,
+                "WARNING: The following packages have UNKNOWN licenses.",
+                "Please verify their license terms manually:",
                 "",
-                "For complete license texts, please visit the respective project URLs.",
             ]
         )
+        for pkg in license_groups["UNKNOWN"]:
+            name = pkg.get("Name", "UNKNOWN")
+            notice_content.append(f"  * {name}")
+        notice_content.append("!" * 78)
+        notice_content.append("")
 
-        return "\n".join(notice_content)
-
-    except json.JSONDecodeError as e:
-        print(
-            f"✗ Error parsing license JSON for NOTICE generation: {e}", file=sys.stderr
-        )
-        return ""
+    return "\n".join(notice_content)
 
 
 @typechecked
@@ -354,9 +359,9 @@ def main() -> None:
     )
     parser.add_argument(
         "--format",
-        choices=["table", "json", "markdown"],
-        default="table",
-        help="Output format for license information (default: table)",
+        choices=["plain", "json", "markdown"],
+        default="plain",
+        help="Output format for license information (default: plain)",
     )
     parser.add_argument(
         "--skip-install",
@@ -397,7 +402,7 @@ def main() -> None:
     print("\n1. Generating license information...")
     license_info = get_license_info(output_format=args.format)
     if license_info:
-        ext = "txt" if args.format == "table" else args.format
+        ext = "txt" if args.format == "plain" else args.format
         license_file = output_dir / f"licenses.{ext}"
         save_to_file(license_info, license_file)
 
