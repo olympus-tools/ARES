@@ -31,12 +31,11 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
 import json
-from typing import Any, Dict, List, Optional, override
-
-from ares.utils.decorators import typechecked_dev as typechecked
+from typing import Any, override
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
@@ -56,17 +55,18 @@ class JSONParamHandler(AresParamInterface):
     @typechecked
     def __init__(
         self,
-        file_path: Optional[str] = None,
+        file_path: str | None = None,
         **kwargs,
     ):
         """Initialize JSONParamHandler from file or parameter list.
 
         Args:
-            file_path: Optional absolute path to the JSON file to load
-            parameters: Optional list of AresParameter objects to initialize with
+            file_path (str | None): Optional absolute path to the JSON file to load
+            **kwargs (Any): Additional arguments.
+                - parameters (list[AresParameter]): Optional list of AresParameter objects to initialize with
         """
         super().__init__(file_path=file_path, **kwargs)
-        self.parameter: Dict[str, Dict[str, Any]] = {}
+        self.parameter: dict[str, dict[str, Any]] = {}
 
         if file_path:
             try:
@@ -90,8 +90,8 @@ class JSONParamHandler(AresParamInterface):
         """Write parameters to JSON file.
 
         Args:
-            output_path: Absolute path where the JSON file should be written
-            **kwargs: Additional format-specific arguments
+            output_path (str): Absolute path where the JSON file should be written
+            **kwargs (Any): Additional format-specific arguments
                 - indent (int): Number of spaces for indentation (default: 2)
                 - ensure_ascii (bool): Escape non-ASCII characters (default: False)
         """
@@ -113,15 +113,15 @@ class JSONParamHandler(AresParamInterface):
 
     @typechecked
     @override
-    def add(self, parameters: List[AresParameter], **kwargs) -> None:
+    def add(self, parameters: list[AresParameter], **kwargs) -> None:
         """Add parameters to the JSON interface.
 
         Converts AresParameter objects to JSON dictionary format and updates
         the internal parameter dictionary. Updates the instance hash after addition.
 
         Args:
-            parameters: List of AresParameter objects to add to the interface
-            **kwargs: Additional format-specific arguments (unused)
+            parameters (list[AresParameter]): List of AresParameter objects to add to the interface
+            **kwargs (Any): Additional format-specific arguments (unused)
         """
         try:
             for param in parameters:
@@ -139,7 +139,7 @@ class JSONParamHandler(AresParamInterface):
     @override
     def get(
         self, label_filter: list[str] | None = None, **kwargs
-    ) -> List[AresParameter]:
+    ) -> list[AresParameter]:
         """Get parameters from the JSON interface.
 
         Converts internal JSON parameter dictionary to list of AresParameter objects.
@@ -148,10 +148,10 @@ class JSONParamHandler(AresParamInterface):
         Args:
             label_filter (list[str] | None): List of parameter names to retrieve from the interface.
                 If None, all parameters are returned. Defaults to None.
-            **kwargs: Additional format-specific arguments
+            **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            List[AresParameter]: List of AresParameter objects, or empty list on error
+            list[AresParameter]: List of AresParameter objects, or empty list on error
         """
         try:
             if label_filter:

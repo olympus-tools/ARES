@@ -31,10 +31,10 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
+
 from ares.utils.decorators import typechecked_dev as typechecked
 
 
@@ -48,18 +48,18 @@ class AresSignal:
     data types and dimensions after initialization.
 
     Attributes:
-        label: Name or identifier of the signal (required).
-        timestamps: Time values as numpy array with floating point dtype (required).
-        value: Signal data values as numpy array - can be any dtype (required).
-        description: Optional textual description of the signal.
-        unit: Optional physical unit of the signal (e.g., 'km/h', '°C', 'm/s').
+        label (str): Name or identifier of the signal (required).
+        timestamps (npt.NDArray[np.float32]): Time values as numpy array with floating point dtype (required).
+        value (npt.NDArray): Signal data values as numpy array - can be any dtype (required).
+        description (str | None): Optional textual description of the signal.
+        unit (str | None): Optional physical unit of the signal (e.g., 'km/h', '°C', 'm/s').
     """
 
     label: str
     value: npt.NDArray
     timestamps: npt.NDArray[np.float32]
-    description: Optional[str] = None
-    unit: Optional[str] = None
+    description: str | None = None
+    unit: str | None = None
 
     def __post_init__(self):
         """

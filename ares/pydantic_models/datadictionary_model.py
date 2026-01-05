@@ -31,9 +31,9 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
 from enum import Enum
-from typing import Annotated, Literal, TypeAlias
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field
 
 
 class Datatype(str, Enum):
@@ -51,7 +51,7 @@ class Datatype(str, Enum):
     uint64 = "uint64"
 
 
-InputAlternatives: TypeAlias = list[str | float | list[float] | list[list[float]]]
+type InputAlternatives = list[str | float | list[float] | list[list[float]]]
 
 
 class BaseDDModel(BaseModel):

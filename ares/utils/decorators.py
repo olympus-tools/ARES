@@ -35,7 +35,6 @@ import os
 import sys
 from functools import wraps
 
-# ares includes
 from ares.utils.logger import create_logger
 
 
@@ -45,10 +44,10 @@ def safely_run(
     """provides try/except functionality via decorator
 
     Args:
-        default_return : default return value in case of failure -> depends on function
-        message[str] : logger message to display in case of failure
-        log_level[str] : log level to use
-        log: specific logger to use, defaults to ares logger
+        default_return (Any): default return value in case of failure -> depends on function
+        message (str | None): logger message to display in case of failure
+        log_level (str | None): log level to use
+        log (Any): specific logger to use, defaults to ares logger
     """
     logger = create_logger() if log is None else log
 
@@ -79,6 +78,12 @@ def typechecked_dev(func):
     does nothing, allowing the code to run without runtime type checking.
 
     Use ARES_DISABLE_TYPEGUARD=1 to disable type checking explicitly.
+
+    Args:
+        func (Callable): The function to decorate.
+
+    Returns:
+        Callable: The decorated function (with or without type checking).
     """
     # Check if we're in a frozen (PyInstaller) environment or if explicitly disabled
     is_frozen = getattr(sys, "frozen", False)

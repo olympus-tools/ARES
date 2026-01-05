@@ -32,7 +32,7 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from ares.utils.decorators import typechecked_dev as typechecked
 
@@ -65,17 +65,17 @@ class ParamDCM:
         https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
         Args:
-            file_path: Optional path to the DCM file to load. If None, an empty
+            file_path (str): Optional path to the DCM file to load. If None, an empty
                 parameter dictionary is created.
         """
         self.file_path: str = file_path
-        self.parameter: Dict[str, Any] = self._load()
+        self.parameter: dict[str, Any] = self._load()
 
-    def _load(self) -> Dict[str, Any]:
+    def _load(self) -> dict[str, Any]:
         """Parses a DCM file and converts it to a validated ParameterModel object.
 
         Returns:
-            Dict[str, Any]: Validated parameter dictionary. Returns empty dict on error.
+            dict[str, Any]: Validated parameter dictionary. Returns empty dict on error.
         """
         try:
             keywords = [
@@ -94,7 +94,7 @@ class ParamDCM:
                 r"(?:" + "|".join(map(re.escape, keywords)) + r")[\s\S]*?^END\b"
             )
 
-            parameter: Dict[str, Any] = {}
+            parameter: dict[str, Any] = {}
 
             with open(self.file_path, "r", encoding="utf-8") as dcm_file:
                 dcm_content = dcm_file.read()
@@ -287,7 +287,7 @@ class ParamDCM:
     def write(
         self,
         output_path: str,
-        meta_data: Dict[str, str],
+        meta_data: dict[str, str],
     ):
         """Writes the loaded parameter model to a DCM file.
 
@@ -300,7 +300,7 @@ class ParamDCM:
 
         Args:
             output_path (str): The full path to the output DCM file.
-            meta_data (dict): A dictionary containing metadata such as the ARES
+            meta_data (dict[str, str]): A dictionary containing metadata such as the ARES
                 version and the current username.
         """
         try:
@@ -327,9 +327,9 @@ class ParamDCM:
 
                     param_str = []
                     dim_str = None
-                    unit_str: List[str] = []
-                    axisname_str: List[str] = []
-                    value_str: List[str] = []
+                    unit_str: list[str] = []
+                    axisname_str: list[str] = []
+                    value_str: list[str] = []
 
                     match parameter_keyword:
                         case "FESTWERT":
@@ -480,15 +480,15 @@ class ParamDCM:
 
     @staticmethod
     @typechecked
-    def _dcm_array1d_str(title: str, input_array: List[Union[int, float]]) -> List[str]:
+    def _dcm_array1d_str(title: str, input_array: list[int | float]) -> list[str]:
         """Formats a one-dimensional array into DCM string lines.
 
         Args:
             title (str): The DCM keyword or title for the data lines (e.g., 'WERT', 'ST/X').
-            input_array (List[Union[int, float]]): A one-dimensional list of numerical values.
+            input_array (list[int | float]): A one-dimensional list of numerical values.
 
         Returns:
-            List[str]: A list of formatted string lines for the DCM file.
+            list[str]: A list of formatted string lines for the DCM file.
         """
         output_array = [
             [str(n) for n in input_array[i : i + ParamDCM.DCMValueLength]]
@@ -502,8 +502,8 @@ class ParamDCM:
     @staticmethod
     @typechecked
     def _dcm_array2d_str(
-        title: str, input_array: List[List[Union[int, float]]]
-    ) -> List[List[str]]:
+        title: str, input_array: list[list[int | float]]
+    ) -> list[list[str]]:
         """Formats a two-dimensional array into a list of formatted string blocks.
 
         This method iterates over each inner list of a 2D array and uses the
@@ -511,11 +511,11 @@ class ParamDCM:
 
         Args:
             title (str): The DCM keyword or title for the data lines (e.g., 'WERT').
-            input_array (List[List[Union[int, float]]]): A two-dimensional list of
+            input_array (list[list[int | float]]): A two-dimensional list of
                 numerical values to be formatted.
 
         Returns:
-            List[List[str]]: A list of lists, where each inner list contains the
+            list[list[str]]: A list of lists, where each inner list contains the
                 formatted string lines for one row of the input array.
         """
         output_array = []
@@ -530,16 +530,16 @@ class ParamDCM:
     def _eval_dcm_keyword(
         parameter_name: str,
         parameter_value: Any,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Evaluates the DCM keyword from a ParameterElement object.
 
         Args:
             parameter_name (str): The name of the parameter.
-            parameter_value (ParameterElement): The Pydantic object containing parameter
+            parameter_value (Any): The Pydantic object containing parameter
                 metadata.
 
         Returns:
-            str or None: The DCM keyword if found, otherwise None.
+            str | None: The DCM keyword if found, otherwise None.
         """
         try:
             keyword = None

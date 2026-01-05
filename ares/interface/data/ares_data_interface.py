@@ -33,13 +33,13 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, List, Optional
+from typing import ClassVar
 
 import numpy as np
-from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.pydantic_models.workflow_model import DataElement
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import sha256_string
 from ares.utils.logger import create_logger
@@ -58,14 +58,14 @@ class AresDataInterface(ABC):
     will automatically return the same cached instance.
     """
 
-    cache: ClassVar[Dict[str, "AresDataInterface"]] = {}
-    _handlers: ClassVar[Dict[str, type["AresDataInterface"]]] = {}
+    cache: ClassVar[dict[str, "AresDataInterface"]] = {}
+    _handlers: ClassVar[dict[str, type["AresDataInterface"]]] = {}
 
     @typechecked
     def __new__(
         cls,
-        file_path: Optional[str] = None,
-        signals: Optional[List[AresSignal]] = None,
+        file_path: str | None = None,
+        signals: list[AresSignal] | None = None,
         **kwargs,
     ):
         """Implement flyweight pattern based on content hash.
@@ -74,12 +74,12 @@ class AresDataInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path: Path to the signals file to load
-            signals: Optional list of AresSignal objects for initialization
-            **kwargs: Additional arguments for subclass initialization
+            file_path (str | None): Path to the signals file to load
+            signals (list[AresSignal] | None): Optional list of AresSignal objects for initialization
+            **kwargs (Any): Additional arguments for subclass initialization
 
         Returns:
-            New or cached instance based on content hash
+            AresDataInterface: New or cached instance based on content hash
         """
         # neither file_path nor signals provided - create uncached instance
         if file_path is None and signals is None:
@@ -105,14 +105,14 @@ class AresDataInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(self, file_path: Optional[str], **kwargs):
+    def __init__(self, file_path: str | None, **kwargs):
         """Initialize base attributes for all data handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
-            file_path: Path to the data file to load
-            **kwargs: Additional arguments passed to subclass
+            file_path (str | None): Path to the data file to load
+            **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(self, "dependencies", kwargs.get("dependencies", []))
@@ -123,8 +123,8 @@ class AresDataInterface(ABC):
         """Register a handler for a specific file extension.
 
         Args:
-            extension: File extension including dot (e.g., '.mf4')
-            handler_class: Handler class to use for this extension
+            extension (str): File extension including dot (e.g., '.mf4')
+            handler_class (type[AresDataInterface]): Handler class to use for this extension
         """
         cls._handlers[extension.lower()] = handler_class
 
@@ -135,8 +135,8 @@ class AresDataInterface(ABC):
         cls,
         element_name: str,
         element_value: DataElement,
-        input_hash_list: Optional[List[List[str]]] = None,
-        output_dir: Optional[str] = None,
+        input_hash_list: list[list[str]] | None = None,
+        output_dir: str | None = None,
         **kwargs,
     ) -> None:
         """Central handler method for data operations.
@@ -144,11 +144,11 @@ class AresDataInterface(ABC):
         Decides between _load() and save() based on mode from DataElement.
 
         Args:
-            element_name: Name of the element being processed
-            element_value: DataElement containing mode, file_path, and output_format
-            input_hash_list: Nested list of data hashes for writing operations
-            output_dir: Output directory path for writing operations
-            **kwargs: Additional format-specific arguments
+            element_name (str): Name of the element being processed
+            element_value (DataElement): DataElement containing mode, file_path, and output_format
+            input_hash_list (list[list[str]] | None): Nested list of data hashes for writing operations
+            output_dir (str | None): Output directory path for writing operations
+            **kwargs (Any): Additional format-specific arguments
         """
 
         match element_value.mode:
@@ -197,18 +197,18 @@ class AresDataInterface(ABC):
 
     @classmethod
     @typechecked
-    def create(cls, file_path: Optional[str] = None, **kwargs) -> "AresDataInterface":
+    def create(cls, file_path: str | None = None, **kwargs) -> "AresDataInterface":
         """Create data handler with automatic format detection.
 
         Uses file extension to select appropriate handler.
         All handlers share the same flyweight cache.
 
         Args:
-            file_path: Path to the data file to load. If None, defaults to MF4 handler.
-            **kwargs: Additional format-specific arguments
+            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            AresDataInterface handler instance (may be cached)
+            AresDataInterface: AresDataInterface handler instance (may be cached)
         """
 
         if file_path is None:
@@ -226,9 +226,9 @@ class AresDataInterface(ABC):
     @staticmethod
     @typechecked
     def _calculate_hash(
-        signals: List[AresSignal],
+        signals: list[AresSignal],
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Calculate hash from signal list.
 
         This method is used for cache lookup. It always calculates hash
@@ -239,11 +239,11 @@ class AresDataInterface(ABC):
         identical signal content.
 
         Args:
-            signals: List of AresSignal objects
-            **kwargs: Additional format-specific arguments (unused)
+            signals (list[AresSignal]): List of AresSignal objects
+            **kwargs (Any): Additional format-specific arguments (unused)
 
         Returns:
-            SHA256 hash string of the content, or None on error
+            str | None: SHA256 hash string of the content, or None on error
         """
         temp_signal_dict = {}
         temp_signal_dict["metadata"] = {"type": "AresDataInterface"}
@@ -261,15 +261,15 @@ class AresDataInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _resample(data: List[AresSignal], stepsize: int) -> List[AresSignal]:
+    def _resample(data: list[AresSignal], stepsize: int) -> list[AresSignal]:
         """Resample all signals to a common time vector using linear interpolation.
 
         Args:
-            data: List of AresSignal objects to resample
-            stepsize: Resampling step size in milliseconds
+            data (list[AresSignal]): List of AresSignal objects to resample
+            stepsize (int): Resampling step size in milliseconds
 
         Returns:
-            List of resampled AresSignal objects with common time vector
+            list[AresSignal]: List of resampled AresSignal objects with common time vector
         """
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
@@ -292,25 +292,25 @@ class AresDataInterface(ABC):
         return data
 
     @abstractmethod
-    def get(self, label_filter: list[str] | None = None, **kwargs) -> List[AresSignal]:
+    def get(self, label_filter: list[str] | None = None, **kwargs) -> list[AresSignal]:
         """Get signals from the interface.
 
         Args:
             label_filter (list[str] | None): List of signal names to retrieve from the interface.
-            **kwargs: Additional format-specific arguments
+            **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            List[AresSignal]: List of all AresSignal objects stored in the interface
+            list[AresSignal]: List of all AresSignal objects stored in the interface
         """
         pass
 
     @abstractmethod
-    def add(self, signals: List[AresSignal], **kwargs) -> None:
+    def add(self, signals: list[AresSignal], **kwargs) -> None:
         """Add signals to the interface.
 
         Args:
-            signals: List of AresSignal objects to add
-            **kwargs: Additional format-specific arguments
+            signals (list[AresSignal]): List of AresSignal objects to add
+            **kwargs (Any): Additional format-specific arguments
         """
         pass
 
@@ -319,7 +319,7 @@ class AresDataInterface(ABC):
         """Write signals to file.
 
         Args:
-            output_path: Absolute path where the data file should be written
-            **kwargs: Additional format-specific arguments
+            output_path (str): Absolute path where the data file should be written
+            **kwargs (Any): Additional format-specific arguments
         """
         pass
