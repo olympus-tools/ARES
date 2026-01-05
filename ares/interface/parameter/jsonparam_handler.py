@@ -35,6 +35,7 @@ from typing import Any, override
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -77,15 +78,15 @@ class JSONParamHandler(AresParamInterface):
                     f"Error initializing JSONParamHandler with {file_path}: {e}"
                 )
         elif "parameters" in kwargs:
-            try:
-                self.add(kwargs["parameters"])
-            except Exception as e:
-                logger.warning(
-                    f"Error initializing JSONParamHandler with parameters: {e}"
-                )
+            self.add(kwargs["parameters"])
 
     @typechecked
     @override
+    @safely_run(
+        default_return=None,
+        message="Error during saving parameter json file.",
+        log=logger,
+    )
     def _save(self, output_path: str, **kwargs) -> None:
         """Write parameters to JSON file.
 
@@ -123,17 +124,14 @@ class JSONParamHandler(AresParamInterface):
             parameters (list[AresParameter]): List of AresParameter objects to add to the interface
             **kwargs (Any): Additional format-specific arguments (unused)
         """
-        try:
-            for param in parameters:
-                self.parameter[param.label] = {
-                    "description": param.description
-                    if param.description is not None
-                    else "",
-                    "unit": param.unit if param.unit is not None else "",
-                    "value": param.value.tolist(),
-                }
-        except Exception as e:
-            logger.error(f"Error adding parameters: {e}")
+        for param in parameters:
+            self.parameter[param.label] = {
+                "description": param.description
+                if param.description is not None
+                else "",
+                "unit": param.unit if param.unit is not None else "",
+                "value": param.value.tolist(),
+            }
 
     @typechecked
     @override
@@ -153,21 +151,17 @@ class JSONParamHandler(AresParamInterface):
         Returns:
             list[AresParameter]: List of AresParameter objects, or empty list on error
         """
-        try:
-            if label_filter:
-                items = {k: v for k, v in self.parameter.items() if k in label_filter}
-            else:
-                items = self.parameter
+        if label_filter:
+            items = {k: v for k, v in self.parameter.items() if k in label_filter}
+        else:
+            items = self.parameter
 
-            return [
-                AresParameter(
-                    label=parameter_name,
-                    value=parameter_value.get("value", 0.0),
-                    description=parameter_value.get("description", "n/m"),
-                    unit=parameter_value.get("unit", "n/m"),
-                )
-                for parameter_name, parameter_value in items.items()
-            ]
-        except Exception as e:
-            logger.error(f"Error getting parameters: {e}")
-            return []
+        return [
+            AresParameter(
+                label=parameter_name,
+                value=parameter_value.get("value", 0.0),
+                description=parameter_value.get("description", "n/m"),
+                unit=parameter_value.get("unit", "n/m"),
+            )
+            for parameter_name, parameter_value in items.items()
+        ]
