@@ -256,7 +256,8 @@ For a detailed explanation of the example applications, please refer to [README.
 ARES is constantly evolving. Future developments will focus on:
 *   **Closed-Loop Simulation**: Enabling feedback loops where the output of a simulation unit influences its own input in subsequent steps.
 *   **Expanded Simulation Support**: Integration of the FMI standard to support Functional Mock-up Units (FMUs).
-*   **Additional File Formats**: Support for more data and parameter formats (e.g., CSV, MAT).
+*   **Additional Data File Formats**: Support for more data formats (e.g., Parquet, MAT). Note that data sets can temporarily only be output as JSON.
+*   **Parameter Support**: Enabling writing of DCM parameter files (currently not possible).
 *   **Enhanced Plugin System**: More built-in plugins for common tasks like plotting and reporting.
 *   **Performance Optimization**: Parallel execution of independent workflow branches.
 
