@@ -34,6 +34,7 @@ from typing import override
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 from packages.param_dcm.param_dcm.param_dcm import ParamDCM
@@ -61,13 +62,15 @@ class DCMHandler(ParamDCM, AresParamInterface):
             **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
         """
         AresParamInterface.__init__(self, file_path=file_path, **kwargs)
-        try:
-            ParamDCM.__init__(self, file_path=file_path)
-        except Exception as e:
-            logger.warning(f"Error initializing DCMHandler with {file_path}: {e}")
+        ParamDCM.__init__(self, file_path=file_path)
 
     @typechecked
     @override
+    @safely_run(
+        default_return=None,
+        message="Error during saving parameter dcm file.",
+        log=logger,
+    )
     def _save(self, output_path: str, **kwargs) -> None:
         """Write parameters to DCM file.
 
@@ -75,12 +78,8 @@ class DCMHandler(ParamDCM, AresParamInterface):
             output_path (str): Absolute path where the DCM file should be written
             **kwargs: Additional format-specific arguments
         """
-        try:
-            self.write(output_path)
-            logger.info(f"Successfully saved DCM parameter file: {output_path}")
-        except Exception as e:
-            logger.error(f"Error saving parameters to {output_path}: {e}")
-            return None
+        self.write(output_path)
+        logger.info(f"Successfully saved DCM parameter file: {output_path}")
 
     @typechecked
     @override
@@ -94,18 +93,14 @@ class DCMHandler(ParamDCM, AresParamInterface):
             parameters (list[AresParameter]): List of AresParameter objects to add to the interface
             **kwargs: Additional format-specific arguments (unused)
         """
-        try:
-            for param in parameters:
-                self.parameter[param.label] = {
-                    "description": param.description
-                    if param.description is not None
-                    else "",
-                    "unit": param.unit if param.unit is not None else "",
-                    "value": param.value.tolist(),
-                }
-        except Exception as e:
-            logger.error(f"Error adding parameters: {e}")
-            return None
+        for param in parameters:
+            self.parameter[param.label] = {
+                "description": param.description
+                if param.description is not None
+                else "",
+                "unit": param.unit if param.unit is not None else "",
+                "value": param.value.tolist(),
+            }
 
     @typechecked
     @override
@@ -125,21 +120,17 @@ class DCMHandler(ParamDCM, AresParamInterface):
         Returns:
             list[AresParameter]: List of AresParameter objects, or empty list on error
         """
-        try:
-            if label_filter:
-                items = {k: v for k, v in self.parameter.items() if k in label_filter}
-            else:
-                items = self.parameter
+        if label_filter:
+            items = {k: v for k, v in self.parameter.items() if k in label_filter}
+        else:
+            items = self.parameter
 
-            return [
-                AresParameter(
-                    label=parameter_name,
-                    value=parameter_value.get("value", 0.0),
-                    description=parameter_value.get("description", "n/m"),
-                    unit=parameter_value.get("unit", "n/m"),
-                )
-                for parameter_name, parameter_value in items.items()
-            ]
-        except Exception as e:
-            logger.error(f"Error getting parameters: {e}")
-            return []
+        return [
+            AresParameter(
+                label=parameter_name,
+                value=parameter_value.get("value", 0.0),
+                description=parameter_value.get("description", "n/m"),
+                unit=parameter_value.get("unit", "n/m"),
+            )
+            for parameter_name, parameter_value in items.items()
+        ]
