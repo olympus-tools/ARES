@@ -32,7 +32,7 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 
 import os
 from pathlib import Path
-from typing import Annotated, Any, Dict, List, Optional, Union
+from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Literal
@@ -42,23 +42,24 @@ class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
     type: str
-    element_workflow: List[str] = []
-    hash_list: Dict[str, List[str]] = {}
+    element_workflow: list[str] = []
+    hash_list: dict[str, list[str]] = {}
 
 
 class DataElement(BaseElement):
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
-    file_path: Optional[List[str]] = []
-    input: Optional[List[str]] = []
-    label_filter: Optional[List[str]] = None
-    output_format: Optional[Literal["mf4"]] = None
-    stepsize: Optional[int] = None
+    file_path: list[str] | None = []
+    input: list[str] | None = []
+    label_filter: list[str] | None = None
+    output_format: Literal["mf4"] | None = None
+    stepsize: int | None = None
 
     class Config:
         extra = "forbid"
 
     def validate_mode_requirements(self):
+        """Validates that required fields are present based on the mode."""
         if self.mode == "read" and not self.file_path:
             raise ValueError("Field 'file_path' is required for mode='read'.")
         if self.mode == "write" and (not self.input or not self.output_format):
@@ -70,15 +71,16 @@ class DataElement(BaseElement):
 class ParameterElement(BaseElement):
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
-    file_path: Optional[List[str]] = []
-    parameter: Optional[List[str]] = []
-    label_filter: Optional[List[str]] = None
-    output_format: Optional[Literal["json", "dcm"]] = None
+    file_path: list[str] | None = []
+    parameter: list[str] | None = []
+    label_filter: list[str] | None = None
+    output_format: Literal["json", "dcm"] | None = None
 
     class Config:
         extra = "forbid"
 
     def validate_mode_requirements(self):
+        """Validates that required fields are present based on the mode."""
         if self.mode == "read" and not self.file_path:
             raise ValueError("Field 'file_path' is required for mode='read'.")
         if self.mode == "write" and (not self.parameter or not self.output_format):
@@ -105,25 +107,25 @@ class SimUnitElement(PluginElement):
     )
     file_path: str
     stepsize: int
-    input: List[str]
-    parameter: Optional[List[str]] = []
+    input: list[str]
+    parameter: list[str] | None = []
     data_dictionary: str
-    init: Optional[List[str]] = []
-    cancel_condition: Optional[str] = None
+    init: list[str] | None = []
+    cancel_condition: str | None = None
 
     class Config:
         extra = "forbid"
 
 
 WorkflowElement = Annotated[
-    Union[DataElement, ParameterElement, SimUnitElement, PluginElement],
+    DataElement | ParameterElement | SimUnitElement | PluginElement,
     Field(discriminator="type"),
 ]
 
 
 # TODO: don't add this extra methods => userdict???
 class WorkflowModel(RootModel):
-    root: Dict[str, WorkflowElement]
+    root: dict[str, WorkflowElement]
 
     def __getitem__(self, key: str) -> WorkflowElement:
         return self.root[key]
@@ -150,6 +152,15 @@ class WorkflowModel(RootModel):
         return self.root.keys()
 
     def get(self, key: str, default: Any = None):
+        """Get an item from the workflow.
+
+        Args:
+            key (str): The key to look up.
+            default (Any): The default value if key is not found.
+
+        Returns:
+            WorkflowElement | Any: The found element or the default value.
+        """
         return self.root.get(key, default)
 
     def model_dump_json(self, **kwargs) -> str:

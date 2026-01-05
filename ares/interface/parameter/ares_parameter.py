@@ -31,7 +31,6 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -46,16 +45,16 @@ class AresParameter:
     converts input values to numpy arrays.
 
     Attributes:
-        label: Name or identifier of the parameter (required).
-        value: The parameter value as numpy array - can be scalar (0D), 1D, or 2D (required).
-        description: Optional textual description of the parameter.
-        unit: Optional physical unit of the parameter (e.g., 'km/h', '°C', 'm/s').
+        label (str): Name or identifier of the parameter (required).
+        value (npt.NDArray): The parameter value as numpy array - can be scalar (0D), 1D, or 2D (required).
+        description (str | None): Optional textual description of the parameter.
+        unit (str | None): Optional physical unit of the parameter (e.g., 'km/h', '°C', 'm/s').
     """
 
     label: str
     value: npt.NDArray
-    description: Optional[str] = None
-    unit: Optional[str] = None
+    description: str | None = None
+    unit: str | None = None
 
     def __post_init__(self) -> None:
         """Post-initialization processing.

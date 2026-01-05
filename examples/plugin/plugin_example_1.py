@@ -30,7 +30,7 @@ limitations under the License.
 For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
-from typing import Any, Dict, List
+from typing import Any
 
 import numpy as np
 
@@ -40,7 +40,7 @@ from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 
 
-def ares_plugin(plugin_input: Dict[str, Any]):
+def ares_plugin(plugin_input: dict[str, Any]):
     """ARES plugin function demonstrating combinatorial parameter and data interface creation.
 
     This example shows how to create AresDataInterface and AresParamInterface objects
@@ -51,18 +51,18 @@ def ares_plugin(plugin_input: Dict[str, Any]):
     allowing the workflow to track which outputs were generated from which input combinations.
 
     Args:
-        plugin_input: Dictionary containing all plugin configuration and data:
+        plugin_input (dict[str, Any]): Dictionary containing all plugin configuration and data:
             - element_name: str - Name of the workflow element
-            - parameter: List[List[AresParamInterface]] - Nested list of parameter interfaces
-            - input: List[List[AresDataInterface]] - Nested list of data interfaces
+            - parameter: list[list[AresParamInterface]] - Nested list of parameter interfaces
+            - input: list[list[AresDataInterface]] - Nested list of data interfaces
             - plugin_path: str - Path to this plugin file
             - type: str - Element type ("plugin" or "sim_unit")
-            - element_workflow: List[str] - Workflow element sequence
+            - element_workflow: list[str] - Workflow element sequence
     """
-    element_parameter_lists: List[List[AresParamInterface]] = plugin_input.get(
+    element_parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
         "parameter", []
     )
-    element_data_lists: List[List[AresDataInterface]] = plugin_input.get("input", [])
+    element_data_lists: list[list[AresDataInterface]] = plugin_input.get("input", [])
 
     new_params = [
         AresParameter(

@@ -34,10 +34,9 @@ import importlib.util
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 from ares.utils.decorators import typechecked_dev as typechecked
-
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
@@ -45,12 +44,12 @@ logger = create_logger(__name__)
 
 @typechecked
 def AresPluginInterface(
-    plugin_input: Dict[str, Any],
+    plugin_input: dict[str, Any],
 ):
     """Execute plugin based on element_value configuration using importlib.
 
     Args:
-        plugin_input: Dictionary containing plugin configuration
+        plugin_input (dict[str, Any]): Dictionary containing plugin configuration
     """
     try:
         plugin_path = plugin_input["plugin_path"]

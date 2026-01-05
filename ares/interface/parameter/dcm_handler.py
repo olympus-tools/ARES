@@ -30,12 +30,11 @@ limitations under the License.
 For details, see: https://github.com/AndraeCarotta/ares#7-license
 """
 
-from typing import List, Optional, override
-
-from ares.utils.decorators import typechecked_dev as typechecked
+from typing import override
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 from packages.param_dcm.param_dcm.param_dcm import ParamDCM
 
@@ -54,11 +53,11 @@ class DCMHandler(ParamDCM, AresParamInterface):
     """
 
     @typechecked
-    def __init__(self, file_path: Optional[str] = None, **kwargs):
+    def __init__(self, file_path: str | None = None, **kwargs):
         """Initialize DCMHandler and optionally load a DCM file.
 
         Args:
-            file_path: Optional absolute path to the DCM file to load
+            file_path (str | None): Optional absolute path to the DCM file to load
             **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
         """
         AresParamInterface.__init__(self, file_path=file_path, **kwargs)
@@ -73,7 +72,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
         """Write parameters to DCM file.
 
         Args:
-            output_path: Absolute path where the DCM file should be written
+            output_path (str): Absolute path where the DCM file should be written
             **kwargs: Additional format-specific arguments
         """
         try:
@@ -85,14 +84,14 @@ class DCMHandler(ParamDCM, AresParamInterface):
 
     @typechecked
     @override
-    def add(self, parameters: List[AresParameter], **kwargs) -> None:
+    def add(self, parameters: list[AresParameter], **kwargs) -> None:
         """Add parameters to the DCM interface.
 
         Converts AresParameter objects to DCM dictionary format and updates
         the internal parameter dictionary. Updates the instance hash after addition.
 
         Args:
-            parameters: List of AresParameter objects to add to the interface
+            parameters (list[AresParameter]): List of AresParameter objects to add to the interface
             **kwargs: Additional format-specific arguments (unused)
         """
         try:
@@ -112,7 +111,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
     @override
     def get(
         self, label_filter: list[str] | None = None, **kwargs
-    ) -> List[AresParameter]:
+    ) -> list[AresParameter]:
         """Get parameters from the DCM interface.
 
         Converts internal DCM parameter dictionary to list of AresParameter objects.
@@ -124,7 +123,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
             **kwargs: Additional format-specific arguments
 
         Returns:
-            List[AresParameter]: List of AresParameter objects, or empty list on error
+            list[AresParameter]: List of AresParameter objects, or empty list on error
         """
         try:
             if label_filter:

@@ -53,10 +53,10 @@ def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
     the necessary objects (Data, SimUnit, Parameter, etc.).
 
     Args:
-        wf_path: The absolute path to the workflow's JSON file.
-        output_dir: The absolute path to the output directory. If `None`, results
+        wf_path (str): The absolute path to the workflow's JSON file.
+        output_dir (str): The absolute path to the output directory. If `None`, results
             are written to the same directory as the workflow file.
-        meta_data: Current ARES and workstation meta data.
+        meta_data (dict[str, Any]): Current ARES and workstation meta data.
     """
     try:
         logger.info("ARES pipeline is starting...")

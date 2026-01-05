@@ -33,12 +33,11 @@ For details, see: https://github.com/AndraeCarotta/ares#7-license
 import json
 import os
 from abc import ABC, abstractmethod
-from typing import ClassVar, Dict, List, Optional
-
-from ares.utils.decorators import typechecked_dev as typechecked
+from typing import ClassVar
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.pydantic_models.workflow_model import ParameterElement
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import sha256_string
 from ares.utils.logger import create_logger
@@ -57,14 +56,14 @@ class AresParamInterface(ABC):
     will automatically return the same cached instance.
     """
 
-    cache: ClassVar[Dict[str, "AresParamInterface"]] = {}
-    _handlers: ClassVar[Dict[str, type["AresParamInterface"]]] = {}
+    cache: ClassVar[dict[str, "AresParamInterface"]] = {}
+    _handlers: ClassVar[dict[str, type["AresParamInterface"]]] = {}
 
     @typechecked
     def __new__(
         cls,
-        file_path: Optional[str] = None,
-        parameters: Optional[List[AresParameter]] = None,
+        file_path: str | None = None,
+        parameters: list[AresParameter] | None = None,
         **kwargs,
     ):
         """Implement flyweight pattern based on content hash.
@@ -73,12 +72,12 @@ class AresParamInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path: Path to the parameter file to load
-            parameters: Optional list of AresParameter objects for initialization
-            **kwargs: Additional arguments for subclass initialization
+            file_path (str | None): Path to the parameter file to load
+            parameters (list[AresParameter] | None): Optional list of AresParameter objects for initialization
+            **kwargs (Any): Additional arguments for subclass initialization
 
         Returns:
-            New or cached instance based on content hash
+            AresParamInterface: New or cached instance based on content hash
         """
         # neither file_path nor parameters provided - create uncached instance
         if file_path is None and parameters is None:
@@ -104,14 +103,14 @@ class AresParamInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(self, file_path: Optional[str], **kwargs):
+    def __init__(self, file_path: str | None, **kwargs):
         """Initialize base attributes for all parameter handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
-            file_path: Path to the parameter file to load
-            **kwargs: Additional arguments passed to subclass
+            file_path (str | None): Path to the parameter file to load
+            **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(self, "dependencies", kwargs.get("dependencies", []))
@@ -124,8 +123,8 @@ class AresParamInterface(ABC):
         """Register a handler for a specific file extension.
 
         Args:
-            extension: File extension including dot (e.g., '.dcm', '.json')
-            handler_class: Handler class to use for this extension
+            extension (str): File extension including dot (e.g., '.dcm', '.json')
+            handler_class (type[AresParamInterface]): Handler class to use for this extension
         """
         cls._handlers[extension.lower()] = handler_class
 
@@ -135,8 +134,8 @@ class AresParamInterface(ABC):
         cls,
         element_name: str,
         element_value: ParameterElement,
-        input_hash_list: Optional[List[List[str]]] = None,
-        output_dir: Optional[str] = None,
+        input_hash_list: list[list[str]] | None = None,
+        output_dir: str | None = None,
         **kwargs,
     ) -> None:
         """Central handler method for parameter operations.
@@ -144,11 +143,11 @@ class AresParamInterface(ABC):
         Decides between _load() and save() based on mode from ParameterElement.
 
         Args:
-            element_name: Name of the element being processed
-            element_value: ParameterElement containing mode, file_path, and output_format
-            input_hash_list: Nested list of parameter hashes for writing operations
-            output_dir: Output directory path for writing operations
-            **kwargs: Additional format-specific arguments
+            element_name (str): Name of the element being processed
+            element_value (ParameterElement): ParameterElement containing mode, file_path, and output_format
+            input_hash_list (list[list[str]] | None): Nested list of parameter hashes for writing operations
+            output_dir (str | None): Output directory path for writing operations
+            **kwargs (Any): Additional format-specific arguments
         """
 
         match element_value.mode:
@@ -195,18 +194,18 @@ class AresParamInterface(ABC):
 
     @classmethod
     @typechecked
-    def create(cls, file_path: Optional[str] = None, **kwargs) -> "AresParamInterface":
+    def create(cls, file_path: str | None = None, **kwargs) -> "AresParamInterface":
         """Create parameter handler with automatic format detection.
 
         Uses file extension to select appropriate handler.
         All handlers share the same flyweight cache.
 
         Args:
-            file_path: Path to the parameter file to load. If None, defaults to JSON handler.
-            **kwargs: Additional format-specific arguments
+            file_path (str | None): Path to the parameter file to load. If None, defaults to JSON handler.
+            **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            AresParameter handler instance (may be cached)
+            AresParamInterface: AresParameter handler instance (may be cached)
         """
 
         if file_path is None:
@@ -221,9 +220,9 @@ class AresParamInterface(ABC):
     @staticmethod
     @typechecked
     def _calculate_hash(
-        parameters: List[AresParameter],
+        parameters: list[AresParameter],
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Calculate hash from parameter list.
 
         This method is used for cache lookup. It always calculates hash
@@ -234,11 +233,11 @@ class AresParamInterface(ABC):
         identical parameter content.
 
         Args:
-            parameters: List of AresParameter objects
-            **kwargs: Additional format-specific arguments (unused)
+            parameters (list[AresParameter]): List of AresParameter objects
+            **kwargs (Any): Additional format-specific arguments (unused)
 
         Returns:
-            SHA256 hash string of the content, or None on error
+            str | None: SHA256 hash string of the content, or None on error
         """
         temp_param_dict = {}
         temp_param_dict["metadata"] = {"type": "AresParamInterface"}
@@ -256,25 +255,25 @@ class AresParamInterface(ABC):
     @abstractmethod
     def get(
         self, label_filter: list[str] | None = None, **kwargs
-    ) -> List[AresParameter]:
+    ) -> list[AresParameter]:
         """Get parameters from the interface.
 
         Args:
             label_filter (list[str] | None): List of parameter names to retrieve from the interface.
-            **kwargs: Additional format-specific arguments
+            **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            List[AresParameter]: List of all AresParameter objects stored in the interface
+            list[AresParameter]: List of all AresParameter objects stored in the interface
         """
         pass
 
     @abstractmethod
-    def add(self, parameters: List[AresParameter], **kwargs) -> None:
+    def add(self, parameters: list[AresParameter], **kwargs) -> None:
         """Add parameters to the interface.
 
         Args:
-            parameters: List of AresParameter objects to add
-            **kwargs: Additional format-specific arguments
+            parameters (list[AresParameter]): List of AresParameter objects to add
+            **kwargs (Any): Additional format-specific arguments
         """
         pass
 
@@ -283,7 +282,7 @@ class AresParamInterface(ABC):
         """Write parameters to file.
 
         Args:
-            output_path: Absolute path where the parameter file should be written
-            **kwargs: Additional format-specific arguments
+            output_path (str): Absolute path where the parameter file should be written
+            **kwargs (Any): Additional format-specific arguments
         """
         pass

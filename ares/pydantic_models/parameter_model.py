@@ -38,7 +38,7 @@ for both DCM and JSON inputs.
 """
 
 from enum import Enum
-from typing import Annotated, Dict, List, Literal, Optional, Union
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, RootModel
 
@@ -48,8 +48,8 @@ DataType = Enum("DataType", list(SimUnit.DATATYPES.keys()))
 
 
 class BaseParameter(BaseModel):
-    description: Optional[str] = None
-    unit: Optional[str] = None
+    description: str | None = None
+    unit: str | None = None
 
     class Config:
         extra = "forbid"
@@ -57,31 +57,31 @@ class BaseParameter(BaseModel):
 
 class ScalarParameter(BaseParameter):
     type: Literal["scalar"] = Field("scalar")
-    value: Union[int, float, str, bool]
+    value: int | float | str | bool
 
 
 class Array1DParameter(BaseParameter):
     type: Literal["array1d"] = Field("array1d")
-    name_breakpoints_1: Optional[str] = None
-    value: List[Union[int, float]]
+    name_breakpoints_1: str | None = None
+    value: list[int | float]
 
 
 class Array2DParameter(BaseParameter):
     type: Literal["array2d"] = Field("array2d")
-    name_breakpoints_1: Optional[str] = None
-    name_breakpoints_2: Optional[str] = None
-    value: List[List[Union[int, float]]]
+    name_breakpoints_1: str | None = None
+    name_breakpoints_2: str | None = None
+    value: list[list[int | float]]
 
 
 # Union type
 ParameterElement = Annotated[
-    Union[ScalarParameter, Array1DParameter, Array2DParameter],
+    ScalarParameter | Array1DParameter | Array2DParameter,
     Field(discriminator="type"),
 ]
 
 
 class ParameterModel(RootModel):
-    root: Dict[str, ParameterElement]
+    root: dict[str, ParameterElement]
 
     def __getitem__(self, key: str) -> ParameterElement:
         return self.root[key]
