@@ -30,6 +30,10 @@ limitations under the License.
 For details, see: https://github.com/olympus-tools/ARES#7-license
 """
 
+import logging
+
+import pytest
+
 from ares.utils.decorators import safely_run
 
 
@@ -62,7 +66,7 @@ def test_safely_run_logging(caplog):
     Tests that a message is logged when the decorated function raises an exception.
     """
 
-    @safely_run(default_return="error", message="An error occurred")
+    @safely_run(default_return="error", message="HELP WANTED")
     def safely_run_logging():
         raise ValueError("This is a test exception")
 
@@ -71,6 +75,29 @@ def test_safely_run_logging(caplog):
         "Error while running function safely_run_logging: This is a test exception"
         in caplog.text
     )
+    assert "HELP WANTED" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "test_log_level", ["INFO", "WARNING", "ERROR", "CRITICAL", "BOOM"]
+)
+def test_safely_run_logging(caplog, test_log_level):
+    """
+    Tests that the decorator respects the requested log_level (e.g., WARNING).
+    """
+    caplog.set_level(logging.INFO)
+
+    @safely_run(default_return="error", log_level=test_log_level)
+    def safely_run_logging():
+        raise ValueError("This is a test exception")
+
+    safely_run_logging()
+
+    assert len(caplog.records) > 0
+    if test_log_level != "BOOM":
+        assert caplog.records[-1].levelname == test_log_level
+    else:
+        assert caplog.records[-1].levelname == "WARNING"
 
 
 def test_safely_run_with_args():

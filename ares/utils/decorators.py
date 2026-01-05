@@ -31,23 +31,35 @@ For details, see: https://github.com/olympus-tools/ARES#7-license
 """
 
 # standard includes
+import logging
 import os
 import sys
 from functools import wraps
+from typing import Any
 
 from ares.utils.logger import create_logger
 
 
 def safely_run(
-    default_return=None, message: str = None, log_level: str = None, log=None
+    default_return: Any = None,
+    message: str | None = None,
+    log_level: str = "WARNING",
+    log: logging.Logger | None = None,
 ):
     """provides try/except functionality via decorator
 
     Args:
-        default_return (Any): default return value in case of failure -> depends on function
-        message (str | None): logger message to display in case of failure
-        log_level (str | None): log level to use
-        log (Any): specific logger to use, defaults to ares logger
+        default_return : default return value in case of failure -> depends on function
+        message[str] : logger message to display in case of failure
+        log_level[str] : log level to use
+        log: specific logger to use, defaults to ares logger
+        default_return[Any] : default return value in case of failure -> depends on function, default = None
+        message[str] : logger message to display in case of failure, default = None
+        log_level[str] : log level to use, default = WARNING
+        log[Logger]: specific logger to use, defaults to ares logger
+
+    Returns:
+        Callable: The decorated function with try/except.
     """
     logger = create_logger() if log is None else log
 
@@ -59,8 +71,13 @@ def safely_run(
                 ret = func(*args, **kwargs)
                 logger.debug(f"Successfully run function {func.__name__}.")
             except Exception as e:
+                log_func = getattr(logger, log_level.lower(), logger.warning)
+
                 # INFO: execution of func failed -> collect debug information
-                logger.error(f"Error while running function {func.__name__}: {e}")
+                log_func(f"Error while running function {func.__name__}: {e}")
+
+                if message:
+                    log_func(message)
 
                 # set default return
                 ret = default_return
