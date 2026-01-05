@@ -16,17 +16,16 @@
 #   - make release
 
 VENV_DIR := .venv
+VENV_RECREATE := false
 
 .PHONY: setup-venv
 setup-venv:
 	@if [ -d "$(VENV_DIR)" ]; then \
-		printf "Virtual environment '$(VENV_DIR)' already exists. Recreate it? [y/n] "; \
-		read -r REPLY; \
-		if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
+		echo "Virtual environment '$(VENV_DIR)' already exists. For recreation add 'VENV_RECREATE=true to cli.'"; \
+		if [ "$(VENV_RECREATE)" = "true" ] || [ "$(VENV_RECREATE)" = "TRUE" ]; then \
 			echo "Removing existing virtual environment '$(VENV_DIR)'..."; \
 			rm -rf "$(VENV_DIR)"; \
 		else \
-			echo "Using existing virtual environment '$(VENV_DIR)'."; \
 			exit 0; \
 		fi; \
 	fi; \
