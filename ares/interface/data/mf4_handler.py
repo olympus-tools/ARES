@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-For details, see: https://github.com/AndraeCarotta/ares#7-license
+For details, see: https://github.com/olympus-tools/ARES#7-license
 """
 
 import datetime
@@ -36,10 +36,10 @@ from typing import override
 
 import numpy as np
 from asammdf import MDF, Signal, Source
-from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)

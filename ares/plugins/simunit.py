@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-For details, see: https://github.com/AndraeCarotta/ares#7-license
+For details, see: https://github.com/olympus-tools/ARES#7-license
 """
 
 import ctypes
@@ -37,13 +37,13 @@ from typing import Any, ClassVar, TypeVar
 
 import numpy as np
 from pydantic import ValidationError
-from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.datadictionary_model import DataDictionaryModel
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)

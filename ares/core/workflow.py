@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-For details, see: https://github.com/AndraeCarotta/ares#7-license
+For details, see: https://github.com/olympus-tools/ARES#7-license
 """
 
 import json
@@ -37,9 +37,9 @@ from datetime import datetime
 from typing import Any
 
 from jsonschema import ValidationError
-from ares.utils.decorators import typechecked_dev as typechecked
 
 from ares.pydantic_models.workflow_model import WorkflowModel
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)

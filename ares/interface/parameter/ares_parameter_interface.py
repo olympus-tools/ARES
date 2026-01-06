@@ -27,7 +27,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-For details, see: https://github.com/AndraeCarotta/ares#7-license
+For details, see: https://github.com/olympus-tools/ARES#7-license
 """
 
 import json

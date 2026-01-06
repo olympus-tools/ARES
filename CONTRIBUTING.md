@@ -29,7 +29,7 @@ To set up your development environment:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/AndraeCarotta/ares.git
+   git clone https://github.com/olympus-tools/ARES.git
    cd ares
    ```
 
@@ -91,8 +91,8 @@ We encourage you to submit pull requests to fix bugs, add new features, or impro
 
 Before you start coding, please create a new issue for your planned work. This helps us track the problem and coordinate contributions.
 
-* For **Bug Reports**, please use our [Bug Report Template](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md).
-* For **Feature Requests**, please use our [Feature Request Template](https://github.com/AndraeCarotta/ares/issues/new?template=feature_request.md).
+* For **Bug Reports**, please use our [Bug Report Template](https://github.com/olympus-tools/ARES/issues/new?template=bug_report.md).
+* For **Feature Requests**, please use our [Feature Request Template](https://github.com/olympus-tools/ARES/issues/new?template=feature_request.md).
 
 ### 2.2 Code Contributions
 
@@ -168,8 +168,8 @@ For more details, see the [License section in the README](README.md#7-license).
 
 If you need help or have questions about contributing:
 
-* **GitHub Issues:** For bug reports, feature requests, or technical questions, create an [issue](https://github.com/AndraeCarotta/ares/issues)
-* **Support Requests:** Use our [Support Request Template](https://github.com/AndraeCarotta/ares/issues/new?template=support_request.md)
+* **GitHub Issues:** For bug reports, feature requests, or technical questions, create an [issue](https://github.com/olympus-tools/ARES/issues)
+* **Support Requests:** Use our [Support Request Template](https://github.com/olympus-tools/ARES/issues/new?template=support_request.md)
 * **Pull Request Discussions:** Ask questions directly in your PR
 
 **Review Process:**

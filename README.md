@@ -1,7 +1,7 @@
 # ARES
 The **A**utomated **R**apid **E**mbedded **S**imulation project is a tool for performing open- and closed-loop simulations of software components. The primary application area is the development of software components for embedded applications.
 
-We are committed to a welcoming and inclusive community. Please read our [Code of Conduct](https://github.com/AndraeCarotta/ARES/blob/master/CODE_OF_CONDUCT.md) before contributing.
+We are committed to a welcoming and inclusive community. Please read our [Code of Conduct](https://github.com/olympus-tools/ARES/blob/master/CODE_OF_CONDUCT.md) before contributing.
 
 * [1. Installation](#1-installation)
 * [2. Usage](#2-usage)
@@ -37,7 +37,7 @@ Using a virtual environment is recommended to avoid conflicts with system packag
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/AndraeCarotta/ares.git
+    git clone https://github.com/olympus-tools/ARES.git
     cd ares
     ```
 
@@ -129,13 +129,13 @@ The architecture uses design patterns like **Flyweight** (hash-based caching), *
 
 ## 4. Get in touch with us
 
-- [Support Request](https://github.com/AndraeCarotta/ares/issues/new?template=support_request.md)
-- [Bug Report](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md)
-- [Feature Request](https://github.com/AndraeCarotta/ares/issues/new?template=feature_request.md)
+- [Support Request](https://github.com/olympus-tools/ARES/issues/new?template=support_request.md)
+- [Bug Report](https://github.com/olympus-tools/ARES/issues/new?template=bug_report.md)
+- [Feature Request](https://github.com/olympus-tools/ARES/issues/new?template=feature_request.md)
 
 ## 5. Contribution to the ares project
 
-To contribute to the ARES project, please see the [CONTRIBUTING.md](https://github.com/AndraeCarotta/ARES/blob/master/CONTRIBUTING.md) file for details.
+To contribute to the ARES project, please see the [CONTRIBUTING.md](https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md) file for details.
 
 ## 6. Workflows
 
@@ -249,7 +249,7 @@ flowchart LR
 
 ### 7.2. Detailed Examples
 
-For a detailed explanation of the example applications, please refer to [README.md](https://github.com/AndraeCarotta/ARES/blob/master/examples/README.md).
+For a detailed explanation of the example applications, please refer to [README.md](https://github.com/olympus-tools/ARES/blob/master/examples/README.md).
 
 ## 8. Future Developments
 
@@ -263,11 +263,11 @@ ARES is constantly evolving. Future developments will focus on:
 
 ## 9. License
 
-This project is licensed under the Apache License 2.0 — see the [LICENSE](https://github.com/AndraeCarotta/ARES/blob/master/LICENSE) file for details.
+This project is licensed under the Apache License 2.0 — see the [LICENSE](https://github.com/olympus-tools/ARES/blob/master/LICENSE) file for details.
 
 ### Third-Party Dependencies
 
-This project includes or depends on third-party software components. All dependencies and their respective licenses are documented in the [NOTICE](https://github.com/AndraeCarotta/ARES/blob/master/NOTICE) file in accordance with Apache License 2.0 requirements.
+This project includes or depends on third-party software components. All dependencies and their respective licenses are documented in the [NOTICE](https://github.com/olympus-tools/ARES/blob/master/NOTICE) file in accordance with Apache License 2.0 requirements.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

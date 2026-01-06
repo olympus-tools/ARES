@@ -69,14 +69,14 @@ dev = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/AndraeCarotta/ares"
-"Documentation" = "https://github.com/AndraeCarotta/ares#readme"
-"Bug Tracker" = "https://github.com/AndraeCarotta/ares/issues"
-"Repository" = "https://github.com/AndraeCarotta/ares"
-"Changelog" = "https://github.com/AndraeCarotta/ares/releases"
-"Source" = "https://github.com/AndraeCarotta/ares"
-"Security Policy" = "https://github.com/AndraeCarotta/ares/security/policy"
-"Contributing" = "https://github.com/AndraeCarotta/ares/blob/master/CONTRIBUTING.md"
+"Homepage" = "https://github.com/olympus-tools/ARES"
+"Documentation" = "https://github.com/olympus-tools/ARES#readme"
+"Bug Tracker" = "https://github.com/olympus-tools/ARES/issues"
+"Repository" = "https://github.com/olympus-tools/ARES"
+"Changelog" = "https://github.com/olympus-tools/ARES/releases"
+"Source" = "https://github.com/olympus-tools/ARES"
+"Security Policy" = "https://github.com/olympus-tools/ARES/security/policy"
+"Contributing" = "https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md"
 
 [tool.setuptools]
 packages = ["ares"]

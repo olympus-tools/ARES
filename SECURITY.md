@@ -27,4 +27,4 @@ Reports for older, unsupported versions will not be addressed.
 
 ## Reporting General Bugs
 
-For all other issues that are not security-related (e.g., crashes, unexpected behavior, or general errors), please open a new issue on GitHub with the `bug` label. You can use our [Bug Report Template](https://github.com/AndraeCarotta/ares/issues/new?template=bug_report.md) to provide us with the necessary information.
+For all other issues that are not security-related (e.g., crashes, unexpected behavior, or general errors), please open a new issue on GitHub with the `bug` label. You can use our [Bug Report Template](https://github.com/olympus-tools/ARES/issues/new?template=bug_report.md) to provide us with the necessary information.
