@@ -1,7 +1,5 @@
 # ARES
-The **A**utomated **R**apid **E**mbedded **S**imulation project is a tool for performing open- and closed-loop simulations of software components. The primary application area is the development of software components for embedded applications.
-
-We are committed to a welcoming and inclusive community. Please read our [Code of Conduct](https://github.com/olympus-tools/ARES/blob/master/CODE_OF_CONDUCT.md) before contributing.
+The **A**utomated **R**apid **E**mbedded **S**imulation project is a tool for performing open-loop simulations of software components. The primary application area is the development of software components for embedded applications.
 
 * [1. Installation](#1-installation)
 * [2. Usage](#2-usage)
@@ -135,7 +133,7 @@ The architecture uses design patterns like **Flyweight** (hash-based caching), *
 
 ## 5. Contribution to the ares project
 
-To contribute to the ARES project, please see the [CONTRIBUTING.md](https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md) file for details.
+We are committed to a welcoming and inclusive community. To contribute to the ARES project, please see the [CONTRIBUTING.md](https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md) file for details.
 
 ## 6. Workflows
 
