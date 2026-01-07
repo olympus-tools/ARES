@@ -4,6 +4,7 @@
 #   - make examples
 #   - make test-examples
 #   - make test-requirements
+#   - make test-coverage
 #   - make format
 #   - make format-check
 #   - make build-executable
@@ -53,7 +54,11 @@ test-examples: setup-venv
 
 .PHONY: test-requirements
 test-requirements: setup-venv
-	@"$(VENV_DIR)/bin/python" -m pytest test/ --ignore=test/examples
+	@"$(VENV_DIR)/bin/python" -m pytest
+
+.PHONY: test-coverage
+test-coverage: setup-venv
+	@"$(VENV_DIR)/bin/python" -m pytest --cov --cov-report=html --cov-report=term-missing
 
 .PHONY: format
 format: setup-venv

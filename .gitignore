@@ -21,6 +21,11 @@ build/*
 .coverage.*
 htmlcov/
 
+# datasource
+*.mf4
+*.mat
+*.parquet
+
 # compilation artefacts
 **/*.so
 
