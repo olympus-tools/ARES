@@ -58,7 +58,7 @@ ares = "ares.cli.ares:cli"
 [project.optional-dependencies]
 test = [
     "pytest==8.4.1",
-    "coverage==7.10.6",
+    "pytest-cov==6.0.0",
 ]
 dev = [
     "ruff==0.12.11",
@@ -92,6 +92,13 @@ ares = ["py.typed"]
 
 [tool.setuptools_scm]
 write_to = "ares/core/version.py"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = ["test_*.py"]
+addopts = [
+    "--ignore=test/examples",
+]
 
 [tool.ruff]
 # The maximum line length.
