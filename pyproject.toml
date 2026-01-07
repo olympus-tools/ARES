@@ -79,7 +79,10 @@ dev = [
 "Contributing" = "https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md"
 
 [tool.setuptools]
-packages = ["ares"]
+packages = ["ares", "param_dcm"]
+
+[tool.setuptools.package-dir]
+param_dcm = "packages/param_dcm/param_dcm"
 
 [tool.setuptools.package-data]
 ares = ["py.typed"]

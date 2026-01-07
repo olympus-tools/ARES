@@ -32,12 +32,13 @@ For details, see: https://github.com/olympus-tools/ARES#7-license
 
 from typing import override
 
+from param_dcm.param_dcm import ParamDCM
+
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
-from packages.param_dcm.param_dcm.param_dcm import ParamDCM
 
 logger = create_logger(__name__)
 
