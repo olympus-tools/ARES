@@ -10,7 +10,8 @@
     "editor.formatOnSave": true
   },
   "files.associations": {
-    "*.instructions.md": "markdown"
+    "*.instructions.md": "markdown",
+    ".coveragerc": "ini"
   },
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
