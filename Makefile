@@ -141,10 +141,12 @@ clean:
 .PHONY: clean-light
 clean-light:
 	echo "Cleaning project in mode light..."; \
-	find . -type f -name "*.pyc" | xargs rm -fr; \
-	find . -type d -name __pycache__ | xargs rm -fr; \
-	find . -type d -name log | xargs rm -fr; \
-	find . -type d -name .pytest_cache | xargs rm -fr; \
-	find . -type d -name .ruff_cache | xargs rm -fr; \
+	find . -type f -name "*.pyc" -delete; \
+	find . -type d -name "__pycache__" -exec rm -rf {} +; \
+	find . -type d -name "log" -exec rm -rf {} +; \
+	find . -type d -name ".pytest_cache" -exec rm -rf {} +; \
+	find . -type d -name ".ruff_cache" -exec rm -rf {} +; \
+	rm -f .coverage .coverage.*; \
+	rm -rf htmlcov; \
 	$(MAKE) -C examples/sim_unit clean; \
 	echo "Project cleaned successfully in mode light."; \

@@ -16,10 +16,10 @@ build/*
 *.pyo
 **/.zed/*
 
-# datasource
-*.mf4
-*.mat
-*.parquet
+# coverage
+.coverage
+.coverage.*
+htmlcov/
 
 # compilation artefacts
 **/*.so
