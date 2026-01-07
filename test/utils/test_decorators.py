@@ -1,5 +1,5 @@
 r"""
-________________________________________________________________________
+_______________________________________________________________________
 |                                                                      |
 |               $$$$$$\  $$$$$$$\  $$$$$$$$\  $$$$$$\                  |
 |              $$  __$$\ $$  __$$\ $$  _____|$$  __$$\                 |
@@ -34,9 +34,10 @@ import logging
 
 import pytest
 
-from ares.utils.decorators import safely_run
+from ares.utils.decorators import error_msg, safely_run
 
 
+# TEST: safely_run
 def test_safely_run_success():
     """
     Tests that the decorated function returns the correct value when it runs successfully.
@@ -124,3 +125,88 @@ def test_safely_run_with_args_exception():
 
     assert safely_run_with_args_exception("a", "b") == "error"
     assert safely_run_with_args_exception("a", "b", c="e") == "error"
+
+
+# TEST: error_msg
+def test_happy_path_execution():
+    """Ensure the function runs normally when no error occurs."""
+
+    @error_msg("This should not trigger")
+    def add(a, b):
+        return a + b
+
+    assert add(2, 3) == 5
+
+
+def test_argument_passing():
+    """Ensure args and kwargs are passed correctly to the wrapped function."""
+
+    @error_msg("Args failed")
+    def greet(name, greeting="Hello"):
+        return f"{greeting}, {name}"
+
+    assert greet("Ares", greeting="Hi") == "Hi, Ares"
+
+
+def test_catches_and_reraises_with_context():
+    """
+    Ensure the decorator catches the error, wraps it in the custom message,
+    and raises the default exception type (RuntimeError).
+    """
+
+    @error_msg("Critical failure in database")
+    def fail_function():
+        raise ValueError("Connection refused")
+
+    # verify the TYPE of error raised is RuntimeError (default)
+    with pytest.raises(RuntimeError) as exc_info:
+        fail_function()
+
+    # verify the MESSAGE contains both our context and the original error
+    msg = str(exc_info.value)
+    assert "Critical failure in database" in msg
+    assert "Original exception trace: Connection refused" in msg
+
+
+def test_exception_chaining_is_preserved():
+    """
+    Ensure 'raise ... from e' is used. This allows debuggers to see
+    the original traceback.
+    """
+    original_error = ZeroDivisionError("Math is hard")
+
+    @error_msg("Calculation failed")
+    def divide():
+        raise original_error
+
+    with pytest.raises(RuntimeError) as exc_info:
+        divide()
+
+    # The __cause__ attribute stores the original exception when using 'from'
+    assert exc_info.value.__cause__ is original_error
+
+
+def test_custom_exception_type():
+    """Ensure the user can specify a specific exception class to raise."""
+
+    class MyCustomError(Exception):
+        pass
+
+    @error_msg("Custom error context", exception_type=MyCustomError)
+    def fail_custom():
+        raise KeyError("missing_key")
+
+    with pytest.raises(MyCustomError):
+        fail_custom()
+
+
+def test_metadata_preservation():
+    """Ensure @wraps is working (docstrings and function names are kept)."""
+
+    @error_msg("Metadata context")
+    def meaningful_name():
+        """This is a docstring."""
+        pass
+
+    assert meaningful_name.__name__ == "meaningful_name"
+    assert meaningful_name.__doc__ == "This is a docstring."
