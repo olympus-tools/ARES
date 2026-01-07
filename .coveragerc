@@ -1,0 +1,27 @@
+[run]
+branch = True
+source = ares
+omit =
+    */__init__.py
+    test/*
+    examples/*
+    scripts/*
+    packages/*
+    ares.egg-info/*
+    *.log
+
+[report]
+; fail_under = 80
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self\.debug
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
+precision = 2
+show_missing = True
+
+[html]
+directory = htmlcov
