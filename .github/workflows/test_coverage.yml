@@ -1,0 +1,40 @@
+name: Test Coverage Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Print system information
+        run: |
+          echo "Running on Linux"
+          uname -a
+
+      - name: Run coverage tests
+        run: |
+          make test-coverage
+
+    #   - name: Upload coverage report
+    #     if: always()
+    #     uses: actions/upload-artifact@v4
+    #     with:
+    #       name: coverage-report
+    #       path: htmlcov/
+    #       retention-days: 30
+
+      - name: Clean up
+        run: |
+          make clean
