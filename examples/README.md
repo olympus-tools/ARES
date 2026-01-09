@@ -79,8 +79,11 @@ flowchart LR
 
 ### Run via CLI
 ```bash
+# Bash/Zsh
 source .venv/bin/activate
-python -m ares pipeline \
+# Fish: source .venv/bin/activate.fish
+
+python3 -m ares pipeline \
     --workflow examples/workflow/workflow_example_1.json \
     --output examples/output/ \
     --log-level 20
@@ -128,8 +131,11 @@ flowchart LR
 
 ### Run via CLI
 ```bash
+# Bash/Zsh
 source .venv/bin/activate
-python -m ares pipeline \
+# Fish: source .venv/bin/activate.fish
+
+python3 -m ares pipeline \
     --workflow examples/workflow/workflow_example_2.json \
     --output examples/output/ \
     --log-level 20
