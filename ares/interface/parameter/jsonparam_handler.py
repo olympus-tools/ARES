@@ -80,7 +80,6 @@ class JSONParamHandler(AresParamInterface):
         elif "parameters" in kwargs:
             self.add(kwargs["parameters"])
 
-    @typechecked
     @override
     @safely_run(
         default_return=None,
@@ -112,7 +111,6 @@ class JSONParamHandler(AresParamInterface):
             logger.error(f"Error saving parameters to {output_path}: {e}")
             return None
 
-    @typechecked
     @override
     def add(self, parameters: list[AresParameter], **kwargs) -> None:
         """Add parameters to the JSON interface.
@@ -133,7 +131,6 @@ class JSONParamHandler(AresParamInterface):
                 "value": param.value.tolist(),
             }
 
-    @typechecked
     @override
     def get(
         self, label_filter: list[str] | None = None, **kwargs

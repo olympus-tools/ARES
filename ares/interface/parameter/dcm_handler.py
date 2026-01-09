@@ -65,7 +65,6 @@ class DCMHandler(ParamDCM, AresParamInterface):
         AresParamInterface.__init__(self, file_path=file_path, **kwargs)
         ParamDCM.__init__(self, file_path=file_path)
 
-    @typechecked
     @override
     @safely_run(
         default_return=None,
@@ -82,7 +81,6 @@ class DCMHandler(ParamDCM, AresParamInterface):
         self.write(output_path)
         logger.info(f"Successfully saved DCM parameter file: {output_path}")
 
-    @typechecked
     @override
     def add(self, parameters: list[AresParameter], **kwargs) -> None:
         """Add parameters to the DCM interface.
@@ -103,7 +101,6 @@ class DCMHandler(ParamDCM, AresParamInterface):
                 "value": param.value.tolist(),
             }
 
-    @typechecked
     @override
     def get(
         self, label_filter: list[str] | None = None, **kwargs
