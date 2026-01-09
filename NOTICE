@@ -10,10 +10,10 @@ This product contains dependencies with the following licenses:
 
 Apache Software License License:
 ------------------------------------------------------------------------------
-  * ares 0.1.dev73+g029c33181.d20260102
+  * ares 0.1.dev96+g88b66c811
     URL: https://github.com/olympus-tools/ARES
 
-  * ares 0.1.dev73+g029c33181.d20260102
+  * ares 0.1.dev96+g88b66c811.d20260109
     URL: https://github.com/olympus-tools/ARES
 
   * id 1.5.0
@@ -184,7 +184,7 @@ MIT License:
   * typing-inspection 0.4.2
     URL: https://github.com/pydantic/typing-inspection
 
-  * urllib3 2.6.2
+  * urllib3 2.6.3
     URL: https://github.com/urllib3/urllib3/blob/main/CHANGES.rst
 
 
@@ -241,7 +241,7 @@ MIT License License:
 
 Mozilla Public License 2.0 (MPL 2.0) License:
 ------------------------------------------------------------------------------
-  * certifi 2025.11.12
+  * certifi 2026.1.4
     URL: https://github.com/certifi/python-certifi
 
 
