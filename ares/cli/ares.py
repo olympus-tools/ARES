@@ -36,8 +36,8 @@ import logging
 import click
 
 from ares.core.pipeline import pipeline
+from ares.core.version import __version__
 from ares.utils.logger import create_logger
-from ares.version import __version__
 
 meta_data = {"username": getpass.getuser(), "version": __version__}
 
