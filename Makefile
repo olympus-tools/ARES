@@ -66,7 +66,7 @@ format-check: setup-venv
 .PHONY: build-executable
 build-executable: setup-venv
 	@echo "Building executable with PyInstaller..."
-	@"$(VENV_DIR)/bin/pyinstaller" --onefile --name ares --paths . --add-data "ares/plugins/simunit.py:ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" ares/__main__.py
+	@"$(VENV_DIR)/bin/pyinstaller" --onefile --name ares --paths . --paths packages/param_dcm --add-data "ares/plugins/simunit.py:ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "param_dcm" --hidden-import "param_dcm.param_dcm" ares/__main__.py
 	@echo ""
 	@echo "Executable created in dist/ares"
 
