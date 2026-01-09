@@ -95,7 +95,6 @@ class MF4Handler(MDF, AresDataInterface):
                 if obs_channel in self._available_signals:
                     self._available_signals.remove(obs_channel)
 
-    @typechecked
     @override
     @safely_run(
         default_return=[],
@@ -117,7 +116,6 @@ class MF4Handler(MDF, AresDataInterface):
         result_path = self.save(output_path, **kwargs)
         logger.debug(f"Data was successfully written to: {result_path}")
 
-    @typechecked
     @override
     def get(self, label_filter: list[str] | None = None, **kwargs) -> list[AresSignal]:
         """Get signals from MF4 file with optional resampling.
@@ -193,7 +191,6 @@ class MF4Handler(MDF, AresDataInterface):
             for signal in found_signals
         ]
 
-    @typechecked
     @override
     def add(self, signals: list[AresSignal], **kwargs) -> None:
         """Add AresSignal objects to MF4 file.
