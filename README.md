@@ -47,7 +47,11 @@ Using a virtual environment is recommended to avoid conflicts with system packag
 
 3.  **Activate the environment:**
     ```bash
+    # Bash/Zsh
     source .venv/bin/activate
+    
+    # Fish
+    source .venv/bin/activate.fish
     ```
 
 #### Option B: Manual Setup
@@ -61,7 +65,11 @@ If you prefer to configure the virtual environment manually:
 
 2.  **Activate the environment:**
     ```bash
+    # Bash/Zsh
     source .venv/bin/activate
+    
+    # Fish
+    source .venv/bin/activate.fish
     ```
 
 3.  **Install ARES:**
@@ -95,7 +103,7 @@ ARES is primarily used via its Command Line Interface (CLI). The main command is
 ### Basic Command
 
 ```bash
-python -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
+python3 -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 ```
 
 ### Options
@@ -109,7 +117,7 @@ python -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 ### Example
 
 ```bash
-python -m ares pipeline -wf ./my_workflow.json -o ./results --log-level 10
+python3 -m ares pipeline -wf ./my_workflow.json -o ./results --log-level 10
 ```
 
 ## 3. Architecture

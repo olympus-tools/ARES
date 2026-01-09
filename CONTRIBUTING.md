@@ -48,7 +48,7 @@ To set up your development environment:
 
 4. **Verify the installation:**
    ```bash
-   python -m ares --version
+   python3 -m ares --version
    ```
 
 5. **VSCode Debugging (optional):**
