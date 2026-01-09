@@ -151,6 +151,7 @@ clean-light:
 	find . -type d -name "log" -exec rm -rf {} +; \
 	find . -type d -name ".pytest_cache" -exec rm -rf {} +; \
 	find . -type d -name ".ruff_cache" -exec rm -rf {} +; \
+	find . -type f -name "*.spec" -delete; \
 	rm -f .coverage .coverage.*; \
 	rm -rf htmlcov; \
 	$(MAKE) -C examples/sim_unit clean; \
