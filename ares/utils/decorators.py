@@ -43,18 +43,16 @@ from ares.utils.logger import create_logger
 def safely_run(
     default_return: Any = None,
     message: str | None = None,
+    exception_map: dict[type[Exception], str] | None = None,
     log_level: str = "WARNING",
     log: logging.Logger | None = None,
 ):
     """provides try/except functionality via decorator
 
     Args:
-        default_return : default return value in case of failure -> depends on function
-        message[str] : logger message to display in case of failure
-        log_level[str] : log level to use
-        log: specific logger to use, defaults to ares logger
         default_return[Any] : default return value in case of failure -> depends on function, default = None
-        message[str] : logger message to display in case of failure, default = None
+        message[str] : default logger message to display in case of failure, default = None
+        exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
         log_level[str] : log level to use, default = WARNING
         log[Logger]: specific logger to use, defaults to ares logger
 
@@ -74,12 +72,20 @@ def safely_run(
                 log_func = getattr(logger, log_level.lower(), logger.warning)
 
                 # INFO: execution of func failed -> collect debug information
-                log_func(f"Error while running function {func.__name__}: {e}")
+                log_message = (
+                    message
+                    if message is not None
+                    else f"Error while running function {func.__name__}"
+                )
 
-                if message:
-                    log_func(message)
+                if exception_map:
+                    for exec_type, specific_msg in exception_map.items():
+                        if isinstance(e, exec_type):
+                            log_message = specific_msg
+                            break
 
-                # set default return
+                log_func(f"{log_message}: {e}")
+
                 ret = default_return
             return ret
 

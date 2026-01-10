@@ -43,6 +43,7 @@ from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.datadictionary_model import DataDictionaryModel
+from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -99,50 +100,45 @@ class SimUnit:
         self._dll_interface: dict[str, Any] | None = self._setup_c_interface()
         self._sim_function: Any = self._setup_sim_function()
 
+    @safely_run(
+        default_return=None,
+        message="Unexpected error loading data dictionary file.",
+        exception_map={
+            FileNotFoundError: "Data dictionary file not found",
+            json.JSONDecodeError: "Error parsing data dictionary JSON file",
+            ValidationError: "Validation error for data dictionary",
+        },
+        log=logger,
+    )
     @typechecked
-    def _load_and_validate_dd(self, dd_path: str | None) -> DataDictionaryModel | None:
+    def _load_and_validate_dd(self, dd_path: str) -> DataDictionaryModel | None:
         """Loads the Data Dictionary from a JSON file and validates its structure using Pydantic.
 
         If the file cannot be found or parsed, or if validation fails, an error is
         logged and `None` is returned.
 
         Args:
-            dd_path (str | None): The path to the Data Dictionary JSON file.
+            dd_path (str): The path to the Data Dictionary JSON file.
 
         Returns:
             DataDictionaryModel | None: The loaded and validated Data Dictionary as a Pydantic
                 object, or `None` if an error occurs.
         """
-        try:
-            with open(dd_path, "r", encoding="utf-8") as file:
-                dd_data = json.load(file)
+        with open(dd_path, "r", encoding="utf-8") as file:
+            dd_data = json.load(file)
 
-            dd = DataDictionaryModel.model_validate(dd_data)
-            logger.info(
-                f"{self.element_name}: Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.",
-            )
-            return dd
-        except FileNotFoundError:
-            logger.error(
-                f"{self.element_name}: Data dictionary file not found at '{dd_path}'.",
-            )
-            return None
-        except json.JSONDecodeError as e:
-            logger.error(
-                f"{self.element_name}: Error parsing data dictionary JSON file '{dd_path}': {e}",
-            )
-            return None
-        except ValidationError as e:
-            logger.error(
-                f"{self.element_name}: Validation error for data dictionary '{dd_path}': {e}",
-            )
-            return None
-        except Exception as e:
-            logger.error(
-                f"{self.element_name}: Unexpected error loading data dictionary file '{dd_path}': {e}",
-            )
-            return None
+        dd = DataDictionaryModel.model_validate(dd_data)
+        logger.info(
+            f"{self.element_name}: Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.",
+        )
+        return dd
 
+    @safely_run(
+        default_return=None,
+        message="Unexpected error loading library.",
+        exception_map={OSError: "Error loading shared library."},
+        log=logger,
+    )
     @typechecked
     def _load_library(self) -> ctypes.CDLL | None:
         """Loads a shared library file using `ctypes`.
@@ -152,27 +148,17 @@ class SimUnit:
         Returns:
             ctypes.CDLL | None: The loaded `ctypes.CDLL` object, or `None` if the library cannot be loaded.
         """
-        try:
-            library = ctypes.CDLL(self.file_path)
+        library = ctypes.CDLL(self.file_path)
 
-            # sumunit should be always a void void function
-            library.argtypes = []
-            library.restype = None
+        # sumunit should be always a void void function
+        # TODO: linter is throwing warning here - reportAttributeAccessIssue - i.O.?
+        library.argtypes = []
+        library.restype = None
 
-            logger.info(
-                f"{self.element_name}: Library '{self.file_path}' successfully loaded.",
-            )
-            return library
-        except OSError as e:
-            logger.error(
-                f"{self.element_name}: Error loading shared library '{self.file_path}': {e}",
-            )
-            return None
-        except Exception as e:
-            logger.error(
-                f"{self.element_name}: Unexpected error loading library '{self.file_path}': {e}",
-            )
-            return None
+        logger.info(
+            f"{self.element_name}: Library '{self.file_path}' successfully loaded.",
+        )
+        return library
 
     @typechecked
     def _setup_c_interface(self) -> dict[str, Any] | None:
@@ -233,6 +219,14 @@ class SimUnit:
             return None
         return dll_interface
 
+    @safely_run(
+        default_return=None,
+        message="An unexpected error occurred while setting up ares simulation function.",
+        exception_map={
+            AttributeError: "Ares simulation function 'ares_simunit' not found in library."
+        },
+        log=logger,
+    )
     @typechecked
     def _setup_sim_function(self) -> Any:
         """Configures the main simulation function (`ares_simunit`) from the shared library.
@@ -244,30 +238,19 @@ class SimUnit:
             Any: The `ctypes` function object for `ares_simunit`, or `None` if the
                 function cannot be found in the library.
         """
-        try:
-            if self._dd.meta_data and self._dd.meta_data.function_name:
-                function_name = self._dd.meta_data.function_name
-            else:
-                function_name = "ares_simunit"
+        sim_function = self._library.ares_simunit
+        sim_function.argtypes = []
+        sim_function.restype = None
+        logger.debug(
+            f"{self.element_name}:Ares simulation function 'ares_simunit' successfully set up.",
+        )
+        return sim_function
 
-            sim_function = getattr(self._library, function_name)
-            sim_function.argtypes = []
-            sim_function.restype = None
-            logger.debug(
-                f"{self.element_name}:Ares simulation function '{function_name}' successfully set up.",
-            )
-            return sim_function
-        except AttributeError as e:
-            logger.error(
-                f"{self.element_name}: Ares simulation function '{function_name}' not found in library: {e}",
-            )
-            return None
-        except Exception as e:
-            logger.error(
-                f"{self.element_name}: An unexpected error occurred while setting up ares simulation function: {e}",
-            )
-            return None
-
+    @safely_run(
+        default_return=None,
+        message="Error while running ares simulation.",
+        log=logger,
+    )
     @typechecked
     def run(
         self, data: list[AresSignal] | None, parameters: list[AresParameter] | None
@@ -287,78 +270,69 @@ class SimUnit:
             list[AresSignal] | None: List of AresSignal objects containing output signals for all
                 time steps, or `None` if an error occurs during the simulation.
         """
+        logger.info(f"{self.element_name}: Starting ares simulation...")
 
-        try:
-            logger.info(f"{self.element_name}: Starting ares simulation...")
+        sim_result: dict[str, np.ndarray] = {}
+        time_steps = len(data[0].timestamps) if data else 1
+        data_dict = self._list_to_dict(data)
+        parameter_dict = self._list_to_dict(parameters)
 
-            sim_result: dict[str, np.ndarray] = {}
-            time_steps = len(data[0].timestamps) if data else 1
-            data_dict = self._list_to_dict(data if data else [])
-            parameter_dict = self._list_to_dict(parameters if parameters else [])
-
-            if data:
-                logger.info(
-                    f"{self.element_name}: The simulation starts at timestamps {min(data[0].timestamps)} seconds "
-                    f"and ends at timestamps {max(data[0].timestamps)} seconds - duration: "
-                    f"{max(data[0].timestamps) - min(data[0].timestamps)} seconds",
-                )
-            else:
-                logger.info(
-                    f"{self.element_name}: No input data provided, using single time step."
-                )
-
-            mapped_input = self._map_sim_input_data(
-                data_dict=data_dict, time_steps=time_steps
+        if data:
+            logger.info(
+                f"{self.element_name}: The simulation starts at timestamps {min(data[0].timestamps)} seconds "
+                f"and ends at timestamps {max(data[0].timestamps)} seconds - duration: "
+                f"{max(data[0].timestamps) - min(data[0].timestamps)} seconds",
+            )
+        else:
+            logger.info(
+                f"{self.element_name}: No input data provided, using single time step."
             )
 
-            self._write_parameters_to_dll(parameters=parameter_dict)
+        mapped_input = self._map_sim_input_data(
+            data_dict=data_dict, time_steps=time_steps
+        )
 
-            output_signals = [
-                k for k, v in self._dd.signals.items() if v.type in ["out", "inout"]
-            ]
+        self._write_parameters_to_dll(parameters=parameter_dict)
+
+        output_signals = [
+            k for k, v in self._dd.signals.items() if v.type in ["out", "inout"]
+        ]
+        for signal in output_signals:
+            size = self._dd.signals[signal].size
+            np_dtype = self.DATATYPES[self._dd.signals[signal].datatype][1]
+            if len(size) == 0:
+                sim_result[signal] = np.empty((time_steps,), dtype=np_dtype)
+            elif len(size) == 1:
+                sim_result[signal] = np.empty((time_steps, size[0]), dtype=np_dtype)
+            elif len(size) == 2:
+                sim_result[signal] = np.empty(
+                    (time_steps, size[0], size[1]), dtype=np_dtype
+                )
+        sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float32)
+
+        for time_step_idx in range(time_steps):
+            self._write_signals_to_dll(data=mapped_input, time_step_idx=time_step_idx)
+            self._sim_function()
+            step_result = self._read_dll_interface()
             for signal in output_signals:
-                size = self._dd.signals[signal].size
-                np_dtype = self.DATATYPES[self._dd.signals[signal].datatype][1]
-                if len(size) == 0:
-                    sim_result[signal] = np.empty((time_steps,), dtype=np_dtype)
-                elif len(size) == 1:
-                    sim_result[signal] = np.empty((time_steps, size[0]), dtype=np_dtype)
-                elif len(size) == 2:
-                    sim_result[signal] = np.empty(
-                        (time_steps, size[0], size[1]), dtype=np_dtype
-                    )
-            sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float32)
+                sim_result[signal][time_step_idx] = step_result[signal]
+            if data:
+                sim_result["timestamps"][time_step_idx] = data[0].timestamps[
+                    time_step_idx
+                ]
+            else:
+                sim_result["timestamps"][time_step_idx] = 0.0
 
-            for time_step_idx in range(time_steps):
-                self._write_signals_to_dll(
-                    data=mapped_input, time_step_idx=time_step_idx
-                )
-                self._sim_function()
-                step_result = self._read_dll_interface()
-                for signal in output_signals:
-                    sim_result[signal][time_step_idx] = step_result[signal]
-                if data:
-                    sim_result["timestamps"][time_step_idx] = data[0].timestamps[
-                        time_step_idx
-                    ]
-                else:
-                    sim_result["timestamps"][time_step_idx] = 0.0
-
-            logger.info(f"{self.element_name}: ares simulation successfully finished.")
-            return [
-                AresSignal(
-                    label=signal_name,
-                    timestamps=sim_result["timestamps"],
-                    value=signal_value,
-                )
-                for signal_name, signal_value in sim_result.items()
-                if signal_name != "timestamps"
-            ]
-        except Exception as e:
-            logger.error(
-                f"{self.element_name}: Error while running ares simulation: {e}"
+        logger.info(f"{self.element_name}: ares simulation successfully finished.")
+        return [
+            AresSignal(
+                label=signal_name,
+                timestamps=sim_result["timestamps"],
+                value=signal_value,
             )
-            return None
+            for signal_name, signal_value in sim_result.items()
+            if signal_name != "timestamps"
+        ]
 
     @typechecked
     def _list_to_dict(self, items: list[AresBaseType]) -> dict[str, AresBaseType]:
@@ -490,6 +464,11 @@ class SimUnit:
         logger.debug(f"{self.element_name}: Mapping is successfully finished.")
         return mapped_input
 
+    @safely_run(
+        default_return=None,
+        message="Error during mapping static values.",
+        log=logger,
+    )
     @typechecked
     def _map_sim_input_static(
         self, time_steps: int, datatype: str, size: list[int], value: Any
@@ -509,26 +488,24 @@ class SimUnit:
             np.ndarray | None: A NumPy array containing the constant value for all time steps, or `None`
                 if an error occurs.
         """
-        try:
-            np_dtype = self.DATATYPES[datatype][1]
-            if len(size) == 0:
-                return np.full((time_steps,), value, dtype=np_dtype)
-            elif len(size) == 1:
-                return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1))
-            elif len(size) == 2:
-                return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1, 1))
-            else:
-                logger.warning(
-                    f"{self.element_name}: Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
-                )
-                return None
-
-        except Exception as e:
+        np_dtype = self.DATATYPES[datatype][1]
+        if len(size) == 0:
+            return np.full((time_steps,), value, dtype=np_dtype)
+        elif len(size) == 1:
+            return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1))
+        elif len(size) == 2:
+            return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1, 1))
+        else:
             logger.warning(
-                f"{self.element_name}: Warnging during mapping static value {value}: {e}",
+                f"{self.element_name}: Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
             )
             return None
 
+    @safely_run(
+        default_return=None,
+        message="Error writing value to DLL interface.",
+        log=logger,
+    )
     @typechecked
     def _write_value_to_dll(
         self,
@@ -546,21 +523,16 @@ class SimUnit:
             input_value (np.ndarray | np.generic): The value to write (numpy array or numpy scalar).
             size (list[int]): Size specification from Data Dictionary (0=scalar, 1=1D array, 2=2D array).
         """
-        try:
-            if len(size) == 0:
-                self._dll_interface[dd_element_name].value = input_value.item()
-            elif len(size) == 1:
-                self._dll_interface[dd_element_name][:] = input_value.tolist()
-            elif len(size) == 2:
-                for i in range(size[0]):
-                    self._dll_interface[dd_element_name][i][:] = input_value[i].tolist()
-            else:
-                logger.warning(
-                    f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
-                )
-        except Exception as e:
+        if len(size) == 0:
+            self._dll_interface[dd_element_name].value = input_value.item()
+        elif len(size) == 1:
+            self._dll_interface[dd_element_name][:] = input_value.tolist()
+        elif len(size) == 2:
+            for i in range(size[0]):
+                self._dll_interface[dd_element_name][i][:] = input_value[i].tolist()
+        else:
             logger.warning(
-                f"{self.element_name}: Error writing value to DLL interface for '{dd_element_name}': {e}",
+                f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
             )
 
     @typechecked
