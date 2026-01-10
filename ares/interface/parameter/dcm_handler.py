@@ -68,7 +68,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
     @override
     @safely_run(
         default_return=None,
-        message="Error during saving parameter dcm file.",
+        exception_msg="Error during saving parameter dcm file.",
         log=logger,
     )
     @typechecked

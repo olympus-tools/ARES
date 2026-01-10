@@ -42,7 +42,7 @@ from ares.utils.logger import create_logger
 
 def safely_run(
     default_return: Any = None,
-    message: str | None = None,
+    exception_msg: str | None = None,
     exception_map: dict[type[Exception], str] | None = None,
     log_level: str = "WARNING",
     log: logging.Logger | None = None,
@@ -51,7 +51,7 @@ def safely_run(
 
     Args:
         default_return[Any] : default return value in case of failure -> depends on function, default = None
-        message[str] : default logger message to display in case of failure, default = None
+        exception_msg[str] : default logger message to display in case of failure, default = None
         exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
         log_level[str] : log level to use, default = WARNING
         log[Logger]: specific logger to use, defaults to ares logger
@@ -73,8 +73,8 @@ def safely_run(
 
                 # INFO: execution of func failed -> collect debug information
                 log_message = (
-                    message
-                    if message is not None
+                    exception_msg
+                    if exception_msg is not None
                     else f"Error while running function {func.__name__}"
                 )
 
