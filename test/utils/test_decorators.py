@@ -62,27 +62,27 @@ def test_safely_run_exception():
     assert safely_run_exception() == "error"
 
 
-def test_safely_run_logging(caplog):
+def test_safely_run_exception_msg(caplog):
     """
     Tests that a message is logged when the decorated function raises an exception.
     """
 
-    @safely_run(default_return="error", message="HELP WANTED")
+    @safely_run(default_return="error", exception_msg="HELP WANTED")
     def safely_run_logging():
         raise ValueError("This is a test exception")
 
     safely_run_logging()
-    assert (
-        "Error while running function safely_run_logging: This is a test exception"
-        in caplog.text
-    )
+
+    # We expect the custom message to be present
     assert "HELP WANTED" in caplog.text
+    # And the exception details
+    assert "This is a test exception" in caplog.text
 
 
 @pytest.mark.parametrize(
     "test_log_level", ["INFO", "WARNING", "ERROR", "CRITICAL", "BOOM"]
 )
-def test_safely_run_logging(caplog, test_log_level):
+def test_safely_run_log_level(caplog, test_log_level):
     """
     Tests that the decorator respects the requested log_level (e.g., WARNING).
     """
@@ -125,6 +125,42 @@ def test_safely_run_with_args_exception():
 
     assert safely_run_with_args_exception("a", "b") == "error"
     assert safely_run_with_args_exception("a", "b", c="e") == "error"
+
+
+def test_safely_run_exception_map(caplog):
+    """
+    Tests that the decorator uses the specific message from exception_map.
+    """
+
+    exception_map = {
+        FileNotFoundError: "File not found custom message",
+        RuntimeError: "Runtime error custom message",
+    }
+
+    @safely_run(
+        default_return="error",
+        exception_map=exception_map,
+        exception_msg="Default message",
+    )
+    def fail_with(exception_type):
+        raise exception_type("Original exception message")
+
+    # Test FileNotFoundError
+    fail_with(FileNotFoundError)
+    assert "File not found custom message" in caplog.text
+    assert "Original exception message" in caplog.text
+    caplog.clear()
+
+    # Test RuntimeError
+    fail_with(RuntimeError)
+    assert "Runtime error custom message" in caplog.text
+    assert "Original exception message" in caplog.text
+    caplog.clear()
+
+    # Test unmapped exception (ValueError)
+    fail_with(ValueError)
+    assert "Default message" in caplog.text
+    assert "Original exception message" in caplog.text
 
 
 # TEST: error_msg
@@ -213,3 +249,39 @@ def test_metadata_preservation():
 
     assert meaningful_name.__name__ == "meaningful_name"
     assert meaningful_name.__doc__ == "This is a docstring."
+
+
+def test_safely_run_exception_map(caplog):
+    """
+    Tests that the decorator uses the specific message from exception_map.
+    """
+
+    exception_map = {
+        FileNotFoundError: "File not found custom message",
+        RuntimeError: "Runtime error custom message",
+    }
+
+    @safely_run(
+        default_return="error",
+        exception_map=exception_map,
+        exception_msg="Default message",
+    )
+    def fail_with(exception_type):
+        raise exception_type("Original exception message")
+
+    # Test FileNotFoundError
+    fail_with(FileNotFoundError)
+    assert "File not found custom message" in caplog.text
+    assert "Original exception message" in caplog.text
+    caplog.clear()
+
+    # Test RuntimeError
+    fail_with(RuntimeError)
+    assert "Runtime error custom message" in caplog.text
+    assert "Original exception message" in caplog.text
+    caplog.clear()
+
+    # Test unmapped exception (ValueError)
+    fail_with(ValueError)
+    assert "Default message" in caplog.text
+    assert "Original exception message" in caplog.text

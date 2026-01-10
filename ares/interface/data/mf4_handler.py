@@ -113,7 +113,7 @@ class MF4Handler(MDF, AresDataInterface):
     @override
     @safely_run(
         default_return=[],
-        message="Error during writing mf4-file. Validate output_path also consider write rights.",
+        exception_msg="Error during writing mf4-file. Validate output_path also consider write rights.",
         log=logger,
     )
     @typechecked

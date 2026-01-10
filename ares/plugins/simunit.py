@@ -102,7 +102,7 @@ class SimUnit:
 
     @safely_run(
         default_return=None,
-        message="Unexpected error loading data dictionary file.",
+        exception_msg="Unexpected error loading data dictionary file.",
         exception_map={
             FileNotFoundError: "Data dictionary file not found",
             json.JSONDecodeError: "Error parsing data dictionary JSON file",
@@ -135,7 +135,7 @@ class SimUnit:
 
     @safely_run(
         default_return=None,
-        message="Unexpected error loading library.",
+        exception_msg="Unexpected error loading library.",
         exception_map={OSError: "Error loading shared library."},
         log=logger,
     )
@@ -221,7 +221,7 @@ class SimUnit:
 
     @safely_run(
         default_return=None,
-        message="An unexpected error occurred while setting up ares simulation function.",
+        exception_msg="An unexpected error occurred while setting up ares simulation function.",
         exception_map={
             AttributeError: "Ares simulation function 'ares_simunit' not found in library."
         },
@@ -248,7 +248,7 @@ class SimUnit:
 
     @safely_run(
         default_return=None,
-        message="Error while running ares simulation.",
+        exception_msg="Error while running ares simulation.",
         log=logger,
     )
     @typechecked
@@ -466,7 +466,7 @@ class SimUnit:
 
     @safely_run(
         default_return=None,
-        message="Error during mapping static values.",
+        exception_msg="Error during mapping static values.",
         log=logger,
     )
     @typechecked
@@ -503,7 +503,7 @@ class SimUnit:
 
     @safely_run(
         default_return=None,
-        message="Error writing value to DLL interface.",
+        exception_msg="Error writing value to DLL interface.",
         log=logger,
     )
     @typechecked

@@ -83,7 +83,7 @@ class JSONParamHandler(AresParamInterface):
     @override
     @safely_run(
         default_return=None,
-        message="Error during saving parameter json file.",
+        exception_msg="Error during saving parameter json file.",
         log=logger,
     )
     @typechecked
