@@ -1,0 +1,16 @@
+name: 'Setup ARES Environment'
+description: 'Setup Python 3.13.7 and print system information'
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python 3.13.7
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13.7'
+
+    - name: Print system information
+      shell: bash
+      run: |
+        echo "Running on Linux"
+        uname -a
+        python --version

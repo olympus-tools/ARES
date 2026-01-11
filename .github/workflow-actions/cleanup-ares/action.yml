@@ -1,0 +1,9 @@
+name: 'Cleanup ARES Environment'
+description: 'Clean up build artifacts and temporary files'
+runs:
+  using: "composite"
+  steps:
+    - name: Clean up
+      shell: bash
+      run: |
+        yes | make clean || true

@@ -22,10 +22,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Print system information
-        run: |
-          echo "Running on Linux"
-          uname -a
+      - name: Setup ARES Environment
+        uses: ./.github/workflow-actions/setup-ares
 
       - name: Run dependency analysis and generate NOTICE
         run: |
@@ -52,3 +50,6 @@ jobs:
             # Fail the build
             exit 1
           fi
+
+      - name: Cleanup ARES Environment
+        uses: ./.github/workflow-actions/cleanup-ares
