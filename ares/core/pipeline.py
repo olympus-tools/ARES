@@ -44,7 +44,7 @@ logger = create_logger(__name__)
 
 
 # TODO: use meta_data from files like e.g. mf4,mat,????
-def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
+def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) -> None:
     """Executes the ARES simulation pipeline based on a defined workflow.
 
     This function orchestrates the entire simulation process, from data acquisition and
@@ -54,12 +54,15 @@ def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
 
     Args:
         wf_path (str): The absolute path to the workflow's JSON file.
-        output_dir (str): The absolute path to the output directory. If `None`, results
-            are written to the same directory as the workflow file.
+        output_dir (str | None): The absolute path to the output directory. If `None`,
+            results are written to a subdirectory 'output' in the workflow file's directory.
         meta_data (dict[str, Any]): Current ARES and workstation meta data.
     """
     try:
         logger.info("ARES pipeline is starting...")
+
+        if output_dir is None:
+            output_dir = os.path.join(os.path.dirname(wf_path), "output")
 
         ares_wf = Workflow(file_path=wf_path)
 
