@@ -81,7 +81,10 @@ class AresParamInterface(ABC):
         """
         # neither file_path nor parameters provided - create uncached instance
         if file_path is None and parameters is None:
-            return super().__new__(cls)
+            empty_instance = super().__new__(cls)
+            object.__setattr__(empty_instance, "hash", "empty_instance_no_hash")
+            cls.cache["empty_instance_no_hash"] = empty_instance
+            return empty_instance
 
         # Load parameters from file if file_path provided
         if file_path is not None:
