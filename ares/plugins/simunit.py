@@ -714,9 +714,14 @@ def ares_plugin(plugin_input):
     """
 
     element_parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
-        "parameter", []
+        "parameter", None
     )
-    element_data_lists: list[list[AresDataInterface]] = plugin_input.get("input", [])
+    element_data_lists: list[list[AresDataInterface]] = plugin_input.get("input", None)
+
+    if not element_parameter_lists:
+        element_parameter_lists = [[AresParamInterface.create()]]
+    if not element_data_lists:
+        element_data_lists = [[AresDataInterface.create()]]
 
     sim_unit = SimUnit(
         # TODO: should we use the element name everywhere for log messages?

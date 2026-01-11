@@ -83,7 +83,10 @@ class AresDataInterface(ABC):
         """
         # neither file_path nor signals provided - create uncached instance
         if file_path is None and signals is None:
-            return super().__new__(cls)
+            empty_instance = super().__new__(cls)
+            object.__setattr__(empty_instance, "hash", "empty_instance_no_hash")
+            cls.cache["empty_instance_no_hash"] = empty_instance
+            return empty_instance
 
         # load signals from file if file_path provided
         if file_path is not None:
