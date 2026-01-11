@@ -86,6 +86,7 @@ class JSONParamHandler(AresParamInterface):
         message="Error during saving parameter json file.",
         log=logger,
     )
+    @typechecked
     def _save(self, output_path: str, **kwargs) -> None:
         """Write parameters to JSON file.
 
@@ -112,6 +113,7 @@ class JSONParamHandler(AresParamInterface):
             return None
 
     @override
+    @typechecked
     def add(self, parameters: list[AresParameter], **kwargs) -> None:
         """Add parameters to the JSON interface.
 
@@ -132,6 +134,7 @@ class JSONParamHandler(AresParamInterface):
             }
 
     @override
+    @typechecked
     def get(
         self, label_filter: list[str] | None = None, **kwargs
     ) -> list[AresParameter]:
