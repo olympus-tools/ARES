@@ -39,6 +39,7 @@ from typing import Any
 from jsonschema import ValidationError
 
 from ares.pydantic_models.workflow_model import WorkflowModel
+from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -66,6 +67,16 @@ class Workflow:
         self._sort_workflow()
         self._eval_element_workflow()
 
+    @safely_run(
+        default_return=None,
+        exception_msg="Unexpected error loading workflow file",
+        exception_map={
+            FileNotFoundError: "Workflow file not found",
+            json.JSONDecodeError: "Error parsing workflow file",
+            ValidationError: "Validation error in workflow file",
+        },
+        log=logger,
+    )
     @typechecked
     def _load_and_validate_wf(self) -> WorkflowModel | None:
         """Reads and validates the workflow JSON file using Pydantic.
@@ -74,42 +85,25 @@ class Workflow:
             WorkflowModel | None: A Pydantic object representing the workflow,
                 or None in case of an error.
         """
-        try:
-            if self._file_path is None:
-                logger.error("No workflow file path provided.")
-                return None
-
-            with open(self._file_path, "r", encoding="utf-8") as file:
-                workflow_raw = json.load(file)
-
-            workflow_raw_pydantic = WorkflowModel.model_validate(workflow_raw)
-
-            logger.info(
-                f"Workflow file {self._file_path} successfully loaded and validated with Pydantic.",
-            )
-            return workflow_raw_pydantic
-
-        except FileNotFoundError:
-            logger.error(
-                f"Workflow file not found at '{self._file_path}'.",
-            )
-            return None
-        except json.JSONDecodeError as e:
-            logger.error(
-                f"Error parsing workflow file '{self._file_path}': {e}",
-            )
-            return None
-        except ValidationError as e:
-            logger.error(
-                f"Validation error in workflow file '{self._file_path}': {e}",
-            )
-            return None
-        except Exception as e:
-            logger.error(
-                f"Unexpected error loading workflow file '{self._file_path}': {e}",
-            )
+        if self._file_path is None:
+            logger.error("No workflow file path provided.")
             return None
 
+        with open(self._file_path, "r", encoding="utf-8") as file:
+            workflow_raw = json.load(file)
+
+        workflow_raw_pydantic = WorkflowModel.model_validate(workflow_raw)
+
+        logger.info(
+            f"Workflow file {self._file_path} successfully loaded and validated with Pydantic.",
+        )
+        return workflow_raw_pydantic
+
+    @safely_run(
+        default_return=None,
+        exception_msg="Error evaluating relative paths",
+        log=logger,
+    )
     @typechecked
     def _evaluate_relative_paths(self) -> None:
         """Converts all relative file paths in workflow elements to absolute paths.
@@ -119,64 +113,63 @@ class Workflow:
         it converts any relative paths into absolute paths based on the directory of the
         workflow JSON file (`self._file_path`). Absolute paths are left unchanged.
         """
-        try:
-            base_dir = os.path.dirname(os.path.abspath(self._file_path))
-            path_eval_pattern = r"\.[a-zA-Z0-9]+$"
+        base_dir = os.path.dirname(os.path.abspath(self._file_path))
+        path_eval_pattern = r"\.[a-zA-Z0-9]+$"
 
-            for wf_element_name, wf_element_value in self.workflow.items():
-                for field_name, field_value in wf_element_value.__dict__.items():
-                    if field_value is None:
-                        continue
+        for wf_element_name, wf_element_value in self.workflow.items():
+            for field_name, field_value in wf_element_value.__dict__.items():
+                if field_value is None:
+                    continue
 
-                    # Case 1: single string
-                    if isinstance(field_value, str):
-                        if (
-                            "/" in field_value
-                            or "\\" in field_value
-                            or re.search(path_eval_pattern, field_value) is not None
-                        ):
-                            if not os.path.isabs(field_value):
-                                abs_path = os.path.abspath(
-                                    os.path.join(base_dir, field_value)
-                                )
-                                setattr(wf_element_value, field_name, abs_path)
-                                logger.info(
-                                    f"Resolved relative path for '{wf_element_name}.{field_name}': {abs_path}",
-                                )
-
-                    # Case 2: list of strings
-                    elif isinstance(field_value, list) and all(
-                        isinstance(x, str) for x in field_value
+                # Case 1: single string
+                if isinstance(field_value, str):
+                    if (
+                        "/" in field_value
+                        or "\\" in field_value
+                        or re.search(path_eval_pattern, field_value) is not None
                     ):
-                        abs_paths = []
-                        changed = False
-                        for path in field_value:
-                            if (
-                                "/" in path
-                                or "\\" in path
-                                or re.search(path_eval_pattern, path) is not None
-                            ):
-                                if not os.path.isabs(path):
-                                    abs_paths.append(
-                                        os.path.abspath(os.path.join(base_dir, path))
-                                    )
-                                    changed = True
-                                else:
-                                    abs_paths.append(path)
-                            else:
-                                abs_paths.append(path)
-
-                        if changed:
-                            setattr(wf_element_value, field_name, abs_paths)
+                        if not os.path.isabs(field_value):
+                            abs_path = os.path.abspath(
+                                os.path.join(base_dir, field_value)
+                            )
+                            setattr(wf_element_value, field_name, abs_path)
                             logger.info(
-                                f"Resolved relative paths for '{wf_element_name}.{field_name}': {abs_paths}",
+                                f"Resolved relative path for '{wf_element_name}.{field_name}': {abs_path}",
                             )
 
-        except Exception as e:
-            logger.error(
-                f"Error evaluating relative paths: {e}",
-            )
+                # Case 2: list of strings
+                elif isinstance(field_value, list) and all(
+                    isinstance(x, str) for x in field_value
+                ):
+                    abs_paths = []
+                    changed = False
+                    for path in field_value:
+                        if (
+                            "/" in path
+                            or "\\" in path
+                            or re.search(path_eval_pattern, path) is not None
+                        ):
+                            if not os.path.isabs(path):
+                                abs_paths.append(
+                                    os.path.abspath(os.path.join(base_dir, path))
+                                )
+                                changed = True
+                            else:
+                                abs_paths.append(path)
+                        else:
+                            abs_paths.append(path)
 
+                    if changed:
+                        setattr(wf_element_value, field_name, abs_paths)
+                        logger.info(
+                            f"Resolved relative paths for '{wf_element_name}.{field_name}': {abs_paths}",
+                        )
+
+    @safely_run(
+        default_return=None,
+        exception_msg="Error while searching sinks",
+        log=logger,
+    )
     @typechecked
     def _find_sinks(self) -> list[str] | None:
         """Identifies the endpoints (sinks) of the workflow.
@@ -189,69 +182,66 @@ class Workflow:
             list[str] | None: A list of strings containing the names of the endpoint elements,
                 or `None` in case of an error.
         """
-        try:
-            wf_sinks: list[str] = []
+        wf_sinks: list[str] = []
 
-            for wf_element_name_1, wf_element_value_1 in self.workflow.items():
-                call_count = 0
+        for wf_element_name_1, wf_element_value_1 in self.workflow.items():
+            call_count = 0
 
-                for wf_element_value_2 in self.workflow.values():
-                    ref_input_list: list[str] = []
+            for wf_element_value_2 in self.workflow.values():
+                ref_input_list: list[str] = []
 
-                    if (
-                        hasattr(wf_element_value_2, "parameter")
-                        and wf_element_value_2.parameter
-                    ):
-                        ref_input_list.extend(wf_element_value_2.parameter)
-
-                    if (
-                        hasattr(wf_element_value_2, "cancel_condition")
-                        and wf_element_value_2.cancel_condition
-                    ):
-                        if (
-                            hasattr(wf_element_value_2, "init")
-                            and wf_element_value_2.init
-                        ):
-                            ref_input_list.extend(wf_element_value_2.init)
-                    else:
-                        if (
-                            hasattr(wf_element_value_2, "input")
-                            and wf_element_value_2.input
-                        ):
-                            ref_input_list.extend(wf_element_value_2.input)
-
-                    # counting how often a wf element is referenced in other elements
-                    if ref_input_list:
-                        for ref_input_list_member in ref_input_list:
-                            if ref_input_list_member == wf_element_name_1:
-                                call_count += 1
-                                break
-
-                if call_count == 0 and (
-                    hasattr(wf_element_value_1, "parameter")
-                    and wf_element_value_1.parameter is None
-                    or hasattr(wf_element_value_1, "input")
-                    and wf_element_value_1.input is None
+                if (
+                    hasattr(wf_element_value_2, "parameter")
+                    and wf_element_value_2.parameter
                 ):
-                    logger.debug(
-                        f"""Workflow element "{wf_element_name_1}" is a unused workflow source."""
-                    )
-                elif call_count > 0:
-                    logger.debug(
-                        f"""Workflow element "{wf_element_name_1}" is referenced {call_count} time(s) in other workflow elements."""
-                    )
+                    ref_input_list.extend(wf_element_value_2.parameter)
+
+                if (
+                    hasattr(wf_element_value_2, "cancel_condition")
+                    and wf_element_value_2.cancel_condition
+                ):
+                    if hasattr(wf_element_value_2, "init") and wf_element_value_2.init:
+                        ref_input_list.extend(wf_element_value_2.init)
                 else:
-                    logger.debug(
-                        f"""Workflow element "{wf_element_name_1}" is a workflow endpoint (sink)."""
-                    )
-                    wf_sinks.append(wf_element_name_1)
+                    if (
+                        hasattr(wf_element_value_2, "input")
+                        and wf_element_value_2.input
+                    ):
+                        ref_input_list.extend(wf_element_value_2.input)
 
-            return wf_sinks
+                # counting how often a wf element is referenced in other elements
+                if ref_input_list:
+                    for ref_input_list_member in ref_input_list:
+                        if ref_input_list_member == wf_element_name_1:
+                            call_count += 1
+                            break
 
-        except Exception as e:
-            logger.error(f"Error while searching for sinks: {e}")
-            return None
+            if call_count == 0 and (
+                hasattr(wf_element_value_1, "parameter")
+                and wf_element_value_1.parameter is None
+                or hasattr(wf_element_value_1, "input")
+                and wf_element_value_1.input is None
+            ):
+                logger.debug(
+                    f"""Workflow element "{wf_element_name_1}" is a unused workflow source."""
+                )
+            elif call_count > 0:
+                logger.debug(
+                    f"""Workflow element "{wf_element_name_1}" is referenced {call_count} time(s) in other workflow elements."""
+                )
+            else:
+                logger.debug(
+                    f"""Workflow element "{wf_element_name_1}" is a workflow endpoint (sink)."""
+                )
+                wf_sinks.append(wf_element_name_1)
 
+        return wf_sinks
+
+    @safely_run(
+        default_return=None,
+        exception_msg="Error evaluating the execution order of the linear workflow",
+        log=logger,
+    )
     @typechecked
     def _eval_workflow_order(self) -> list[str] | None:
         """Determines the correct execution order of the workflow elements.
@@ -263,33 +253,31 @@ class Workflow:
             list[str] | None: A list of strings containing the elements in their execution
                 order, or `None` in case of an error.
         """
-        try:
-            workflow_order: list[str] = []
+        workflow_order: list[str] = []
 
-            for wf_sink in self.workflow_sinks:
-                path = self._recursive_search(sink=wf_sink, loop=False, element=wf_sink)
-                if path is None:
-                    logger.error(
-                        f"Failed to determine execution path for sink '{wf_sink}'.",
-                    )
-                    return None
-                for step in path:
-                    if step not in workflow_order:
-                        workflow_order.append(step)
+        for wf_sink in self.workflow_sinks:
+            path = self._recursive_search(sink=wf_sink, loop=False, element=wf_sink)
+            if path is None:
+                logger.error(
+                    f"Failed to determine execution path for sink '{wf_sink}'.",
+                )
+                return None
+            for step in path:
+                if step not in workflow_order:
+                    workflow_order.append(step)
 
-            workflow_lin_string = " -> ".join(workflow_order)
-            logger.info(
-                f"Workflow execution order: {workflow_lin_string}",
-            )
+        workflow_lin_string = " -> ".join(workflow_order)
+        logger.info(
+            f"Workflow execution order: {workflow_lin_string}",
+        )
 
-            return workflow_order
+        return workflow_order
 
-        except Exception as e:
-            logger.error(
-                f"Error evaluating the execution order of the linear workflows: {e}",
-            )
-            return None
-
+    @safely_run(
+        default_return=None,
+        exception_msg="Error during recursive path tracing",
+        log=logger,
+    )
     @typechecked
     def _recursive_search(
         self, sink: str, loop: bool, element: str
@@ -310,104 +298,102 @@ class Workflow:
             list[str] | None: A list representing the backward-traced execution path, or `None`
                 if an error occurs (e.g., an infinite loop is detected).
         """
-        try:
-            path: list[str] = []
-            inputs: list[str] = []
+        path: list[str] = []
+        inputs: list[str] = []
 
-            if self.workflow is None:
-                return None
-
-            elem_obj = self.workflow.get(element)
-
-            if elem_obj is None:
-                logger.warning(
-                    f"Workflow element '{element}' not found.",
-                )
-                return []
-
-            if hasattr(elem_obj, "parameter") and elem_obj.parameter:
-                inputs.extend(elem_obj.parameter)
-
-            if hasattr(elem_obj, "cancel_condition") and elem_obj.cancel_condition:
-                if hasattr(elem_obj, "input") and elem_obj.input:
-                    if sink in elem_obj.input or loop:
-                        if hasattr(elem_obj, "init") and elem_obj.init:
-                            inputs.extend(elem_obj.init)
-                    else:
-                        loop = True
-                        inputs.extend(elem_obj.input)
-            else:
-                if hasattr(elem_obj, "input") and elem_obj.input:
-                    inputs.extend(elem_obj.input)
-
-            for input_name in inputs:
-                sub_path = self._recursive_search(
-                    sink=sink, loop=loop, element=input_name
-                )
-                if sub_path is None:
-                    return None
-                path.extend(sub_path)
-
-            path.append(element)
-            return path
-
-        except Exception as e:
-            logger.error(
-                f"Error during recursive path tracing from {element}: {e}",
-            )
+        if self.workflow is None:
             return None
 
+        elem_obj = self.workflow.get(element)
+
+        if elem_obj is None:
+            logger.warning(
+                f"Workflow element '{element}' not found.",
+            )
+            return []
+
+        if hasattr(elem_obj, "parameter") and elem_obj.parameter:
+            inputs.extend(elem_obj.parameter)
+
+        if hasattr(elem_obj, "cancel_condition") and elem_obj.cancel_condition:
+            if hasattr(elem_obj, "input") and elem_obj.input:
+                if sink in elem_obj.input or loop:
+                    if hasattr(elem_obj, "init") and elem_obj.init:
+                        inputs.extend(elem_obj.init)
+                else:
+                    loop = True
+                    inputs.extend(elem_obj.input)
+        else:
+            if hasattr(elem_obj, "input") and elem_obj.input:
+                inputs.extend(elem_obj.input)
+
+        for input_name in inputs:
+            sub_path = self._recursive_search(sink=sink, loop=loop, element=input_name)
+            if sub_path is None:
+                return None
+            path.extend(sub_path)
+
+        path.append(element)
+        return path
+
+    @safely_run(
+        default_return=None,
+        exception_msg="Error while sorting the workflow",
+        log=logger,
+    )
     @typechecked
     def _sort_workflow(self) -> None:
         """Sorts the workflow Pydantic object based on the determined execution order."""
-        try:
-            workflow_sorted_dict: dict[str, Any] = {}
-            for item in self.workflow_order:
-                wf_element_obj = self.workflow.get(item)
-                if wf_element_obj:
-                    workflow_sorted_dict[item] = wf_element_obj
+        workflow_sorted_dict: dict[str, Any] = {}
+        for item in self.workflow_order:
+            wf_element_obj = self.workflow.get(item)
+            if wf_element_obj:
+                workflow_sorted_dict[item] = wf_element_obj
 
-            self.workflow = WorkflowModel(root=workflow_sorted_dict)
+        self.workflow = WorkflowModel(root=workflow_sorted_dict)
 
-        except Exception as e:
-            logger.error(f"Error while sorting the workflow: {e}")
-
+    @safely_run(
+        default_return=None,
+        exception_msg="Error while evaluating element workflow",
+        log=logger,
+    )
     @typechecked
     def _eval_element_workflow(self) -> None:
         """Assigns the workflow from a data source to each workflow element."""
-        try:
-            for wf_element_name, wf_element in self.workflow.items():
-                element_workflow: list[str] = []
+        for wf_element_name, wf_element in self.workflow.items():
+            element_workflow: list[str] = []
 
-                if hasattr(wf_element, "parameter") and wf_element.parameter:
-                    for param_name in wf_element.parameter:
-                        param_elem = self.workflow.get(param_name)
-                        if param_elem:
-                            element_workflow.extend(param_elem.element_workflow)
-                            element_workflow.append(param_name)
+            if hasattr(wf_element, "parameter") and wf_element.parameter:
+                for param_name in wf_element.parameter:
+                    param_elem = self.workflow.get(param_name)
+                    if param_elem:
+                        element_workflow.extend(param_elem.element_workflow)
+                        element_workflow.append(param_name)
 
-                if hasattr(wf_element, "init") and wf_element.init:
-                    for init_name in wf_element.init:
-                        init_elem = self.workflow.get(init_name)
-                        if init_elem:
-                            element_workflow.extend(init_elem.element_workflow)
-                            element_workflow.append(init_name)
+            if hasattr(wf_element, "init") and wf_element.init:
+                for init_name in wf_element.init:
+                    init_elem = self.workflow.get(init_name)
+                    if init_elem:
+                        element_workflow.extend(init_elem.element_workflow)
+                        element_workflow.append(init_name)
 
-                elif hasattr(wf_element, "input") and wf_element.input:
-                    for input_name in wf_element.input:
-                        input_elem = self.workflow.get(input_name)
-                        if input_elem:
-                            element_workflow.extend(input_elem.element_workflow)
-                            element_workflow.append(input_name)
+            elif hasattr(wf_element, "input") and wf_element.input:
+                for input_name in wf_element.input:
+                    input_elem = self.workflow.get(input_name)
+                    if input_elem:
+                        element_workflow.extend(input_elem.element_workflow)
+                        element_workflow.append(input_name)
 
-                # remove duplicates and store it to the dictionary
-                self.workflow[wf_element_name].element_workflow = list(
-                    dict.fromkeys(element_workflow)
-                )
+            # remove duplicates and store it to the dictionary
+            self.workflow[wf_element_name].element_workflow = list(
+                dict.fromkeys(element_workflow)
+            )
 
-        except Exception as e:
-            logger.error(f"Error while evaluating element workflow: {e}")
-
+    @safely_run(
+        default_return=None,
+        exception_msg="Error writing workflow",
+        log=logger,
+    )
     @typechecked
     def save(self, output_dir: str) -> None:
         """Writes the current, processed workflow object to a JSON file.
@@ -415,21 +401,20 @@ class Workflow:
         Args:
             output_dir (str): The path where the workflow should be saved.
         """
-        try:
-            output_file_path = self._eval_output_path(
-                dir_path=output_dir, output_format="json"
-            )
+        output_file_path = self._eval_output_path(
+            dir_path=output_dir, output_format="json"
+        )
 
-            with open(output_file_path, "w", encoding="utf-8") as file:
-                file.write(self.workflow.model_dump_json(indent=4, exclude_none=True))
+        with open(output_file_path, "w", encoding="utf-8") as file:
+            file.write(self.workflow.model_dump_json(indent=4, exclude_none=True))
 
-            logger.debug(f"File successfully written to {output_file_path}.")
+        logger.debug(f"File successfully written to {output_file_path}.")
 
-        except Exception as e:
-            logger.error(
-                f"Error writing workflow to {output_file_path}: {e}",
-            )
-
+    @safely_run(
+        default_return=None,
+        exception_msg="Evaluation of data output name failed",
+        log=logger,
+    )
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> str | None:
         """Adds a timestamps to the filename and returns a complete, absolute file path.
@@ -446,14 +431,9 @@ class Workflow:
             str | None: The new, complete file path with a timestamps, or `None` if an
                 error occurs.
         """
-        try:
-            os.makedirs(dir_path, exist_ok=True)
-            file_name = os.path.splitext(os.path.basename(self._file_path))[0]
-            timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
-            new_file_name = f"{file_name}_{timestamps}.{output_format}"
-            full_path = os.path.join(dir_path, new_file_name)
-            return full_path
-
-        except Exception as e:
-            logger.error(f"Evaluation of data output name failed: {e}")
-            return None
+        os.makedirs(dir_path, exist_ok=True)
+        file_name = os.path.splitext(os.path.basename(self._file_path))[0]
+        timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
+        new_file_name = f"{file_name}_{timestamps}.{output_format}"
+        full_path = os.path.join(dir_path, new_file_name)
+        return full_path
