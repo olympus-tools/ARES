@@ -85,12 +85,29 @@ class ParameterModel(BaseDDModel):
 SignalElement = InModel | InoutModel | OutModel
 
 
+class MetaDataModel(BaseModel):
+    """Meta data model with optional fields.
+
+    Args:
+        function_name (str | None): Optional function name
+
+    Returns:
+        MetaDataModel: Validated meta data instance
+    """
+
+    function_name: str | None = None
+
+    class Config:
+        extra = "allow"
+
+
 class DataDictionaryModel(BaseModel):
     """Data Dictionary Model with separate signals and parameters sections.
 
     Args:
         signals (dict[str, SignalElement]): Dictionary of signal definitions (in, inout, out)
         parameters (dict[str, ParameterModel]): Dictionary of parameter definitions
+        meta_data (MetaDataModel | None): Optional meta data containing function name and other fields
 
     Returns:
         DataDictionaryModel: Validated data dictionary instance
@@ -98,6 +115,7 @@ class DataDictionaryModel(BaseModel):
 
     signals: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], SignalElement]
     parameters: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], ParameterModel]
+    meta_data: MetaDataModel | None = None
 
     class Config:
         extra = "forbid"

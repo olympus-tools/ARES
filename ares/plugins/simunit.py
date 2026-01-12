@@ -245,16 +245,21 @@ class SimUnit:
                 function cannot be found in the library.
         """
         try:
-            sim_function = self._library.ares_simunit
+            if self._dd.meta_data and self._dd.meta_data.function_name:
+                function_name = self._dd.meta_data.function_name
+            else:
+                function_name = "ares_simunit"
+
+            sim_function = getattr(self._library, function_name)
             sim_function.argtypes = []
             sim_function.restype = None
             logger.debug(
-                f"{self.element_name}:Ares simulation function 'ares_simunit' successfully set up.",
+                f"{self.element_name}:Ares simulation function '{function_name}' successfully set up.",
             )
             return sim_function
         except AttributeError as e:
             logger.error(
-                f"{self.element_name}: Ares simulation function 'ares_simunit' not found in library: {e}",
+                f"{self.element_name}: Ares simulation function '{function_name}' not found in library: {e}",
             )
             return None
         except Exception as e:
