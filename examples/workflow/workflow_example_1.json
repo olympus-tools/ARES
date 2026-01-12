@@ -11,6 +11,7 @@
     "plugin_1": {
         "type": "plugin",
         "file_path": "../plugin/plugin_example_1.py",
+        "plugin_name": "plugin_example_1",
         "parameter": ["parameterset_1"],
         "input": ["data_1"]
     },

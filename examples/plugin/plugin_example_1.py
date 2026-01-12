@@ -40,7 +40,7 @@ from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 
 
-def ares_plugin(plugin_input: dict[str, Any]):
+def plugin_example_1(plugin_input: dict[str, Any]):
     """ARES plugin function demonstrating combinatorial parameter and data interface creation.
 
     This example shows how to create AresDataInterface and AresParamInterface objects
