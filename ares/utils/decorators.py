@@ -35,7 +35,7 @@ import logging
 import os
 import sys
 from functools import wraps
-from typing import Any
+from typing import Any, Type
 
 from ares.utils.logger import create_logger
 
@@ -82,6 +82,44 @@ def safely_run(
                 # set default return
                 ret = default_return
             return ret
+
+        return wrapper
+
+    return wrap
+
+
+def error_msg(
+    message: str,
+    exception_type: Type[Exception] = RuntimeError,
+    log: logging.Logger | None = None,
+):
+    """
+    Wraps a function to provide context to errors without suppressing them.
+
+    If the decorated function raises an exception, this decorator catches it,
+    logs the failure, and raises a new exception (chained to the original)
+    with the provided context message.
+
+    Args:
+        message (str): meaningful error context to display to the user.
+        exception_type (Type[Exception]): The type of error to raise. Defaults to RuntimeError.
+        log[Logger]: specific logger to use, defaults to ares logger
+
+    Returns:
+        Callable: The decorated function with try/except.
+    """
+    logger = create_logger() if log is None else log
+
+    def wrap(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                full_error_msg = f"{message} | Original exception trace: {str(e)}"
+
+                logger.error(full_error_msg)
+                raise exception_type(full_error_msg) from e
 
         return wrapper
 

@@ -38,7 +38,7 @@ from asammdf import MDF, Signal, Source
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
-from ares.utils.decorators import safely_run
+from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -118,7 +118,6 @@ class MF4Handler(MDF, AresDataInterface):
         logger.debug(f"Data was successfully written to: {result_path}")
 
     @override
-    @typechecked
     def get(self, label_filter: list[str] | None = None, **kwargs) -> list[AresSignal]:
         """Get signals from MF4 file with optional resampling.
 
@@ -195,6 +194,10 @@ class MF4Handler(MDF, AresDataInterface):
 
     @override
     @typechecked
+    @error_msg(
+        message="Failure in mf4-handler add function.",
+        log=logger,
+    )
     def add(self, signals: list[AresSignal], **kwargs) -> None:
         """Add AresSignal objects to MF4 file.
 
