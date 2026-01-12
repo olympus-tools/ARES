@@ -107,7 +107,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
     @typechecked
     def get(
         self, label_filter: list[str] | None = None, **kwargs
-    ) -> list[AresParameter]:
+    ) -> list[AresParameter] | None:
         """Get parameters from the DCM interface.
 
         Converts internal DCM parameter dictionary to list of AresParameter objects.
@@ -119,14 +119,14 @@ class DCMHandler(ParamDCM, AresParamInterface):
             **kwargs: Additional format-specific arguments
 
         Returns:
-            list[AresParameter]: List of AresParameter objects, or empty list on error
+            list[AresParameter] | None: List of AresParameter objects, or None if no parameters were found
         """
         if label_filter:
             items = {k: v for k, v in self.parameter.items() if k in label_filter}
         else:
             items = self.parameter
 
-        return [
+        result = [
             AresParameter(
                 label=parameter_name,
                 value=parameter_value.get("value", 0.0),
@@ -135,3 +135,5 @@ class DCMHandler(ParamDCM, AresParamInterface):
             )
             for parameter_name, parameter_value in items.items()
         ]
+
+        return result if result else None

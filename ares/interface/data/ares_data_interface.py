@@ -294,7 +294,9 @@ class AresDataInterface(ABC):
         return data
 
     @abstractmethod
-    def get(self, label_filter: list[str] | None = None, **kwargs) -> list[AresSignal]:
+    def get(
+        self, label_filter: list[str] | None = None, **kwargs
+    ) -> list[AresSignal] | None:
         """Get signals from the interface.
 
         Args:
@@ -302,7 +304,7 @@ class AresDataInterface(ABC):
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            list[AresSignal]: List of all AresSignal objects stored in the interface
+            list[AresSignal] | None: List of all AresSignal objects stored in the interface, or None if no signals are found
         """
         pass
 

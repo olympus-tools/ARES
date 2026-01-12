@@ -270,7 +270,7 @@ class SimUnit:
 
     @typechecked
     def run(
-        self, data: list[AresSignal], parameters: list[AresParameter]
+        self, data: list[AresSignal] | None, parameters: list[AresParameter] | None
     ) -> list[AresSignal] | None:
         """Executes the main simulation function over multiple time steps.
 
@@ -278,8 +278,10 @@ class SimUnit:
         function for each time step, and reads the output back as AresSignal objects.
 
         Args:
-            data (list[AresSignal]): List of AresSignal objects containing input signals with timestamps.
-            parameters (list[AresParameter]): List of AresParameter objects containing simulation parameters.
+            data (list[AresSignal] | None): List of AresSignal objects containing input signals with timestamps,
+                or None if no input data is available.
+            parameters (list[AresParameter] | None): List of AresParameter objects containing simulation parameters,
+                or None if no parameters are available.
 
         Returns:
             list[AresSignal] | None: List of AresSignal objects containing output signals for all
@@ -291,8 +293,8 @@ class SimUnit:
 
             sim_result: dict[str, np.ndarray] = {}
             time_steps = len(data[0].timestamps) if data else 1
-            data_dict = self._list_to_dict(data)
-            parameter_dict = self._list_to_dict(parameters)
+            data_dict = self._list_to_dict(data if data else [])
+            parameter_dict = self._list_to_dict(parameters if parameters else [])
 
             if data:
                 logger.info(
