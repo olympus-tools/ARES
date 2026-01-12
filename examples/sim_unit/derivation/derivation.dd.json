@@ -1,4 +1,7 @@
 {
+    "meta_data": {
+        "function_name": "ares_simunit_1"
+    },
     "signals":{
         "input_value": {
             "type": "in",

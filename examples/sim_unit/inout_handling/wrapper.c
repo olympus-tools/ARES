@@ -41,7 +41,7 @@ int32_t signal_scalar = 0;
 uint32_t signal_array1d[3] = {0};
 float signal_array2d[2][3] = {{0}};
 
-void ares_simunit()
+void ares_simunit_2()
 {
     inout_handling(
         &parameter_scalar,

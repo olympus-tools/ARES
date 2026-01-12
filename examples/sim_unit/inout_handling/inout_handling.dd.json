@@ -1,4 +1,7 @@
 {
+    "meta_data": {
+        "function_name": "ares_simunit_2"
+    },
 	"signals":{
 		"signal_scalar": {
 			"type": "inout",
