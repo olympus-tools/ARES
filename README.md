@@ -24,7 +24,7 @@ ARES is currently under active development and is distributed as a source packag
 Before setting up ARES, ensure your system meets the following requirements:
 
 *   **Operating System**: Linux (currently the only supported OS)
-*   **Python**: Version 3.12 or higher
+*   **Python**: Version equal 3.13.7 or higher and lower than 3.14
 *   **Build Tools**: `make` (only required for **Option A: Automated Setup**)
 
 ### 1.2. Installation in Virtual Environment (Recommended)
@@ -286,3 +286,4 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
