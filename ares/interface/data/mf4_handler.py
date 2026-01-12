@@ -118,7 +118,10 @@ class MF4Handler(MDF, AresDataInterface):
         logger.debug(f"Data was successfully written to: {result_path}")
 
     @override
-    def get(self, label_filter: list[str] | None = None, **kwargs) -> list[AresSignal]:
+    @typechecked
+    def get(
+        self, label_filter: list[str] | None = None, **kwargs
+    ) -> list[AresSignal] | None:
         """Get signals from MF4 file with optional resampling.
 
         Args:
@@ -127,7 +130,8 @@ class MF4Handler(MDF, AresDataInterface):
             **kwargs (Any): Additional arguments. 'stepsize' (int) triggers resampling.
 
         Returns:
-            list[AresSignal]: List of AresSignal objects, optionally resampled to common time vector.
+            list[AresSignal] | None: List of AresSignal objects, optionally resampled to common time vector.
+                Returns None if no signals were found.
         """
         stepsize = kwargs.pop("stepsize", None)
         tmp_data = (
@@ -136,10 +140,13 @@ class MF4Handler(MDF, AresDataInterface):
             else self._get_signals(label_filter, **kwargs)
         )
 
+        if not tmp_data:
+            return None
+
         if stepsize is None:
             return tmp_data
         else:
-            return self._resample(tmp_data, stepsize=stepsize)
+            return self._resample(data=tmp_data, stepsize=stepsize)
 
     @typechecked
     def _get_signals(self, label_filter: list[str], **kwargs) -> list[AresSignal]:

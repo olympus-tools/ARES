@@ -258,7 +258,7 @@ class AresParamInterface(ABC):
     @abstractmethod
     def get(
         self, label_filter: list[str] | None = None, **kwargs
-    ) -> list[AresParameter]:
+    ) -> list[AresParameter] | None:
         """Get parameters from the interface.
 
         Args:

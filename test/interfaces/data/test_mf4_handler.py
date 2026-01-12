@@ -59,7 +59,7 @@ def test_ares_mf4handler_file_init_write():
     Test if mf4handler can be initialized with mf4-file mode "write".
     """
     mf4_filepath = os.path.join(os.path.dirname(__file__), "test_file.mf4")
-    test_data_write01 = MF4Handler(file_path=None)
+    test_data_write01 = MF4Handler(file_path=None, signals=[])
     test_data_write01._save(mf4_filepath)
 
     if not os.path.isfile(mf4_filepath):
@@ -67,7 +67,7 @@ def test_ares_mf4handler_file_init_write():
     else:
         os.remove(mf4_filepath)
 
-    test_data_write02 = MF4Handler(file_path="")
+    test_data_write02 = MF4Handler(file_path=None, signals=[])
     test_data_write02._save(mf4_filepath)
 
     if not os.path.isfile(mf4_filepath):
