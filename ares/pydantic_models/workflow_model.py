@@ -92,6 +92,7 @@ class ParameterElement(BaseElement):
 class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
     file_path: str
+    plugin_name: str | None = None
 
     class Config:
         extra = "allow"

@@ -79,8 +79,13 @@ def AresPluginInterface(
             spec.loader.exec_module(module)
 
             # Call plugin's main function with explicit arguments
-            if hasattr(module, "ares_plugin"):
-                module.ares_plugin(plugin_input=plugin_input)
+            if plugin_input["plugin_name"]:
+                plugin_name = plugin_input["plugin_name"]
+            else:
+                plugin_name = "ares_plugin"
+
+            if hasattr(module, plugin_name):
+                getattr(module, plugin_name)(plugin_input=plugin_input)
             else:
                 logger.error(
                     f"{plugin_input.get('element_name')}: Plugin {Path(plugin_path).name} does not have an 'ares_plugin' function"
