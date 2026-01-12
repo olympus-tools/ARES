@@ -207,6 +207,7 @@ Allows users to execute custom Python scripts within the workflow. Plugins can d
 | :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
 | `type`             | Yes        | `str`       | `"plugin"`          | Unique identifier for the element type.             |
 | `file_path`        | Yes        | `str`       |                     | Path to the Python plugin script.                   |
+| `plugin_name`      | No         | `str`       |                     | Name of the plugin function to execute. If not specified, defaults to `"ares_plugin"`. |
 | *Custom*           | No         | `Any`       |                     | Additional fields as required by the plugin.        |
 
 ## 7. Examples
