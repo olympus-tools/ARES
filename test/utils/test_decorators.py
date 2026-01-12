@@ -148,7 +148,7 @@ def test_argument_passing():
     assert greet("Ares", greeting="Hi") == "Hi, Ares"
 
 
-def test_catches_and_reraises_with_context():
+def test_catches_and_reraises_with_context(caplog):
     """
     Ensure the decorator catches the error, wraps it in the custom message,
     and raises the default exception type (RuntimeError).
@@ -166,6 +166,9 @@ def test_catches_and_reraises_with_context():
     msg = str(exc_info.value)
     assert "Critical failure in database" in msg
     assert "Original exception trace: Connection refused" in msg
+    # verify the MESSAGE is also in the logger
+    assert "Critical failure in database" in caplog.text
+    assert "Original exception trace: Connection refused" in caplog.text
 
 
 def test_exception_chaining_is_preserved():
