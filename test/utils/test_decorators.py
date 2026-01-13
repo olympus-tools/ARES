@@ -163,6 +163,20 @@ def test_safely_run_exception_map(caplog):
     assert "Original exception message" in caplog.text
 
 
+def test_safely_run_include_args(caplog):
+    """
+    Tests that the safely_run decorator includes requested arguments in the log message.
+    """
+
+    @safely_run(default_return="error", include_args=["a", "c"])
+    def fail_with_args(a, b, c="default"):
+        raise ValueError("Failed with args")
+
+    fail_with_args("val_a", "val_b", c="val_c")
+
+    assert "Context: {'a': 'val_a', 'c': 'val_c'}" in caplog.text
+
+
 # TEST: error_msg
 def test_happy_path_execution():
     """Ensure the function runs normally when no error occurs."""
@@ -251,37 +265,18 @@ def test_metadata_preservation():
     assert meaningful_name.__doc__ == "This is a docstring."
 
 
-def test_safely_run_exception_map(caplog):
+def test_error_msg_include_args(caplog):
     """
-    Tests that the decorator uses the specific message from exception_map.
+    Tests that the error_msg decorator includes requested arguments in the log and exception message.
     """
 
-    exception_map = {
-        FileNotFoundError: "File not found custom message",
-        RuntimeError: "Runtime error custom message",
-    }
+    @error_msg("Critical error", include_args=["x", "z"])
+    def fail_with_args(x, y, z=10):
+        raise ValueError("Inner error")
 
-    @safely_run(
-        default_return="error",
-        exception_map=exception_map,
-        exception_msg="Default message",
-    )
-    def fail_with(exception_type):
-        raise exception_type("Original exception message")
+    with pytest.raises(RuntimeError) as exc_info:
+        fail_with_args(1, 2, z=3)
 
-    # Test FileNotFoundError
-    fail_with(FileNotFoundError)
-    assert "File not found custom message" in caplog.text
-    assert "Original exception message" in caplog.text
-    caplog.clear()
-
-    # Test RuntimeError
-    fail_with(RuntimeError)
-    assert "Runtime error custom message" in caplog.text
-    assert "Original exception message" in caplog.text
-    caplog.clear()
-
-    # Test unmapped exception (ValueError)
-    fail_with(ValueError)
-    assert "Default message" in caplog.text
-    assert "Original exception message" in caplog.text
+    expected_context = "Context: {'x': 1, 'z': 3}"
+    assert expected_context in str(exc_info.value)
+    assert expected_context in caplog.text
