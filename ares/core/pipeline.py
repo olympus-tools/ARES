@@ -48,6 +48,7 @@ logger = create_logger(__name__)
 @error_msg(
     message="Error while executing ARES pipeline.",
     log=logger,
+    include_args=["wf_path"],
 )
 def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
     """Executes the ARES simulation pipeline based on a defined workflow.

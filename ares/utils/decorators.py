@@ -31,6 +31,7 @@ For details, see: https://github.com/olympus-tools/ARES#7-license
 """
 
 # standard includes
+import inspect
 import logging
 import os
 import sys
@@ -108,7 +109,7 @@ def safely_run(
                         # Safety net: Don't let logging logic crash the app
                         input_details = f" | (Failed to inspect args: {inspect_err})"
 
-                log_func(f"{log_message}: {e}{input_details}")
+                log_func(f"{log_message}: Exception trace: {e} : {input_details}")
 
                 ret = default_return
             return ret
@@ -148,7 +149,7 @@ def error_msg(
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                full_error_msg = f"{message} | Original exception trace: {str(e)}"
+                full_error_msg = f"{message} | Exception trace: {str(e)}"
 
                 input_details = ""
                 if include_args:
