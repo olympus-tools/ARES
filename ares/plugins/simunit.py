@@ -454,11 +454,22 @@ class SimUnit:
                             break
 
                 if not mapped:
+                    size = dd_element_value.size
+
+                    if len(size) == 0:
+                        default_init_value = 0
+                    elif len(size) == 1:
+                        default_init_value = [0] * size[0]
+                    elif len(size) == 2:
+                        default_init_value = [[0] * size[1] for _ in range(size[0])]
+                    else:
+                        default_init_value = 0
+
                     default_value = self._map_sim_input_static(
                         time_steps=time_steps,
                         datatype=dd_element_value.datatype,
-                        size=dd_element_value.size,
-                        value=0,
+                        size=size,
+                        value=default_init_value,
                     )
                     mapped_input[dd_element_name] = AresSignal(
                         label=dd_element_name,
@@ -568,6 +579,9 @@ class SimUnit:
                     continue
 
                 if dd_element_name in data:
+                    data[dd_element_name].dtype_cast(
+                        self.DATATYPES[dd_element_value.datatype][1]
+                    )
                     input_value = data[dd_element_name].value[time_step_idx]
                     size = dd_element_value.size
                     self._write_value_to_dll(dd_element_name, input_value, size)

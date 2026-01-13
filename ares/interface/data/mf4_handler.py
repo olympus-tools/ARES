@@ -32,8 +32,9 @@ For details, see: https://github.com/olympus-tools/ARES#7-license
 
 import datetime
 import os
-from typing import override
+from typing import ClassVar, override
 
+import numpy as np
 from asammdf import MDF, Signal, Source
 
 from ares.interface.data.ares_data_interface import AresDataInterface
@@ -52,6 +53,20 @@ class MF4Handler(MDF, AresDataInterface):
     """A extension of the asammdf.MDF class to allow ARES to interact with mf4's.
     see: https://asammdf.readthedocs.io/en/latest/api.html#asammdf.mdf.MDF
     """
+
+    DTYPE_MAP: ClassVar[dict[np.dtype, str]] = {
+        np.dtype(np.float32): "<f4",
+        np.dtype(np.float64): "<f8",
+        np.dtype(np.bool_): "<u1",
+        np.dtype(np.int8): "<i1",
+        np.dtype(np.int16): "<i2",
+        np.dtype(np.int32): "<i4",
+        np.dtype(np.int64): "<i8",
+        np.dtype(np.uint8): "<u1",
+        np.dtype(np.uint16): "<u2",
+        np.dtype(np.uint32): "<u4",
+        np.dtype(np.uint64): "<u8",
+    }
 
     @typechecked
     def __init__(
@@ -165,54 +180,78 @@ class MF4Handler(MDF, AresDataInterface):
                 Only contains signals that were actually found.
         """
 
-        occurences = [self.whereis(c) for c in label_filter]
-        not_found = [i for i, x in enumerate(occurences) if len(x) == 0]
-        if len(not_found) > 0:
-            missing_channels = ", ".join([label_filter[i] for i in not_found])
-            logger.warning(
-                f"Selection of the following channels not possible. Existence is not given: {missing_channels}"
-            )
-
-        single_occ = [i for i, x in enumerate(occurences) if len(x) == 1]
-        multi_occ = [i for i, x in enumerate(occurences) if len(x) > 1]
-
-        # Collect only found signals (no static list with None values)
         found_signals: list[Signal] = []
 
-        if len(single_occ) > 0:
-            selected_signals = super().select(
-                [label_filter[idx] for idx in single_occ], **kwargs
-            )
-            found_signals.extend(selected_signals)
+        for channel_name in label_filter:
+            logger.debug(f"Processing channel: {channel_name}")
+            occurence = self.whereis(channel_name)
 
-        for i in multi_occ:
-            sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurences[i]]
-            all_signals = super().select(sel_signal, **kwargs)
-            len_samples = [len(s.samples) for s in all_signals]
-            idx = len_samples.index(max(len_samples))
-            found_signals.append(all_signals[idx])
+            if len(occurence) == 0:
+                logger.warning(
+                    f"Channel '{channel_name}' not found in MF4 file. Skipping."
+                )
+                continue
 
-        return [
-            AresSignal(
-                label=signal.name, timestamps=signal.timestamps, value=signal.samples
+            if len(occurence) == 1:
+                logger.debug(f"Channel '{channel_name}' has single occurrence")
+                selected_signal = super().select([channel_name], **kwargs)
+                if selected_signal:
+                    found_signals.extend(selected_signal)
+
+            else:
+                logger.debug(
+                    f"Channel '{channel_name}' has {len(occurence)} occurrences"
+                )
+                sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurence]
+                all_signals = super().select(sel_signal, **kwargs)
+                len_samples = [len(s.samples) for s in all_signals]
+                idx = len_samples.index(max(len_samples))
+                logger.debug(
+                    f"Selected occurrence {idx} with {len_samples[idx]} samples"
+                )
+                found_signals.append(all_signals[idx])
+
+        ares_signals = []
+        for signal in found_signals:
+            if hasattr(signal.samples.dtype, "names") and signal.samples.dtype.names:
+                value = signal.samples[signal.name]
+                logger.debug(
+                    f"Array signal '{signal.name}' extracted with shape: {value.shape}"
+                )
+            else:
+                value = signal.samples
+                logger.debug(f"Scalar signal '{signal.name}' with shape: {value.shape}")
+
+            ares_signals.append(
+                AresSignal(
+                    label=signal.name,
+                    timestamps=signal.timestamps,
+                    value=value,
+                    unit=signal.unit if hasattr(signal, "unit") else None,
+                    description=signal.comment if hasattr(signal, "comment") else None,
+                )
             )
-            for signal in found_signals
-        ]
+
+        return ares_signals
 
     @override
-    @typechecked
     @error_msg(
         message="Failure in mf4-handler add function.",
         log=logger,
     )
+    @typechecked
     def add(self, signals: list[AresSignal], **kwargs) -> None:
         """Add AresSignal objects to MF4 file.
 
         Converts AresSignal objects to asammdf Signal format and appends them to the MF4 file.
+        Supports scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
         Optionally adds source information to signals for traceability.
 
         Args:
             signals (list[AresSignal]): List of AresSignal objects to append to MF4 file.
+                - ndim == 1: Scalar value per time step
+                - ndim == 2: 1D array per time step (shape: cycles, array_size)
+                - ndim == 3: 2D array per time step (shape: cycles, rows, cols)
             **kwargs (Any): Additional arguments:
                 - source_name (str): Name for the signal source. If not provided,
                   defaults to "ARES_DEFAULT_SOURCE".
@@ -227,14 +266,48 @@ class MF4Handler(MDF, AresDataInterface):
             bus_type=1,
         )
 
-        signals_to_write = [
-            Signal(
-                samples=sig.value,
-                timestamps=sig.timestamps,
-                name=sig.label,
-                source=source,
-            )
-            for sig in signals
-        ]
+        signals_to_write = []
+        for sig in signals:
+            if sig.ndim == 1:
+                signals_to_write.append(
+                    Signal(
+                        samples=sig.value,
+                        timestamps=sig.timestamps,
+                        name=sig.label,
+                        unit=sig.unit if sig.unit else "",
+                        comment=sig.description if sig.description else "",
+                        source=source,
+                    )
+                )
+
+            elif sig.ndim in [2, 3]:
+                dtype_str = self.DTYPE_MAP[sig.dtype]
+
+                if sig.ndim == 2:
+                    array_size = sig.shape[1]
+                    dimension_str = f"({array_size},)"
+                else:
+                    rows, cols = sig.shape[1], sig.shape[2]
+                    dimension_str = f"({rows}, {cols})"
+
+                types = [(sig.label, f"{dimension_str}{dtype_str}")]
+                samples = np.rec.fromarrays([sig.value], dtype=np.dtype(types))
+
+                signals_to_write.append(
+                    Signal(
+                        samples=samples,
+                        timestamps=sig.timestamps,
+                        name=sig.label,
+                        unit=sig.unit if sig.unit else "",
+                        comment=sig.description if sig.description else "",
+                        source=source,
+                    )
+                )
+
+            else:
+                logger.warning(
+                    f"Unsupported signal dimension: {sig.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)"
+                )
+
         self.append(signals_to_write)
         [self._available_signals.append(sig.label) for sig in signals]

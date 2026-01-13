@@ -36,6 +36,9 @@ import numpy as np
 import numpy.typing as npt
 
 from ares.utils.decorators import typechecked_dev as typechecked
+from ares.utils.logger import create_logger
+
+logger = create_logger(__name__)
 
 
 @dataclass
@@ -108,6 +111,9 @@ class AresSignal:
     def resample(self, timestamps_resampled: npt.NDArray[np.float32]) -> None:
         """Resample the signal to new timestamps using linear interpolation.
 
+        Handles scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
+        Interpolation is performed independently for each array element.
+
         Args:
             timestamps_resampled (npt.NDArray[np.float32]): New timestamp values
                 for resampling. Must be a 1D numpy array with floating point dtype.
@@ -115,7 +121,60 @@ class AresSignal:
         Returns:
             None: Modifies the signal in-place, updating timestamps and value.
         """
-        self.value = np.interp(
-            timestamps_resampled, self.timestamps, self.value.astype(np.float32)
-        ).astype(self.dtype)
+        if self.ndim == 1:
+            self.value = np.interp(
+                timestamps_resampled, self.timestamps, self.value.astype(np.float32)
+            ).astype(self.dtype)
+
+        elif self.ndim == 2:
+            array_size = self.shape[1]
+            resampled = np.zeros(
+                (len(timestamps_resampled), array_size), dtype=np.float32
+            )
+            for i in range(array_size):
+                resampled[:, i] = np.interp(
+                    timestamps_resampled, self.timestamps, self.value[:, i]
+                )
+            self.value = resampled.astype(self.dtype)
+
+        elif self.ndim == 3:
+            rows, cols = self.shape[1], self.shape[2]
+            resampled = np.zeros(
+                (len(timestamps_resampled), rows, cols), dtype=np.float32
+            )
+            for i in range(rows):
+                for j in range(cols):
+                    resampled[:, i, j] = np.interp(
+                        timestamps_resampled, self.timestamps, self.value[:, i, j]
+                    )
+            self.value = resampled.astype(self.dtype)
+
+        else:
+            logger.warning(
+                f"Unsupported signal dimension: {self.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)"
+            )
+
         self.timestamps = timestamps_resampled
+
+    @typechecked
+    def dtype_cast(self, dtype: np.dtype | type[np.generic]) -> None:
+        """Cast the signal value to a specified numpy dtype.
+
+        Converts the value array to the target dtype only if the current dtype
+        differs from the target dtype. Does nothing if dtypes already match.
+
+        Args:
+            dtype (np.dtype | type[np.generic]): Target numpy data type
+                (e.g., np.float32, np.int64, np.dtype('float64')).
+
+        Returns:
+            None: Modifies the signal value in-place.
+        """
+        target_dtype = np.dtype(dtype)
+
+        if self.dtype != target_dtype:
+            curr_datatype = self.dtype
+            self.value = self.value.astype(target_dtype)
+            logger.debug(
+                f"Signal '{self.label}' cast from {curr_datatype} to {target_dtype}"
+            )
