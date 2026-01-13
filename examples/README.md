@@ -111,10 +111,12 @@ flowchart LR
     DATA1(data_1) --> SIM1
     DATA1 --> SIM2
     DATA1 --> SIM3
-    DATA1 --> DATA2(data_2)
-    SIM1 --> DATA2
-    SIM2 --> DATA2
-    SIM3 --> DATA2
+    DATA2(data_2) --> SIM2
+    DATA1 --> DATA3(data_3)
+    DATA2 --> DATA3
+    SIM1 --> DATA3
+    SIM2 --> DATA3
+    SIM3 --> DATA3
 
     classDef Parameters     color:#a44300, stroke:#a44300;
     classDef Data           color:#1e9bec, stroke:#1e9bec;
@@ -124,6 +126,7 @@ flowchart LR
     class PARAM1 Parameters;
     class DATA1 Data;
     class DATA2 Data;
+    class DATA3 Data;
     class SIM1 SW_Unit;
     class SIM2 SW_Unit;
     class SIM3 SW_Unit;

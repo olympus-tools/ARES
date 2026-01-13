@@ -17,6 +17,13 @@
         ],
         "mode": "read"
     },
+    "data_2": {
+        "type": "data",
+        "file_path": [
+            "../data/data_example_3.mf4"
+        ],
+        "mode": "read"
+    },
     "simunit_1": {
         "type": "sim_unit",
         "file_path": "../sim_unit/derivation/derivation.so",
@@ -31,7 +38,10 @@
         "data_dictionary": "../sim_unit/inout_handling/inout_handling.dd.json",
         "stepsize": 1000,
         "parameter": ["parameterset_1"],
-        "input": ["data_1"]
+        "input": [
+            "data_1",
+            "data_2"
+        ]
     },
     "simunit_3": {
         "type": "sim_unit",
@@ -41,9 +51,9 @@
         "parameter": ["parameterset_1"],
         "input": ["data_1"]
     },
-    "data_2": {
+    "data_3": {
         "type": "data",
-        "input": ["data_1", "simunit_1", "simunit_2", "simunit_3"],
+        "input": ["data_1", "data_2", "simunit_1", "simunit_2", "simunit_3"],
         "mode": "write",
         "output_format": "mf4"
     }
