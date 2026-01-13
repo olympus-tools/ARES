@@ -70,49 +70,53 @@ signal_scalar = Signal(
     comment="Scalar int32 signal for inout_handling example",
 )
 
-# # 2.3 signal_array1d - 1D array with 3 elements (uint32)
-# # Timestamps: 0.0s to 18.0s, step 0.75s (25 samples)
-# timestamps_array1d = np.arange(0.0, 19.0, 0.75)
-# signal_array1d_samples = np.zeros((len(timestamps_array1d), 3), dtype=np.uint32)
-# for i in range(len(timestamps_array1d)):
-#     signal_array1d_samples[i] = [i * 1, i * 2, i * 3]
+# 2.3 signal_array1d - 1D array with 4 elements (float64)
+# Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
+timestamps_array1d = np.arange(0.0, 20.0, 0.5)
+signal_array1d_samples = np.zeros((len(timestamps_array1d), 4), dtype=np.float64)
+for i in range(len(timestamps_array1d)):
+    signal_array1d_samples[i] = [i * 1.0, i * 2.0, i * 3.0, i * 4.0]
 
-# signal_array1d = Signal(
-#     samples=signal_array1d_samples,
-#     timestamps=timestamps_array1d,
-#     name="signal_array1d",
-#     source=source_1,
-#     comment="1D array signal (3 elements) for inout_handling example",
-# )
+types_1d = [("signal_array1d_xyz", "(4,)<f8")]
+signal_array1d = Signal(
+    samples=np.rec.fromarrays([signal_array1d_samples], dtype=np.dtype(types_1d)),
+    timestamps=timestamps_array1d,
+    name="signal_array1d_xyz",
+    unit="A",
+    source=source_1,
+    comment="1D array signal (4 elements) per time step",
+)
 
-# # 2.4 signal_array2d - 2D array with 2x3 elements (float)
-# # Timestamps: 0.1s to 20.0s, step 1.1s (19 samples)
-# timestamps_array2d = np.arange(0.1, 20.0, 1.1)
-# signal_array2d_samples = np.zeros((len(timestamps_array2d), 2, 3), dtype=np.float32)
-# for i in range(len(timestamps_array2d)):
-#     signal_array2d_samples[i] = [
-#         [i * 1.0, i * 2.0, i * 3.0],
-#         [i * 4.0, i * 5.0, i * 6.0],
-#     ]
+# 2.4 signal_array2d - 2D array with 2x3 elements (float64)
+# Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
+timestamps_array2d = np.arange(0.0, 20.0, 0.5)
+signal_array2d_samples = np.zeros((len(timestamps_array2d), 2, 3), dtype=np.float64)
+for i in range(len(timestamps_array2d)):
+    signal_array2d_samples[i] = [
+        [i * 1.0, i * 2.0, i * 3.0],
+        [i * 4.0, i * 5.0, i * 6.0],
+    ]
 
-# signal_array2d = Signal(
-#     samples=signal_array2d_samples,
-#     timestamps=timestamps_array2d,
-#     name="signal_array2d",
-#     source=source_1,
-#     comment="2D array signal (2x3 elements) for inout_handling example",
-# )
+types_2d = [("signal_array2d", "(2, 3)<f8")]
+signal_array2d = Signal(
+    samples=np.rec.fromarrays([signal_array2d_samples], dtype=np.dtype(types_2d)),
+    timestamps=timestamps_array2d,
+    name="signal_array2d",
+    unit="N",
+    source=source_1,
+    comment="2D array signal (2x3 elements) per time step",
+)
 
 # 3. Create a new MDF file and append all signals
 mdf = MDF()
 mdf.append(input_value)
 mdf.append(signal_scalar)
-# mdf.append(signal_array1d)
-# mdf.append(signal_array2d)
+mdf.append(signal_array1d)
+mdf.append(signal_array2d)
 
 # 4. Define the output path and save the file
 output_dir = Path("examples/data")
-file_name = "data_example_1.mf4"
+file_name = "data_example_3.mf4"
 file_path = output_dir / file_name
 
 # Create the examples directory if it doesn't exist
