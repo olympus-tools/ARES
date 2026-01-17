@@ -115,6 +115,7 @@ class MF4Handler(MDF, AresDataInterface):
         default_return=[],
         exception_msg="Error during writing mf4-file. Validate output_path also consider write rights.",
         log=logger,
+        include_args=["output_path"],
     )
     @typechecked
     def _save(self, output_path: str, **kwargs) -> None:
@@ -163,6 +164,11 @@ class MF4Handler(MDF, AresDataInterface):
         else:
             return self._resample(data=tmp_data, stepsize=stepsize)
 
+    @error_msg(
+        exception_msg="Error in mf4-handler get function.",
+        log=logger,
+        include_args=["label_filter"],
+    )
     @typechecked
     def _get_signals(self, label_filter: list[str], **kwargs) -> list[AresSignal]:
         """Helper function for get() that handles multiple occurrences of signals in MF4 files.
@@ -236,8 +242,9 @@ class MF4Handler(MDF, AresDataInterface):
 
     @override
     @error_msg(
-        message="Failure in mf4-handler add function.",
+        exception_msg="Error in mf4-handler add function.",
         log=logger,
+        include_args=["signals"],
     )
     @typechecked
     def add(self, signals: list[AresSignal], **kwargs) -> None:

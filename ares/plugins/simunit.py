@@ -43,7 +43,7 @@ from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.datadictionary_model import DataDictionaryModel
-from ares.utils.decorators import safely_run
+from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -100,8 +100,7 @@ class SimUnit:
         self._dll_interface: dict[str, Any] | None = self._setup_c_interface()
         self._sim_function: Any = self._setup_sim_function()
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Unexpected error loading data dictionary file.",
         exception_map={
             FileNotFoundError: "Data dictionary file not found",
@@ -109,6 +108,7 @@ class SimUnit:
             ValidationError: "Validation error for data dictionary",
         },
         log=logger,
+        include_args=["dd_path"],
     )
     @typechecked
     def _load_and_validate_dd(self, dd_path: str) -> DataDictionaryModel | None:
@@ -133,9 +133,8 @@ class SimUnit:
         )
         return dd
 
-    @safely_run(
-        default_return=None,
-        exception_msg="Unexpected error loading library.",
+    @error_msg(
+        exception_msg="Unexpected error during loading library.",
         exception_map={OSError: "Error loading shared library."},
         log=logger,
     )
@@ -219,8 +218,7 @@ class SimUnit:
             return None
         return dll_interface
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="An unexpected error occurred while setting up ares simulation function.",
         exception_map={
             AttributeError: "Ares simulation function 'ares_simunit' not found in library."
@@ -464,8 +462,7 @@ class SimUnit:
         logger.debug(f"{self.element_name}: Mapping is successfully finished.")
         return mapped_input
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Error during mapping static values.",
         log=logger,
     )
@@ -505,6 +502,7 @@ class SimUnit:
         default_return=None,
         exception_msg="Error writing value to DLL interface.",
         log=logger,
+        include_args=["dd_element_name"],
     )
     @typechecked
     def _write_value_to_dll(
