@@ -201,7 +201,7 @@ def test_argument_passing():
 def test_catches_and_reraises_with_context(caplog):
     """
     Ensure the decorator catches the error, wraps it in the custom message,
-    and raises the default exception type (RuntimeError).
+    and raises the original exception type (ValueError).
     """
 
     @error_msg("Critical failure in database")
@@ -209,16 +209,16 @@ def test_catches_and_reraises_with_context(caplog):
         raise ValueError("Connection refused")
 
     # verify the TYPE of error raised is RuntimeError (default)
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         fail_function()
 
     # verify the MESSAGE contains both our context and the original error
     msg = str(exc_info.value)
     assert "Critical failure in database" in msg
-    assert "Original exception trace: Connection refused" in msg
+    assert "Connection refused" in msg
     # verify the MESSAGE is also in the logger
     assert "Critical failure in database" in caplog.text
-    assert "Original exception trace: Connection refused" in caplog.text
+    assert "Connection refused" in caplog.text
 
 
 def test_exception_chaining_is_preserved():
@@ -232,7 +232,7 @@ def test_exception_chaining_is_preserved():
     def divide():
         raise original_error
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(ZeroDivisionError) as exc_info:
         divide()
 
     # The __cause__ attribute stores the original exception when using 'from'
@@ -274,7 +274,7 @@ def test_error_msg_include_args(caplog):
     def fail_with_args(x, y, z=10):
         raise ValueError("Inner error")
 
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(ValueError) as exc_info:
         fail_with_args(1, 2, z=3)
 
     expected_context = "Context: {'x': 1, 'z': 3}"

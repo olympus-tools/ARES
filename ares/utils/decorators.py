@@ -35,6 +35,7 @@ import inspect
 import logging
 import os
 import sys
+import traceback
 from functools import wraps
 from typing import Any, Callable, Type
 
@@ -67,18 +68,23 @@ def safely_run(
     def wrap(func: Callable) -> Callable:
         @wraps(func)  # preserve original func metadata
         def wrapper(*args, **kwargs):
-            logger.debug(f"Safely running function {func.__name__} triggered.")
+            logger.debug(f"Safely running function {func.__qualname__} triggered.")
             try:
                 ret = func(*args, **kwargs)
-                logger.debug(f"Successfully run function {func.__name__}.")
+                logger.debug(f"Successfully run function {func.__qualname__}.")
             except Exception as e:
                 log_func = getattr(logger, log_level.lower(), logger.warning)
 
                 # INFO: execution of func failed -> collect debug information
-                log_message = (
+                # log_message = (
+                #     exception_msg
+                #     if exception_msg is not None
+                #     else f"Error while running function {func.__qualname__}"
+                # )
+                log_message = f"{func.__qualname__}: " + (
                     exception_msg
                     if exception_msg is not None
-                    else f"Error while running function {func.__name__}"
+                    else "Something went wrong. Trying to continue... see trace for details.\n"
                 )
 
                 if exception_map:
@@ -109,7 +115,12 @@ def safely_run(
                         # Safety net: Don't let logging logic crash the app
                         input_details = f" | (Failed to inspect args: {inspect_err})"
 
-                log_func(f"{log_message}: Exception trace: {e} : {input_details}")
+                if input_details != "":
+                    log_message = f"{log_message} | input-details {input_details}"
+
+                # use traceback to format exception and log it
+                full_trace = traceback.format_exc()
+                log_func(f"{log_message}Exception trace:\n{full_trace}")
 
                 ret = default_return
             return ret
@@ -183,12 +194,11 @@ def error_msg(
 
                 if input_details != "":
                     log_message = f"{log_message} | input-details {input_details}"
-
                 logger.exception(log_message)
-                if exception_type:
-                    raise exception_type(log_message) from e
 
-                    raise type(e)(log_message) from e
+                if exception_type is not None:
+                    raise exception_type(f"{log_message} | original msg:{e}") from e
+                raise type(e)(f"{log_message} | original msg:{e}") from e
 
         return wrapper
 

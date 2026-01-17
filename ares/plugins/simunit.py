@@ -221,7 +221,7 @@ class SimUnit:
     @error_msg(
         exception_msg="An unexpected error occurred while setting up ares simulation function.",
         exception_map={
-            AttributeError: "Ares simulation function 'ares_simunit' not found in library."
+            AttributeError: "Ares simulation function not found in library."
         },
         log=logger,
     )
@@ -236,17 +236,21 @@ class SimUnit:
             Any: The `ctypes` function object for `ares_simunit`, or `None` if the
                 function cannot be found in the library.
         """
-        sim_function = self._library.ares_simunit
+        if self._dd.meta_data and self._dd.meta_data.function_name:
+            function_name = self._dd.meta_data.function_name
+        else:
+            function_name = "ares_simunit"
+
+        sim_function = getattr(self._library, function_name)
         sim_function.argtypes = []
         sim_function.restype = None
         logger.debug(
-            f"{self.element_name}:Ares simulation function 'ares_simunit' successfully set up.",
+            f"{self.element_name}:Ares simulation function '{function_name}' successfully set up.",
         )
         return sim_function
 
-    @safely_run(
-        default_return=None,
-        exception_msg="Error while running ares simulation.",
+    @error_msg(
+        exception_msg="An unexpected error occurred during execution of ares simulation.",
         log=logger,
     )
     @typechecked
@@ -272,8 +276,8 @@ class SimUnit:
 
         sim_result: dict[str, np.ndarray] = {}
         time_steps = len(data[0].timestamps) if data else 1
-        data_dict = self._list_to_dict(data)
-        parameter_dict = self._list_to_dict(parameters)
+        data_dict = self._list_to_dict(data if data else [])
+        parameter_dict = self._list_to_dict(parameters if parameters else [])
 
         if data:
             logger.info(
