@@ -46,9 +46,9 @@ logger = create_logger(__name__)
 
 # TODO: use meta_data from files like e.g. mf4,mat,????
 @error_msg(
-    message="Error while executing ARES pipeline.",
+    exception_msg="Error while executing ARES pipeline.",
     log=logger,
-    include_args=["wf_path"],
+    include_args=["wf_path", "output_dir"],
 )
 def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
     """Executes the ARES simulation pipeline based on a defined workflow.

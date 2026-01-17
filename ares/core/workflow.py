@@ -39,7 +39,7 @@ from typing import Any
 from jsonschema import ValidationError
 
 from ares.pydantic_models.workflow_model import WorkflowModel
-from ares.utils.decorators import safely_run
+from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -67,8 +67,7 @@ class Workflow:
         self._sort_workflow()
         self._eval_element_workflow()
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Unexpected error loading workflow file",
         exception_map={
             FileNotFoundError: "Workflow file not found",
@@ -99,8 +98,7 @@ class Workflow:
         )
         return workflow_raw_pydantic
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Error evaluating relative paths",
         log=logger,
     )
@@ -165,8 +163,7 @@ class Workflow:
                             f"Resolved relative paths for '{wf_element_name}.{field_name}': {abs_paths}",
                         )
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Error while searching sinks",
         log=logger,
     )
@@ -237,9 +234,8 @@ class Workflow:
 
         return wf_sinks
 
-    @safely_run(
-        default_return=None,
-        exception_msg="Error evaluating the execution order of the linear workflow",
+    @error_msg(
+        exception_msg="Error during evaluation of the execution order of the linear workflow",
         log=logger,
     )
     @typechecked
@@ -273,8 +269,7 @@ class Workflow:
 
         return workflow_order
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Error during recursive path tracing",
         log=logger,
     )
@@ -336,8 +331,7 @@ class Workflow:
         path.append(element)
         return path
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Error while sorting the workflow",
         log=logger,
     )
@@ -352,8 +346,7 @@ class Workflow:
 
         self.workflow = WorkflowModel(root=workflow_sorted_dict)
 
-    @safely_run(
-        default_return=None,
+    @error_msg(
         exception_msg="Error while evaluating element workflow",
         log=logger,
     )
@@ -393,6 +386,7 @@ class Workflow:
         default_return=None,
         exception_msg="Error writing workflow",
         log=logger,
+        include_args=["output_dir"],
     )
     @typechecked
     def save(self, output_dir: str) -> None:
@@ -414,6 +408,7 @@ class Workflow:
         default_return=None,
         exception_msg="Evaluation of data output name failed",
         log=logger,
+        include_args=["dir_path", "output_format"],
     )
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> str | None:

@@ -70,6 +70,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
         default_return=None,
         exception_msg="Error during saving parameter dcm file.",
         log=logger,
+        include_args=["output_path"],
     )
     @typechecked
     def _save(self, output_path: str, **kwargs) -> None:

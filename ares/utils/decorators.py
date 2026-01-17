@@ -120,8 +120,9 @@ def safely_run(
 
 
 def error_msg(
-    message: str,
-    exception_type: Type[Exception] = RuntimeError,
+    exception_msg: str,
+    exception_type: Type[Exception] | None = None,
+    exception_map: dict[type[Exception], str] | None = None,
     log: logging.Logger | None = None,
     include_args: list[str] | None = None,
 ) -> Callable:
@@ -133,8 +134,9 @@ def error_msg(
     with the provided context message.
 
     Args:
-        message (str): meaningful error context to display to the user.
-        exception_type (Type[Exception]): The type of error to raise. Defaults to RuntimeError.
+        exceptions_msg (str): meaningful error context to display to the user.
+        exception_type (Type[Exception]): The type of error to raise. Defaults to None (original exception is used)
+        exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
         log[Logger]: specific logger to use, defaults to ares logger
         include_args[list[str]]: function arguments to include in logger message
 
@@ -149,7 +151,14 @@ def error_msg(
             try:
                 return func(*args, **kwargs)
             except Exception as e:
-                full_error_msg = f"{message} | Exception trace: {str(e)}"
+                log_message = exception_msg
+
+                if exception_map:
+                    for exec_type, specific_msg in exception_map.items():
+                        if isinstance(e, exec_type):
+                            # log_message = f"{specific_msg} | Exception trace: {str(e)}"
+                            log_message = specific_msg
+                            break
 
                 input_details = ""
                 if include_args:
@@ -159,7 +168,7 @@ def error_msg(
                         bound_args = sig.bind(*args, **kwargs)
                         bound_args.apply_defaults()  # Include default values if arguments weren't passed
 
-                        # Filter to only the arguments requested in include_args
+                        # Filter to only get the arguments requested in include_args
                         captured = {
                             k: v
                             for k, v in bound_args.arguments.items()
@@ -170,12 +179,16 @@ def error_msg(
                             input_details = f" | Context: {captured}"
 
                     except Exception as inspect_err:
-                        # Safety net: Don't let logging logic crash the app
                         input_details = f" | (Failed to inspect args: {inspect_err})"
 
-                full_error_msg = f"{full_error_msg} | input-details {input_details}"
-                logger.error(full_error_msg)
-                raise exception_type(full_error_msg) from e
+                if input_details != "":
+                    log_message = f"{log_message} | input-details {input_details}"
+
+                logger.exception(log_message)
+                if exception_type:
+                    raise exception_type(log_message) from e
+
+                    raise type(e)(log_message) from e
 
         return wrapper
 

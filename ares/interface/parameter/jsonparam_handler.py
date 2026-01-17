@@ -85,6 +85,7 @@ class JSONParamHandler(AresParamInterface):
         default_return=None,
         exception_msg="Error during saving parameter json file.",
         log=logger,
+        include_args=["output_path"],
     )
     @typechecked
     def _save(self, output_path: str, **kwargs) -> None:
