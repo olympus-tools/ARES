@@ -100,21 +100,17 @@ class JSONParamHandler(AresParamInterface):
                 - indent (int): Number of spaces for indentation (default: 2)
                 - ensure_ascii (bool): Escape non-ASCII characters (default: False)
         """
-        try:
-            indent = kwargs.get("indent", 2)
-            ensure_ascii = kwargs.get("ensure_ascii", False)
+        indent = kwargs.get("indent", 2)
+        ensure_ascii = kwargs.get("ensure_ascii", False)
 
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    self.parameter,
-                    f,
-                    indent=indent,
-                    ensure_ascii=ensure_ascii,
-                    sort_keys=True,
-                )
-        except Exception as e:
-            logger.error(f"Error saving parameters to {output_path}: {e}")
-            return None
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(
+                self.parameter,
+                f,
+                indent=indent,
+                ensure_ascii=ensure_ascii,
+                sort_keys=True,
+            )
 
     @override
     @typechecked
