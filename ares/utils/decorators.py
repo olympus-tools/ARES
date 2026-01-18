@@ -68,10 +68,8 @@ def safely_run(
     def wrap(func: Callable) -> Callable:
         @wraps(func)  # preserve original func metadata
         def wrapper(*args, **kwargs):
-            logger.debug(f"Safely running function {func.__qualname__} triggered.")
             try:
                 ret = func(*args, **kwargs)
-                logger.debug(f"Successfully run function {func.__qualname__}.")
             except Exception as e:
                 log_func = getattr(logger, log_level.lower(), logger.warning)
 
@@ -140,7 +138,6 @@ def error_msg(
     with the provided context message.
 
     Args:
-        exceptions_msg (str): meaningful error context to display to the user.
         exception_msg (str): meaningful error context to display to the user.
         exception_type (Type[Exception]): The type of error to raise. Defaults to None (original exception is used)
         exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
