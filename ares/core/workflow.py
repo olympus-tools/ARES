@@ -72,7 +72,7 @@ class Workflow:
         exception_map={
             FileNotFoundError: "Workflow file not found",
             json.JSONDecodeError: "Error parsing workflow file",
-            ValidationError: "Validation error in workflow file",
+            ValidationError: "Pydantic validation error in workflow file",
         },
         log=logger,
     )
