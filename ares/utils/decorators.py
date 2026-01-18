@@ -82,7 +82,7 @@ def safely_run(
                 log_message = f"{func.__qualname__}: " + (
                     exception_msg
                     if exception_msg is not None
-                    else "Something went wrong. Trying to continue... see trace for details.\n"
+                    else "Something went wrong. Trying to continue... see trace for details."
                 )
 
                 if exception_map:
@@ -109,7 +109,7 @@ def safely_run(
                             }
 
                             if captured:
-                                input_details = f" | Context: {captured}"
+                                input_details = f"| Context:\n|    {captured}"
 
                         if instance_el:
                             instance = bound_args.arguments.get("self")
@@ -118,19 +118,17 @@ def safely_run(
                             }
 
                             if captured_el:
-                                instance_details = f" | Instance: {captured_el}"
+                                instance_details = f"| Instance:\n|    {captured_el}"
 
                     except Exception as inspect_err:
                         # Safety net: Don't let logging logic crash the app
                         input_details = f" | Failed to inspect function/instance args: {inspect_err})"
 
                 if input_details != "":
-                    log_message = f"{log_message} | input-details:\n{input_details}"
+                    log_message = f"{log_message}\n{input_details}"
 
                 if instance_details != "":
-                    log_message = (
-                        f"{log_message} | instance-details:\n{instance_details}"
-                    )
+                    log_message = f"{log_message}\n{instance_details}\n"
 
                 # use traceback to format exception and log it
                 full_trace = traceback.format_exc()
