@@ -71,7 +71,6 @@ def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
     data_storage: list[AresDataInterface] = AresDataInterface.cache
 
     # evaluation of all sinks, that were found in workflow json files
-    # TODO: sink logic is not ready => it could happen that elements are evaluated multiple times
     for wf_element_name, wf_element_value in ares_wf.workflow.items():
         prev_param_hash_list: list[str] = list(param_storage.keys())
         prev_data_hash_list: list[str] = list(data_storage.keys())
