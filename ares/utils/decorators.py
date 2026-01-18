@@ -52,6 +52,7 @@ def safely_run(
     log_level: str = "WARNING",
     log: logging.Logger | None = None,
     include_args: list[str] | None = None,
+    instance_el: list[str] | None = None,
 ) -> Callable:
     """provides try/except functionality via decorator
 
@@ -62,6 +63,7 @@ def safely_run(
         log_level[str] : log level to use, default = WARNING
         log[Logger]: specific logger to use, defaults to ares logger
         include_args[list[str]]: function arguments to include in logger message
+        instance_el[list[str]]: instance/object arguments to include in logger message
 
     Returns:
         Callable: The decorated function with try/except.
@@ -90,7 +92,8 @@ def safely_run(
                             break
 
                 input_details = ""
-                if include_args:
+                instance_details = ""
+                if include_args or instance_el:
                     try:
                         # Map *args and **kwargs to the function's signature
                         sig = inspect.signature(func)
@@ -98,21 +101,36 @@ def safely_run(
                         bound_args.apply_defaults()  # Include default values if arguments weren't passed
 
                         # Filter to only the arguments requested in include_args
-                        captured = {
-                            k: v
-                            for k, v in bound_args.arguments.items()
-                            if k in include_args
-                        }
+                        if include_args:
+                            captured = {
+                                k: v
+                                for k, v in bound_args.arguments.items()
+                                if k in include_args
+                            }
 
-                        if captured:
-                            input_details = f" | Context: {captured}"
+                            if captured:
+                                input_details = f" | Context: {captured}"
+
+                        if instance_el:
+                            instance = bound_args.arguments.get("self")
+                            captured_el = {
+                                el: getattr(instance, el, "None") for el in instance_el
+                            }
+
+                            if captured_el:
+                                instance_details = f" | Instance: {captured_el}"
 
                     except Exception as inspect_err:
                         # Safety net: Don't let logging logic crash the app
-                        input_details = f" | (Failed to inspect args: {inspect_err})"
+                        input_details = f" | Failed to inspect function/instance args: {inspect_err})"
 
                 if input_details != "":
-                    log_message = f"{log_message} | input-details {input_details}"
+                    log_message = f"{log_message} | input-details:\n{input_details}"
+
+                if instance_details != "":
+                    log_message = (
+                        f"{log_message} | instance-details:\n{instance_details}"
+                    )
 
                 # use traceback to format exception and log it
                 full_trace = traceback.format_exc()
