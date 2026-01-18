@@ -83,7 +83,7 @@ flowchart LR
 source .venv/bin/activate
 # Fish: source .venv/bin/activate.fish
 
-python3 -m ares pipeline \
+python -m ares pipeline \
     --workflow examples/workflow/workflow_example_1.json \
     --output examples/output/ \
     --log-level 20
@@ -138,7 +138,7 @@ flowchart LR
 source .venv/bin/activate
 # Fish: source .venv/bin/activate.fish
 
-python3 -m ares pipeline \
+python -m ares pipeline \
     --workflow examples/workflow/workflow_example_2.json \
     --output examples/output/ \
     --log-level 20

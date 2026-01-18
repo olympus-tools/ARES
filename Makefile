@@ -31,7 +31,7 @@ setup-venv:
 		fi; \
 	fi; \
 	echo "Creating virtual environment '$(VENV_DIR)'..."; \
-	python3 -m venv "$(VENV_DIR)" || { echo "Error: Failed to create virtual environment."; exit 1; }; \
+	python -m venv "$(VENV_DIR)" || { echo "Error: Failed to create virtual environment."; exit 1; }; \
 	echo "Installing project dependencies in virtual environment '$(VENV_DIR)'..."; \
 	\
 	# Check if .git exists to decide on versioning strategy for editable install \

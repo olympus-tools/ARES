@@ -1,3 +1,8 @@
+> **⚠️ This tool is currently under active development!**
+>
+> The first official release is not yet available but you are welcome to use ARES as a beta version. Please stay tuned for updates and be aware that features and documentation may change frequently. If you encounter bugs or have feature requests, please report them via the issue tracker. Your feedback is highly appreciated!
+
+
 # ARES
 The **A**utomated **R**apid **E**mbedded **S**imulation project is a tool for performing open-loop simulations of software components. The primary application area is the development of software components for embedded applications.
 
@@ -60,7 +65,7 @@ If you prefer to configure the virtual environment manually:
 
 1.  **Create a virtual environment:**
     ```bash
-    python3 -m venv .venv
+    python -m venv .venv
     ```
 
 2.  **Activate the environment:**
@@ -103,7 +108,7 @@ ARES is primarily used via its Command Line Interface (CLI). The main command is
 ### Basic Command
 
 ```bash
-python3 -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
+python -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 ```
 
 ### Options
@@ -117,7 +122,7 @@ python3 -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 ### Example
 
 ```bash
-python3 -m ares pipeline -wf ./my_workflow.json -o ./results --log-level 10
+python -m ares pipeline -wf ./my_workflow.json -o ./results --log-level 10
 ```
 
 ## 3. Architecture
