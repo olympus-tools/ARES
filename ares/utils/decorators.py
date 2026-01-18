@@ -76,11 +76,6 @@ def safely_run(
                 log_func = getattr(logger, log_level.lower(), logger.warning)
 
                 # INFO: execution of func failed -> collect debug information
-                # log_message = (
-                #     exception_msg
-                #     if exception_msg is not None
-                #     else f"Error while running function {func.__qualname__}"
-                # )
                 log_message = f"{func.__qualname__}: " + (
                     exception_msg
                     if exception_msg is not None
@@ -146,6 +141,7 @@ def error_msg(
 
     Args:
         exceptions_msg (str): meaningful error context to display to the user.
+        exception_msg (str): meaningful error context to display to the user.
         exception_type (Type[Exception]): The type of error to raise. Defaults to None (original exception is used)
         exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
         log[Logger]: specific logger to use, defaults to ares logger
@@ -167,7 +163,6 @@ def error_msg(
                 if exception_map:
                     for exec_type, specific_msg in exception_map.items():
                         if isinstance(e, exec_type):
-                            # log_message = f"{specific_msg} | Exception trace: {str(e)}"
                             log_message = specific_msg
                             break
 
