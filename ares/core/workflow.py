@@ -36,7 +36,7 @@ import re
 from datetime import datetime
 from typing import Any
 
-from jsonschema import ValidationError
+from pydantic_core import ValidationError
 
 from ares.pydantic_models.workflow_model import WorkflowModel
 from ares.utils.decorators import error_msg, safely_run
