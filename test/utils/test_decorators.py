@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 import logging
+import re
 
 import pytest
 
@@ -176,8 +177,10 @@ def test_safely_run_include_args(caplog):
         raise ValueError("Failed with args")
 
     fail_with_args("val_a", "val_b", c="val_c")
+    print(f"DEBUG: {repr(caplog.text)}")
 
-    assert "Context: {'a': 'val_a', 'c': 'val_c'}" in caplog.text
+    pattern = r"\| Context:\s+\| \s+\{'a': 'val_a', 'c': 'val_c'\}"
+    assert re.search(pattern, caplog.text)
 
 
 # TEST: error_msg
@@ -280,6 +283,6 @@ def test_error_msg_include_args(caplog):
     with pytest.raises(ValueError) as exc_info:
         fail_with_args(1, 2, z=3)
 
-    expected_context = "Context: {'x': 1, 'z': 3}"
+    expected_context = "| Context:\n|    {'x': 1, 'z': 3}"
     assert expected_context in str(exc_info.value)
     assert expected_context in caplog.text
