@@ -27,6 +27,7 @@ applyTo: '**/*.py'
 - Use consistent naming conventions and follow language-specific best practices.
 - Write concise, efficient, and idiomatic code that is also easily understandable.
 - Doc-strings and comments should always be written in clear english.
+- Use the `@safely_run` and `@error_msg` decorators from `ares.utils.decorators` for robust error handling and logging in your classes and functions. Pass relevant attributes to `safely_run` (e.g., `include_args`, `instance_el`) to improve context in logs.
 
 ## Code Style and Formatting
 
@@ -52,6 +53,7 @@ import math
 
 from pydantic import BaseModel, Field
 from typeguard import typechecked
+from ares.utils.decorators import safely_run, error_msg
 
 
 class Circle(BaseModel):
@@ -61,30 +63,66 @@ class Circle(BaseModel):
         ..., gt=0, description="Radius of the circle, must be > 0"
     )
 
+class CircleCalculator:
+    """Example class using @safely_run and @error_msg decorators for robust error handling."""
 
-@typechecked
-def calculate_area(radius: int | float) -> float:
-    """Calculate the area of a circle given the radius.
+    def __init__(self, circle: Circle):
+        self.circle = circle
 
-    Args:
-        radius (int | float): The radius of the circle. Must be positive.
+    @typechecked
+    @safely_run(
+        default_return=float('nan'),
+        exception_msg="Error in calculate_area: returning NaN.",
+        include_args=["self"],
+        instance_el=["circle"],
+        log=None  # Pass a custom logger instance if desired
+    )
+    def calculate_area(self) -> float:
+        """Calculate the area of the circle.
 
-    Returns:
-        float: The area of the circle, calculated as π * radius^2.
-    """
-    if radius <= 0:
-        raise ValueError("Radius must be greater than zero.")
-    return math.pi * radius**2
+        Args:
+            self (CircleCalculator): Instance containing the circle.
 
+        Returns:
+            float: The area of the circle, calculated as π * radius^2.
+        """
+        if self.circle.radius <= 0:
+            raise ValueError("Radius must be greater than zero.")
+        return math.pi * self.circle.radius**2
 
-def test_calculate_area():
-    """Unit tests for calculate_area function."""
-    assert abs(calculate_area(1) - math.pi) < 1e-9
-    assert abs(calculate_area(2.5) - (math.pi * 2.5**2)) < 1e-9
+    @typechecked
+    @error_msg(
+        "Failed to calculate diameter.",
+        exception_map={ValueError: "Radius must be positive (ValueError)."},
+        include_args=["self"],
+        instance_el=["circle"],
+        log=None  # Pass a custom logger instance if desired
+    )
+    def calculate_diameter(self) -> float:
+        """Calculate the diameter of the circle.
 
-    try:
-        calculate_area(0)
-    except ValueError:
-        pass
-    else:
-        raise AssertionError("Expected ValueError for radius = 0")
+        Args:
+            self (CircleCalculator): Instance containing the circle.
+
+        Returns:
+            float: The diameter of the circle, calculated as 2 * radius.
+        """
+        if self.circle.radius <= 0:
+            raise ValueError("Radius must be greater than zero.")
+        return 2 * self.circle.radius
+
+def test_circle_calculator():
+    """Unit tests for CircleCalculator methods."""
+    c1 = Circle(radius=1)
+    c2 = Circle(radius=2.5)
+    calc1 = CircleCalculator(c1)
+    calc2 = CircleCalculator(c2)
+    assert abs(calc1.calculate_area() - math.pi) < 1e-9
+    assert abs(calc2.calculate_area() - (math.pi * 2.5**2)) < 1e-9
+    assert abs(calc1.calculate_diameter() - 2) < 1e-9
+    assert abs(calc2.calculate_diameter() - 5) < 1e-9
+
+    CircleCalculator(Circle(radius=0)).calculate_area()
+    CircleCalculator(Circle(radius=0)).calculate_diameter()
+
+```
