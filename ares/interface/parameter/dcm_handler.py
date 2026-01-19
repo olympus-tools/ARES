@@ -39,7 +39,7 @@ from param_dcm.param_dcm import ParamDCM
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
-from ares.utils.decorators import safely_run
+from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -53,16 +53,16 @@ class DCMHandler(ParamDCM, AresParamInterface):
     allowing seamless integration into ARES workflows with flyweight pattern
     based on content hash.
 
-    Implements flyweight pattern via __new__ - identical DCM files
+    Implements flyweight pattern via __new__ - identical dcm files
     will automatically return the same cached instance.
     """
 
     @typechecked
     def __init__(self, file_path: str | None = None, **kwargs):
-        """Initialize DCMHandler and optionally load a DCM file.
+        """Initialize DCMHandler and optionally load a dcm file.
 
         Args:
-            file_path (str | None): Optional absolute path to the DCM file to load
+            file_path (str | None): Optional absolute path to the dcm file to load
             **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
         """
         AresParamInterface.__init__(self, file_path=file_path, **kwargs)
@@ -71,27 +71,32 @@ class DCMHandler(ParamDCM, AresParamInterface):
     @override
     @safely_run(
         default_return=None,
-        exception_msg="Error during saving parameter dcm file.",
+        exception_msg="For some reason the .dcm file could not be saved.",
         log=logger,
         include_args=["output_path"],
     )
     @typechecked
     def _save(self, output_path: str, **kwargs) -> None:
-        """Write parameters to DCM file.
+        """Write parameters to dcm file.
 
         Args:
-            output_path (str): Absolute path where the DCM file should be written
+            output_path (str): Absolute path where the dcm file should be written
             **kwargs: Additional format-specific arguments
         """
         self.write(output_path)
-        logger.info(f"Successfully saved DCM parameter file: {output_path}")
+        logger.info(f"Successfully saved dcm parameter file: {output_path}")
 
     @override
+    @error_msg(
+        exception_msg="Error in dcm-handler add function.",
+        log=logger,
+        include_args=["parameters"],
+    )
     @typechecked
     def add(self, parameters: list[AresParameter], **kwargs) -> None:
-        """Add parameters to the DCM interface.
+        """Add parameters to the dcm interface.
 
-        Converts AresParameter objects to DCM dictionary format and updates
+        Converts AresParameter objects to dcm dictionary format and updates
         the internal parameter dictionary. Updates the instance hash after addition.
 
         Args:
@@ -108,13 +113,18 @@ class DCMHandler(ParamDCM, AresParamInterface):
             }
 
     @override
+    @error_msg(
+        exception_msg="Error in dcm-handler get function.",
+        log=logger,
+        include_args=["label_filter"],
+    )
     @typechecked
     def get(
         self, label_filter: list[str] | None = None, **kwargs
     ) -> list[AresParameter] | None:
-        """Get parameters from the DCM interface.
+        """Get parameters from the dcm interface.
 
-        Converts internal DCM parameter dictionary to list of AresParameter objects.
+        Converts internal dcm parameter dictionary to list of AresParameter objects.
         Uses safe dictionary access to handle missing optional fields.
 
         Args:

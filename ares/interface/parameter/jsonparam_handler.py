@@ -38,7 +38,7 @@ from typing import Any, override
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
-from ares.utils.decorators import safely_run
+from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -86,7 +86,7 @@ class JSONParamHandler(AresParamInterface):
     @override
     @safely_run(
         default_return=None,
-        exception_msg="Error during saving parameter json file.",
+        exception_msg="For some reason the .json parameter file could not be saved.",
         log=logger,
         include_args=["output_path"],
     )
@@ -112,7 +112,14 @@ class JSONParamHandler(AresParamInterface):
                 sort_keys=True,
             )
 
+        logger.info(f"Successfully saved json parameter file: {output_path}")
+
     @override
+    @error_msg(
+        exception_msg="Error in jsonparam-handler add function.",
+        log=logger,
+        include_args=["parameters"],
+    )
     @typechecked
     def add(self, parameters: list[AresParameter], **kwargs) -> None:
         """Add parameters to the JSON interface.
@@ -134,6 +141,11 @@ class JSONParamHandler(AresParamInterface):
             }
 
     @override
+    @error_msg(
+        exception_msg="Error in jsonparam-handler get function.",
+        log=logger,
+        include_args=["label_filter"],
+    )
     @typechecked
     def get(
         self, label_filter: list[str] | None = None, **kwargs

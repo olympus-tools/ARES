@@ -75,6 +75,8 @@ def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
 
     # evaluation of all sinks, that were found in workflow json files
     for wf_element_name, wf_element_value in ares_wf.workflow.items():
+        logger.info(f"Processing workflow element: {wf_element_name}")
+
         prev_param_hash_list: list[str] = list(param_storage.keys())
         prev_data_hash_list: list[str] = list(data_storage.keys())
 

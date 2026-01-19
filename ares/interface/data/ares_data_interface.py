@@ -42,6 +42,7 @@ import numpy as np
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.pydantic_models.workflow_model import DataElement
+from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import sha256_string
@@ -135,6 +136,11 @@ class AresDataInterface(ABC):
         cls._handlers[extension.lower()] = handler_class
 
     @classmethod
+    @error_msg(
+        exception_msg="Error while executing wf_element_handler in ares-data-interface.",
+        log=logger,
+        include_args=["element_name", "element_value", "input_hash_list", "output_dir"],
+    )
     @typechecked
     def wf_element_handler(
         cls,
@@ -229,6 +235,11 @@ class AresDataInterface(ABC):
     # + uniqueness of hash is easier applicable since attributes of the obj itself can be used, avaialable signals, lenght, timestamps
     # - for each new element type an implementation is necessary
     @staticmethod
+    @error_msg(
+        exception_msg="Hash of ares-data-interface could not be calculated.",
+        log=logger,
+        include_args=["signals"],
+    )
     @typechecked
     def _calculate_hash(
         signals: list[AresSignal],
@@ -265,6 +276,11 @@ class AresDataInterface(ABC):
         return sha256_string(signal_json)
 
     @staticmethod
+    @error_msg(
+        exception_msg="Error in ares-data-interface resample function.",
+        log=logger,
+        include_args=["data", "stepsize"],
+    )
     @typechecked
     def _resample(data: list[AresSignal], stepsize: int) -> list[AresSignal]:
         """Resample all signals to a common time vector using linear interpolation.
