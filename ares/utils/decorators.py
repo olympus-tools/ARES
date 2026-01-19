@@ -121,7 +121,6 @@ def safely_run(
                                 instance_details = f"| Instance:\n|    {captured_el}"
 
                     except Exception as inspect_err:
-                        # Safety net: Don't let logging logic crash the app
                         input_details = f" | Failed to inspect function/instance args: {inspect_err})"
 
                 if input_details != "":
@@ -148,6 +147,7 @@ def error_msg(
     exception_map: dict[type[Exception], str] | None = None,
     log: logging.Logger | None = None,
     include_args: list[str] | None = None,
+    instance_el: list[str] | None = None,
 ) -> Callable:
     """
     Wraps a function to provide context to errors without suppressing them.
@@ -162,6 +162,7 @@ def error_msg(
         exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
         log[Logger]: specific logger to use, defaults to ares logger
         include_args[list[str]]: function arguments to include in logger message
+        instance_el[list[str]]: instance/object arguments to include in logger message
 
     Returns:
         Callable: The decorated function with try/except.
@@ -183,7 +184,8 @@ def error_msg(
                             break
 
                 input_details = ""
-                if include_args:
+                instance_details = ""
+                if include_args or instance_el:
                     try:
                         # Map *args and **kwargs to the function's signature
                         sig = inspect.signature(func)
@@ -198,13 +200,26 @@ def error_msg(
                         }
 
                         if captured:
-                            input_details = f" | Context: {captured}"
+                            input_details = f" | Context:\n|    {captured}"
+
+                        if instance_el:
+                            instance = bound_args.arguments.get("self")
+                            captured_el = {
+                                el: getattr(instance, el, "None") for el in instance_el
+                            }
+
+                            if captured_el:
+                                instance_details = f"| Instance:\n|    {captured_el}"
 
                     except Exception as inspect_err:
-                        input_details = f" | (Failed to inspect args: {inspect_err})"
+                        input_details = f" | Failed to inspect function/instance args: {inspect_err})"
 
                 if input_details != "":
-                    log_message = f"{log_message} | input-details {input_details}"
+                    log_message = f"{log_message}\n{input_details}"
+
+                if instance_details != "":
+                    log_message = f"{log_message}\n{instance_details}\n"
+
                 logger.exception(log_message)
 
                 if exception_type is not None:
