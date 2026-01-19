@@ -200,7 +200,7 @@ def error_msg(
                         }
 
                         if captured:
-                            input_details = f" | Context:\n|    {captured}"
+                            input_details = f"| Context:\n|    {captured}"
 
                         if instance_el:
                             instance = bound_args.arguments.get("self")
