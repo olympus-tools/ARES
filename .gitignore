@@ -15,6 +15,7 @@ build/*
 *.pyc
 *.pyo
 **/.zed/*
+.python-version
 
 # coverage
 .coverage
