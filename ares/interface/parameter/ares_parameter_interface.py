@@ -40,6 +40,7 @@ from typing import ClassVar
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.pydantic_models.workflow_model import ParameterElement
+from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import sha256_string
@@ -135,6 +136,11 @@ class AresParamInterface(ABC):
         cls._handlers[extension.lower()] = handler_class
 
     @classmethod
+    @error_msg(
+        exception_msg="Error while executing wf_element_handler in ares-parameter-interface.",
+        log=logger,
+        include_args=["element_name", "element_value", "input_hash_list", "output_dir"],
+    )
     @typechecked
     def wf_element_handler(
         cls,
@@ -224,6 +230,11 @@ class AresParamInterface(ABC):
         return handler_class(file_path=file_path, **kwargs)
 
     @staticmethod
+    @error_msg(
+        exception_msg="Hash of ares-parameter-interface could not be calculated.",
+        log=logger,
+        include_args=["parameters"],
+    )
     @typechecked
     def _calculate_hash(
         parameters: list[AresParameter],

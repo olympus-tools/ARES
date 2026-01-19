@@ -80,11 +80,11 @@ class MF4Handler(MDF, AresDataInterface):
         """Initialize MF4Handler and load available channels.
 
         Checks if asammdf MDF is already initialized to avoid duplicate initialization.
-        In read mode, loads the MF4 file.
+        In read mode, loads the mf4 file.
         In write mode, creates an empty MDF instance plus adds signals if any are given.
 
         Args:
-            file_path (str | None): Path to the MF4 file to load or write.
+            file_path (str | None): Path to the mf4 file to load or write.
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
 
@@ -115,36 +115,41 @@ class MF4Handler(MDF, AresDataInterface):
 
     @override
     @safely_run(
-        default_return=[],
-        exception_msg="Error during writing mf4-file. Validate output_path also consider write rights.",
+        default_return=None,
+        exception_msg="For some reason the .mf4 file could not be saved.",
         log=logger,
         include_args=["output_path"],
     )
     @typechecked
     def _save(self, output_path: str, **kwargs) -> None:
-        """Save MF4 file with timestamp in header comment.
+        """Save mf4 file with timestamp in header comment.
 
         Wrapper for asammdf's MDF.save() that adds a timestamp to the file header.
 
         Args:
-            output_path (str): Absolute path where the MF4 file should be written.
+            output_path (str): Absolute path where the mf4 file should be written.
             **kwargs (Any): Additional arguments passed to MDF.save().
         """
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.header.comment = f"File last saved on: {timestamp}"
         result_path = self.save(output_path, **kwargs)
-        logger.debug(f"Data was successfully written to: {result_path}")
+        logger.info(f"Successfully saved mf4 data file: {result_path}")
 
     @override
+    @error_msg(
+        exception_msg="Error in mf4-handler get function.",
+        log=logger,
+        include_args=["label_filter"],
+    )
     @typechecked
     def get(
         self, label_filter: list[str] | None = None, **kwargs
     ) -> list[AresSignal] | None:
-        """Get signals from MF4 file with optional resampling.
+        """Get signals from mf4 file with optional resampling.
 
         Args:
-            label_filter (list[str] | None): List of signal names to read from MF4 file.
+            label_filter (list[str] | None): List of signal names to read from mf4 file.
                 If None, all available signals are read. Defaults to None.
             **kwargs (Any): Additional arguments. 'stepsize' (int) triggers resampling.
 
@@ -167,25 +172,20 @@ class MF4Handler(MDF, AresDataInterface):
         else:
             return self._resample(data=tmp_data, stepsize=stepsize)
 
-    @error_msg(
-        exception_msg="Error in mf4-handler get function.",
-        log=logger,
-        include_args=["label_filter"],
-    )
     @typechecked
     def _get_signals(self, label_filter: list[str], **kwargs) -> list[AresSignal]:
-        """Helper function for get() that handles multiple occurrences of signals in MF4 files.
+        """Helper function for get() that handles multiple occurrences of signals in mf4 files.
 
         Uses asammdf's whereis() function to locate signals and selects the signal
         with the most samples when multiple occurrences exist. Missing signals are
         skipped with a warning instead of causing errors.
 
         Args:
-            label_filter (list[str]): List of signal names to retrieve from the MF4 file.
+            label_filter (list[str]): List of signal names to retrieve from the mf4 file.
             **kwargs (Any): Additional arguments passed to asammdf's select() method.
 
         Returns:
-            list[AresSignal]: List of AresSignal objects extracted from the MF4 file.
+            list[AresSignal]: List of AresSignal objects extracted from the mf4 file.
                 Only contains signals that were actually found.
         """
 
@@ -197,26 +197,28 @@ class MF4Handler(MDF, AresDataInterface):
 
             if len(occurence) == 0:
                 logger.warning(
-                    f"Channel '{channel_name}' not found in MF4 file. Skipping."
+                    f"Signal '{channel_name}' not found in mf4 file. Skipping."
                 )
                 continue
 
             if len(occurence) == 1:
-                logger.debug(f"Channel '{channel_name}' has single occurrence")
+                logger.debug(
+                    f"Signal '{channel_name}' has single occurrence in mf4 data file."
+                )
                 selected_signal = super().select([channel_name], **kwargs)
                 if selected_signal:
                     found_signals.extend(selected_signal)
 
             else:
                 logger.debug(
-                    f"Channel '{channel_name}' has {len(occurence)} occurrences"
+                    f"Signal '{channel_name}' has {len(occurence)} occurrences in mf4 data file."
                 )
                 sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurence]
                 all_signals = super().select(sel_signal, **kwargs)
                 len_samples = [len(s.samples) for s in all_signals]
                 idx = len_samples.index(max(len_samples))
                 logger.debug(
-                    f"Selected occurrence {idx} with {len_samples[idx]} samples"
+                    f"Selected occurrence {idx} with {len_samples[idx]} samples."
                 )
                 found_signals.append(all_signals[idx])
 
@@ -251,14 +253,14 @@ class MF4Handler(MDF, AresDataInterface):
     )
     @typechecked
     def add(self, signals: list[AresSignal], **kwargs) -> None:
-        """Add AresSignal objects to MF4 file.
+        """Add AresSignal objects to mf4 file.
 
-        Converts AresSignal objects to asammdf Signal format and appends them to the MF4 file.
+        Converts AresSignal objects to asammdf Signal format and appends them to the mf4 file.
         Supports scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
         Optionally adds source information to signals for traceability.
 
         Args:
-            signals (list[AresSignal]): List of AresSignal objects to append to MF4 file.
+            signals (list[AresSignal]): List of AresSignal objects to append to mf4 file.
                 - ndim == 1: Scalar value per time step
                 - ndim == 2: 1D array per time step (shape: cycles, array_size)
                 - ndim == 3: 2D array per time step (shape: cycles, rows, cols)

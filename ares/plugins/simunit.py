@@ -73,7 +73,6 @@ class SimUnit:
     @typechecked
     def __init__(
         self,
-        element_name: str = None,
         file_path: str = None,
         dd_path: str = None,
     ):
@@ -87,12 +86,10 @@ class SimUnit:
         - Stores all configuration parameters as instance variables
 
         Args:
-            element_name (str, optional): Name of the simulation element for logging purposes.
             file_path (str, optional): Path to the shared library file (.so, .dll, .dylib).
             dd_path (str, optional): Path to the Data Dictionary JSON file.
         """
 
-        self.element_name: str = element_name
         self.file_path: str = file_path
         self.dd_path: str = dd_path
 
@@ -104,14 +101,14 @@ class SimUnit:
         self._sim_function: Any = self._setup_sim_function()
 
     @error_msg(
-        exception_msg="Unexpected error loading data dictionary file.",
+        exception_msg="Unexpected error loading data dictionary json-file.",
         exception_map={
             FileNotFoundError: "Data dictionary file not found",
             json.JSONDecodeError: "Error parsing data dictionary JSON file",
             ValidationError: "Validation error for data dictionary",
         },
         log=logger,
-        include_args=["dd_path"],
+        instance_el=["dd_path"],
     )
     @typechecked
     def _load_and_validate_dd(self, dd_path: str) -> DataDictionaryModel | None:
@@ -132,7 +129,7 @@ class SimUnit:
 
         dd = DataDictionaryModel.model_validate(dd_data)
         logger.info(
-            f"{self.element_name}: Data dictionary '{dd_path}' successfully loaded and validated with Pydantic.",
+            f"Data dictionary '{dd_path}' successfully loaded and validated.",
         )
         return dd
 
@@ -140,6 +137,7 @@ class SimUnit:
         exception_msg="Unexpected error during loading library.",
         exception_map={OSError: "Error loading shared library."},
         log=logger,
+        instance_el=["file_path"],
     )
     @typechecked
     def _load_library(self) -> ctypes.CDLL | None:
@@ -158,10 +156,15 @@ class SimUnit:
         library.restype = None
 
         logger.info(
-            f"{self.element_name}: Library '{self.file_path}' successfully loaded.",
+            f"Library '{self.file_path}' successfully loaded.",
         )
         return library
 
+    @error_msg(
+        exception_msg="Unexpected error during setting up C interface.",
+        log=logger,
+        instance_el=["file_path", "dd_path"],
+    )
     @typechecked
     def _setup_c_interface(self) -> dict[str, Any] | None:
         """Maps global variables defined in the Data Dictionary to their corresponding ctypes objects.
@@ -193,30 +196,30 @@ class SimUnit:
                     ctypes_type = (base_ctypes_type * size[1]) * size[0]
                 else:
                     logger.warning(
-                        f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
                     )
                     continue
 
                 dll_interface[dd_element_name] = ctypes_type.in_dll(
                     self._library, dd_element_name
                 )
-                logger.debug(
-                    f"{self.element_name}: Global simulation variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}'.",
+                logger.info(
+                    f"Data dictionary variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}' could be mapped successfully to simulation unit.",
                 )
             except AttributeError as e:
                 logger.warning(
-                    f"{self.element_name}: Failed to map global simulation variable '{dd_element_name}': Symbol not found or type mismatch. {e}",
+                    f"Failed to map data dictionary variable '{dd_element_name}' to simulation unit: Symbol not found or type mismatch. {e}",
                 )
                 continue
             except Exception as e:
                 logger.warning(
-                    f"{self.element_name}: An unexpected failure occurred while mapping global simulation variable '{dd_element_name}': {e}",
+                    f"An unexpected failure occurred while mapping data dictionary variable '{dd_element_name}' to simulation unit: {e}",
                 )
                 continue
 
         if not dll_interface:
-            logger.error(
-                f"{self.element_name}: No variables could be mapped successfully.",
+            logger.warning(
+                f"There is no data dictionary variable that could be mapped successfully to simulation unit.",
             )
             return None
         return dll_interface
@@ -227,6 +230,7 @@ class SimUnit:
             AttributeError: "Ares simulation function not found in library."
         },
         log=logger,
+        instance_el=["file_path", "dd_path"],
     )
     @typechecked
     def _setup_sim_function(self) -> Any:
@@ -248,13 +252,14 @@ class SimUnit:
         sim_function.argtypes = []
         sim_function.restype = None
         logger.debug(
-            f"{self.element_name}:Ares simulation function '{function_name}' successfully set up.",
+            f"Ares simulation unit '{function_name}' successfully set up.",
         )
         return sim_function
 
     @error_msg(
         exception_msg="An unexpected error occurred during execution of ares simulation.",
         log=logger,
+        instance_el=["file_path", "dd_path"],
     )
     @typechecked
     def run(
@@ -275,7 +280,7 @@ class SimUnit:
             list[AresSignal] | None: List of AresSignal objects containing output signals for all
                 time steps, or `None` if an error occurs during the simulation.
         """
-        logger.info(f"{self.element_name}: Starting ares simulation...")
+        logger.info(f"Starting ares simulation...")
 
         sim_result: dict[str, np.ndarray] = {}
         time_steps = len(data[0].timestamps) if data else 1
@@ -284,14 +289,12 @@ class SimUnit:
 
         if data:
             logger.info(
-                f"{self.element_name}: The simulation starts at timestamps {min(data[0].timestamps)} seconds "
+                f"The simulation starts at timestamps {min(data[0].timestamps)} seconds "
                 f"and ends at timestamps {max(data[0].timestamps)} seconds - duration: "
                 f"{max(data[0].timestamps) - min(data[0].timestamps)} seconds",
             )
         else:
-            logger.info(
-                f"{self.element_name}: No input data provided, using single time step."
-            )
+            logger.info(f"No input data provided => executing single time step.")
 
         mapped_input = self._map_sim_input_data(
             data_dict=data_dict, time_steps=time_steps
@@ -328,7 +331,7 @@ class SimUnit:
             else:
                 sim_result["timestamps"][time_step_idx] = 0.0
 
-        logger.info(f"{self.element_name}: ares simulation successfully finished.")
+        logger.info(f"ares simulation successfully finished.")
         return [
             AresSignal(
                 label=signal_name,
@@ -353,11 +356,17 @@ class SimUnit:
         for item in items:
             if item.label in result_dict:
                 logger.warning(
-                    f"{self.element_name}: Duplicate label '{item.label}' found - overwriting previous value."
+                    f"Duplicate label '{item.label}' found - overwriting previous value."
                 )
             result_dict[item.label] = item
         return result_dict
 
+    @safely_run(
+        default_return=None,
+        exception_msg="Mapping dynamic simulation input to data source could not be executed.",
+        log=logger,
+        instance_el=["file_path", "dd_path"],
+    )
     @typechecked
     def _map_sim_input_data(
         self, data_dict: dict[str, AresSignal], time_steps: int
@@ -391,8 +400,8 @@ class SimUnit:
 
                 if dd_element_name in data_dict:
                     mapped_input[dd_element_name] = data_dict[dd_element_name]
-                    logger.debug(
-                        f"{self.element_name}: Simulation signal '{dd_element_name}' could be mapped to the original signal.",
+                    logger.info(
+                        f"Data dictionary variable '{dd_element_name}' could be mapped to the original signal in data source.",
                     )
                     continue
 
@@ -408,8 +417,8 @@ class SimUnit:
                                 mapped_input[dd_element_name] = data_dict[
                                     alternative_value
                                 ]
-                                logger.debug(
-                                    f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to alternative '{alternative_value}'.",
+                                logger.info(
+                                    f"Data dictionary variable '{dd_element_name}' has been mapped to alternative '{alternative_value}' from data source.",
                                 )
                                 mapped = True
                                 break
@@ -426,8 +435,8 @@ class SimUnit:
                                 timestamps=timestamps,
                                 description=f"Static value: {alternative_value}",
                             )
-                            logger.debug(
-                                f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
+                            logger.info(
+                                f"Data dictionary variable '{dd_element_name}' has been mapped to constant value {alternative_value}.",
                             )
                             mapped = True
                             break
@@ -456,22 +465,27 @@ class SimUnit:
                         timestamps=timestamps,
                         description="Default value: 0",
                     )
-                    logger.debug(
-                        f"{self.element_name}: Simulation signal '{dd_element_name}' has been mapped to default constant value 0.",
+                    logger.info(
+                        f"Data dictionary variable '{dd_element_name}' has been mapped to default constant value 0.",
                     )
 
             except Exception as e:
                 logger.warning(
-                    f"{self.element_name}: Error while mapping signal {dd_element_name}: {e}",
+                    f"Mapping dynamic simulation input to signal {dd_element_name} could not be executed: {e}",
                 )
                 return None
 
-        logger.debug(f"{self.element_name}: Mapping is successfully finished.")
+        logger.debug(
+            f"Mapping dynamic simulation input to data source has been successfully finished."
+        )
         return mapped_input
 
-    @error_msg(
-        exception_msg="Error during mapping static values.",
+    @safely_run(
+        default_return=None,
+        exception_msg="Mapping static simulation input to data source could not be executed.",
         log=logger,
+        include_args=["time_steps", "datatype", "size", "value"],
+        instance_el=["file_path", "dd_path"],
     )
     @typechecked
     def _map_sim_input_static(
@@ -501,15 +515,16 @@ class SimUnit:
             return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1, 1))
         else:
             logger.warning(
-                f"{self.element_name}: Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                f"Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
             )
-            return None
+            raise
 
     @safely_run(
         default_return=None,
-        exception_msg="Error writing value to DLL interface.",
+        exception_msg="Writing value to library interface could not be executed.",
         log=logger,
-        include_args=["dd_element_name"],
+        include_args=["dd_element_name", "input_value", "size"],
+        instance_el=["file_path", "dd_path"],
     )
     @typechecked
     def _write_value_to_dll(
@@ -537,8 +552,9 @@ class SimUnit:
                 self._dll_interface[dd_element_name][i][:] = input_value[i].tolist()
         else:
             logger.warning(
-                f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
             )
+            raise
 
     @typechecked
     def _write_signals_to_dll(
@@ -565,7 +581,7 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"{self.element_name}: Warning writing signal '{dd_element_name}' to 'ares_simunit' function: {e}",
+                    f"Warning writing signal '{dd_element_name}' to 'ares_simunit' function: {e}",
                 )
 
     @typechecked
@@ -586,9 +602,15 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"{self.element_name}: Warning writing parameter '{dd_element_name}' to 'ares_simunit' function: {e}",
+                    f"Warning writing parameter '{dd_element_name}' to 'ares_simunit' function: {e}",
                 )
 
+    @safely_run(
+        default_return=None,
+        exception_msg="Writing value to library interface could not be executed.",
+        log=logger,
+        instance_el=["file_path", "dd_path"],
+    )
     @typechecked
     def _write_dll_interface(
         self, input: dict[str, AresBaseType], time_step_idx: int = 0
@@ -650,13 +672,13 @@ class SimUnit:
                         )
                 else:
                     logger.warning(
-                        f"{self.element_name}: Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
                     )
                     continue
 
             except Exception as e:
-                logger.error(
-                    f"{self.element_name}: Error reading output value '{dd_element_name}' from 'ares_simunit' function: {e}",
+                logger.warning(
+                    f"Reading output value '{dd_element_name}' from 'ares_simunit' function has not been successful: {e}",
                 )
 
         return step_result
@@ -722,8 +744,6 @@ def ares_plugin(plugin_input):
         element_data_lists = [[AresDataInterface.create()]]
 
     sim_unit = SimUnit(
-        # TODO: should we use the element name everywhere for log messages?
-        element_name=plugin_input["element_name"],
         file_path=plugin_input["file_path"],
         dd_path=plugin_input["data_dictionary"],
     )

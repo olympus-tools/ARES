@@ -71,13 +71,14 @@ class Workflow:
         self._eval_element_workflow()
 
     @error_msg(
-        exception_msg="Unexpected error loading workflow file",
+        exception_msg="Unexpected error loading workflow file.",
         exception_map={
             FileNotFoundError: "Workflow file not found",
             json.JSONDecodeError: "Error parsing workflow file",
             ValidationError: "Pydantic validation error in workflow file",
         },
         log=logger,
+        instance_el=["_file_path"],
     )
     @typechecked
     def _load_and_validate_wf(self) -> WorkflowModel | None:
@@ -87,23 +88,20 @@ class Workflow:
             WorkflowModel | None: A Pydantic object representing the workflow,
                 or None in case of an error.
         """
-        if self._file_path is None:
-            logger.error("No workflow file path provided.")
-            return None
-
         with open(self._file_path, "r", encoding="utf-8") as file:
             workflow_raw = json.load(file)
 
         workflow_raw_pydantic = WorkflowModel.model_validate(workflow_raw)
 
         logger.info(
-            f"Workflow file {self._file_path} successfully loaded and validated with Pydantic.",
+            f"Workflow file {self._file_path} successfully loaded and validated.",
         )
         return workflow_raw_pydantic
 
     @error_msg(
-        exception_msg="Error evaluating relative paths",
+        exception_msg="Error evaluating relative paths in workflow file.",
         log=logger,
+        instance_el=["_file_path"],
     )
     @typechecked
     def _evaluate_relative_paths(self) -> None:
@@ -134,8 +132,8 @@ class Workflow:
                                 os.path.join(base_dir, field_value)
                             )
                             setattr(wf_element_value, field_name, abs_path)
-                            logger.info(
-                                f"Resolved relative path for '{wf_element_name}.{field_name}': {abs_path}",
+                            logger.debug(
+                                f"Resolved relative path in workflow file for '{wf_element_name}.{field_name}': {abs_path}",
                             )
 
                 # Case 2: list of strings
@@ -162,13 +160,14 @@ class Workflow:
 
                     if changed:
                         setattr(wf_element_value, field_name, abs_paths)
-                        logger.info(
-                            f"Resolved relative paths for '{wf_element_name}.{field_name}': {abs_paths}",
+                        logger.debug(
+                            f"Resolved relative paths in workflow file for '{wf_element_name}.{field_name}': {abs_paths}",
                         )
 
     @error_msg(
-        exception_msg="Error while searching sinks",
+        exception_msg="Error while searching workflow sinks.",
         log=logger,
+        instance_el=["_file_path"],
     )
     @typechecked
     def _find_sinks(self) -> list[str] | None:
@@ -238,8 +237,9 @@ class Workflow:
         return wf_sinks
 
     @error_msg(
-        exception_msg="Error during evaluation of the execution order of the linear workflow",
+        exception_msg="Error during evaluation of the execution order of the workflow.",
         log=logger,
+        instance_el=["_file_path"],
     )
     @typechecked
     def _eval_workflow_order(self) -> list[str] | None:
@@ -273,8 +273,9 @@ class Workflow:
         return workflow_order
 
     @error_msg(
-        exception_msg="Error during recursive path tracing",
+        exception_msg="Error during recursive dependency search in workflow.",
         log=logger,
+        instance_el=["_file_path"],
     )
     @typechecked
     def _recursive_search(
@@ -335,8 +336,9 @@ class Workflow:
         return path
 
     @error_msg(
-        exception_msg="Error while sorting the workflow",
+        exception_msg="Error while sorting the workflow elements.",
         log=logger,
+        instance_el=["_file_path"],
     )
     @typechecked
     def _sort_workflow(self) -> None:
@@ -349,9 +351,11 @@ class Workflow:
 
         self.workflow = WorkflowModel(root=workflow_sorted_dict)
 
-    @error_msg(
-        exception_msg="Error while evaluating element workflow",
+    @safely_run(
+        default_return=None,
+        exception_msg="Evaluating individual wf-element workflow has not been successful.",
         log=logger,
+        instance_el=["_file_path"],
     )
     @typechecked
     def _eval_element_workflow(self) -> None:
@@ -380,16 +384,16 @@ class Workflow:
                         element_workflow.extend(input_elem.element_workflow)
                         element_workflow.append(input_name)
 
-            # remove duplicates and store it to the dictionary
             self.workflow[wf_element_name].element_workflow = list(
                 dict.fromkeys(element_workflow)
             )
 
     @safely_run(
         default_return=None,
-        exception_msg="Error writing workflow",
+        exception_msg="Error writing workflow result to json file.",
         log=logger,
         include_args=["output_dir"],
+        instance_el=["_file_path"],
     )
     @typechecked
     def save(self, output_dir: str) -> None:
@@ -405,13 +409,14 @@ class Workflow:
         with open(output_file_path, "w", encoding="utf-8") as file:
             file.write(self.workflow.model_dump_json(indent=4, exclude_none=True))
 
-        logger.debug(f"File successfully written to {output_file_path}.")
+        logger.info(f"Workflow output file successfully written to {output_file_path}.")
 
     @safely_run(
         default_return=None,
-        exception_msg="Evaluation of data output name failed",
+        exception_msg="Evaluation of workflow output file name failed",
         log=logger,
         include_args=["dir_path", "output_format"],
+        instance_el=["_file_path"],
     )
     @typechecked
     def _eval_output_path(self, dir_path: str, output_format: str) -> str | None:
