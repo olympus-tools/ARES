@@ -81,12 +81,12 @@ def cli():
 )
 @click.option(
     "--log-level",
-    default=logging.WARNING,
+    default=logging.INFO,
     help="""\b
     Setting log level for root logger via integer value:
     10 = DEBUG
-    20 = INFO
-    30 = WARNING (default)
+    20 = INFO (default)
+    30 = WARNING
     40 = ERROR
     50 = CRITICAL
     """,
