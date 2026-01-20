@@ -53,7 +53,7 @@ logger = create_logger(__name__)
     log=logger,
     include_args=["wf_path", "output_dir"],
 )
-def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
+def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) -> None:
     """Executes the ARES simulation pipeline based on a defined workflow.
 
     This function orchestrates the entire simulation process, from data acquisition and
@@ -70,8 +70,11 @@ def pipeline(wf_path: str, output_dir: str, meta_data: dict[str, Any]) -> None:
     logger.info("ARES pipeline is starting...")
     ares_wf = Workflow(file_path=wf_path)
 
-    param_storage: list[AresParamInterface] = AresParamInterface.cache
-    data_storage: list[AresDataInterface] = AresDataInterface.cache
+    if output_dir is None:
+        output_dir = os.path.join(os.path.dirname(wf_path), "output")
+
+    param_storage: dict[str, AresParamInterface] = AresParamInterface.cache
+    data_storage: dict[str, AresDataInterface] = AresDataInterface.cache
 
     # evaluation of all sinks, that were found in workflow json files
     for wf_element_name, wf_element_value in ares_wf.workflow.items():
