@@ -33,9 +33,9 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import json
 import os
 from abc import ABC, abstractmethod
+from datetime import datetime
 from typing import ClassVar
 
 import numpy as np
@@ -45,7 +45,7 @@ from ares.pydantic_models.workflow_model import DataElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import sha256_string
+from ares.utils.hash import bin_based_hash, str_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
@@ -85,24 +85,24 @@ class AresDataInterface(ABC):
         Returns:
             AresDataInterface: New or cached instance based on content hash
         """
-        # neither file_path nor signals provided - create uncached instance
-        if file_path is None and signals is None:
+        # neither file_path nor data provided - create uncached instance
+        if file_path is None and data is None:
             empty_instance = super().__new__(cls)
             object.__setattr__(empty_instance, "hash", "empty_instance_no_hash")
             cls.cache["empty_instance_no_hash"] = empty_instance
             return empty_instance
-
         # load signals from file if file_path provided
-        if file_path is not None:
+        elif file_path is not None:
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
-            signals = temp_instance.get(**kwargs)
-
-        # calculate hash from signals
-        content_hash = cls._calculate_hash(signals=signals, **kwargs)
+            content_hash = cls._calculate_hash(file_path=file_path, **kwargs)
+        # calculate hash in case data are provided directly
+        else:
+            timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")[:-3]
+            content_hash = cls._calculate_hash(input_string=timestamp_str, **kwargs)
 
         # return cached instance if hash already exists
-        if content_hash in cls.cache:
+        if content_hash in cls.cache
             return cls.cache[content_hash]
 
         # create new instance and add to cache
@@ -238,13 +238,14 @@ class AresDataInterface(ABC):
     @error_msg(
         exception_msg="Hash of ares-data-interface could not be calculated.",
         log=logger,
-        include_args=["signals"],
+        include_args=["file_path", "input_string"],
     )
     @typechecked
     def _calculate_hash(
-        signals: list[AresSignal],
+        file_path: str | None = None,
+        input_string: str | None = None,
         **kwargs,
-    ) -> str | None:
+    ) -> str:
         """Calculate hash from signal list.
 
         This method is used for cache lookup. It always calculates hash
@@ -255,25 +256,21 @@ class AresDataInterface(ABC):
         identical signal content.
 
         Args:
-            signals (list[AresSignal]): List of AresSignal objects
+            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            input_string (str | None): Input string to hash. Used if file_path is None.
             **kwargs (Any): Additional format-specific arguments (unused)
 
         Returns:
-            str | None: SHA256 hash string of the content, or None on error
+            str: SHA256 hash string of the content
         """
-        temp_signal_dict = {}
-        temp_signal_dict["metadata"] = {"type": "AresDataInterface"}
-        for signal in signals:
-            temp_signal_dict[signal.label] = {
-                "description": signal.description
-                if signal.description is not None
-                else "",
-                "unit": signal.unit if signal.unit is not None else "",
-                "dtype": str(signal.dtype),
-                "shape": signal.shape,
-            }
-        signal_json = json.dumps(temp_signal_dict, sort_keys=True)
-        return sha256_string(signal_json)
+        if file_path is not None:
+            return_hash = bin_based_hash(file_path=file_path)
+        elif input_string is not None:
+            return_hash = str_based_hash(input_string=input_string)
+        else:
+            raise
+
+        return return_hash
 
     @staticmethod
     @error_msg(

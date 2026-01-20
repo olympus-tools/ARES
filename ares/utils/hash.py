@@ -36,6 +36,14 @@ limitations under the License:
 import hashlib
 
 
-def sha256_string(hash_string: str) -> str:
-    sha256 = hashlib.sha256(hash_string.encode("utf-8"))
+def bin_based_hash(file_path: str) -> str:
+    hasher = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        while chunk := f.read(4096):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+
+def str_based_hash(input_string: str) -> str:
+    sha256 = hashlib.sha256(input_string.encode("utf-8"))
     return sha256.hexdigest()

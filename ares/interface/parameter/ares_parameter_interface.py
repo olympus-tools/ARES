@@ -43,7 +43,7 @@ from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import sha256_string
+from ares.utils.hash import bin_based_hash, str_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
@@ -267,7 +267,7 @@ class AresParamInterface(ABC):
                 "value": param.value.tolist(),
             }
         param_json = json.dumps(temp_param_dict, sort_keys=True)
-        return sha256_string(param_json)
+        return str_based_hash(input_string=param_json)
 
     @abstractmethod
     def get(
