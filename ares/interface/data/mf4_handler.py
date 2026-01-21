@@ -249,7 +249,6 @@ class MF4Handler(MDF, AresDataInterface):
     @error_msg(
         exception_msg="Error in mf4-handler add function.",
         log=logger,
-        include_args=["signals"],
     )
     @typechecked
     def add(self, signals: list[AresSignal], **kwargs) -> None:

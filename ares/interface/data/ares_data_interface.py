@@ -276,7 +276,6 @@ class AresDataInterface(ABC):
     @error_msg(
         exception_msg="Error in ares-data-interface resample function.",
         log=logger,
-        include_args=["data", "stepsize"],
     )
     @typechecked
     def _resample(data: list[AresSignal], stepsize: int) -> list[AresSignal]:
