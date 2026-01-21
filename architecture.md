@@ -120,7 +120,7 @@ classDiagram
     }
 
     class SimUnit{
-        +str element_name
+        +str wf_element_name
         +str file_path
         +str dd_path
         +DataDictionaryModel _dd
@@ -180,7 +180,7 @@ classDiagram
         +Dict~str, type~ _handlers$
         +create(str file_path)$
         +register(str extension, type handler)$
-        +wf_element_handler(str element_name, DataElement element_value)$
+        +wf_element_handler(str wf_element_name, DataElement element_value)$
         +get() list~ares_signal~*
         +add(list~ares_signal~)*
         +save(str output_path)*
@@ -192,7 +192,7 @@ classDiagram
         +Dict~str, type~ _handlers$
         +create(str file_path)$
         +register(str extension, type handler)$
-        +wf_element_handler(str element_name, ParameterElement element_value)$
+        +wf_element_handler(str wf_element_name, ParameterElement element_value)$
         +get() list~ares_parameter~*
         +add(list~ares_parameter~)*
         +save(str output_path)*

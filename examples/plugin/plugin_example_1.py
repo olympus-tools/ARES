@@ -55,7 +55,7 @@ def plugin_example_1(plugin_input: dict[str, Any]):
 
     Args:
         plugin_input (dict[str, Any]): Dictionary containing all plugin configuration and data:
-            - element_name: str - Name of the workflow element
+            - wf_element_name: str - Name of the workflow element
             - parameter: list[list[AresParamInterface]] - Nested list of parameter interfaces
             - input: list[list[AresDataInterface]] - Nested list of data interfaces
             - plugin_path: str - Path to this plugin file
@@ -103,5 +103,5 @@ def plugin_example_1(plugin_input: dict[str, Any]):
                     AresDataInterface.create(
                         data=combined_signals,
                         dependencies=dependencies,
-                        source_name=plugin_input.get("element_name"),
+                        source_name=plugin_input.get("wf_element_name"),
                     )

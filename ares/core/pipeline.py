@@ -96,7 +96,7 @@ def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) ->
         match wf_element_value.type:
             case "data":
                 AresDataInterface.wf_element_handler(
-                    element_name=wf_element_name,
+                    wf_element_name=wf_element_name,
                     element_value=wf_element_value,
                     input_hash_list=tmp_data_hash_list,
                     output_dir=output_dir,
@@ -104,7 +104,7 @@ def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) ->
 
             case "parameter":
                 AresParamInterface.wf_element_handler(
-                    element_name=wf_element_name,
+                    wf_element_name=wf_element_name,
                     element_value=wf_element_value,
                     input_hash_list=tmp_param_hash_list,
                     output_dir=output_dir,
@@ -112,7 +112,7 @@ def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) ->
 
             case "sim_unit" | "plugin":
                 plugin_input: dict[str, Any] = wf_element_value.model_dump()
-                plugin_input["element_name"] = wf_element_name
+                plugin_input["wf_element_name"] = wf_element_name
 
                 if wf_element_value.type == "sim_unit":
                     plugin_input["plugin_path"] = os.path.join(
