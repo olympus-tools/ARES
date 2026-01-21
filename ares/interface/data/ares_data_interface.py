@@ -102,7 +102,7 @@ class AresDataInterface(ABC):
             content_hash = cls._calculate_hash(input_string=timestamp_str, **kwargs)
 
         # return cached instance if hash already exists
-        if content_hash in cls.cache
+        if content_hash in cls.cache:
             return cls.cache[content_hash]
 
         # create new instance and add to cache
@@ -180,6 +180,8 @@ class AresDataInterface(ABC):
                 target_extension = f".{wf_element_value.output_format}"
                 target_handler_class = cls._handlers.get(target_extension)
 
+                stepsize = getattr(wf_element_value, "stepsize", None)
+
                 for wf_element_hash_list in input_hash_list:
                     for output_hash in wf_element_hash_list:
                         if output_hash in cls.cache:
@@ -187,7 +189,7 @@ class AresDataInterface(ABC):
 
                             data = source_instance.get(
                                 label_filter=wf_element_value.label_filter,
-                                stepsize=wf_element_value.stepsize,
+                                stepsize=stepsize,
                                 **kwargs,
                             )
 
