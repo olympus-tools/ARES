@@ -42,7 +42,7 @@ import numpy as np
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.pydantic_models.workflow_model import DataElement
-from ares.utils.decorators import error_msg
+from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import bin_based_hash, str_based_hash

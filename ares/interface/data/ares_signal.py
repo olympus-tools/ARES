@@ -38,6 +38,7 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
+from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -110,6 +111,12 @@ class AresSignal:
         """
         return self.value.ndim
 
+    @safely_run(
+        default_return=None,
+        exception_msg="The signal could not be resampled.",
+        log=logger,
+        instance_el=["label"],
+    )
     @typechecked
     def resample(self, timestamps_resampled: npt.NDArray[np.float32]) -> None:
         """Resample the signal to new timestamps using linear interpolation.
@@ -159,6 +166,12 @@ class AresSignal:
 
         self.timestamps = timestamps_resampled
 
+    @safely_run(
+        default_return=None,
+        exception_msg="Typecast for this signal could not be executed.",
+        log=logger,
+        instance_el=["label"],
+    )
     @typechecked
     def dtype_cast(self, dtype: np.dtype | type[np.generic]) -> None:
         """Cast the signal value to a specified numpy dtype.
