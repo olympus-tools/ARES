@@ -141,7 +141,7 @@ class AresDataInterface(ABC):
         log=logger,
         include_args=[
             "wf_element_name",
-            "element_value",
+            "wf_element_value",
             "input_hash_list",
             "output_dir",
         ],
@@ -150,7 +150,7 @@ class AresDataInterface(ABC):
     def wf_element_handler(
         cls,
         wf_element_name: str,
-        element_value: DataElement,
+        wf_element_value: DataElement,
         input_hash_list: list[list[str]] | None = None,
         output_dir: str | None = None,
         **kwargs,
@@ -161,15 +161,15 @@ class AresDataInterface(ABC):
 
         Args:
             wf_element_name (str): Name of the element being processed
-            element_value (DataElement): DataElement containing mode, file_path, and output_format
+            wf_element_value (DataElement): DataElement containing mode, file_path, and output_format
             input_hash_list (list[list[str]] | None): Nested list of data hashes for writing operations
             output_dir (str | None): Output directory path for writing operations
             **kwargs (Any): Additional format-specific arguments
         """
 
-        match element_value.mode:
+        match wf_element_value.mode:
             case "read":
-                for fp in element_value.file_path:
+                for fp in wf_element_value.file_path:
                     cls.create(fp, **kwargs)
                 return None
 
@@ -177,7 +177,7 @@ class AresDataInterface(ABC):
                 if not input_hash_list or not output_dir:
                     return None
 
-                target_extension = f".{element_value.output_format}"
+                target_extension = f".{wf_element_value.output_format}"
                 target_handler_class = cls._handlers.get(target_extension)
 
                 for wf_element_hash_list in input_hash_list:
@@ -186,8 +186,8 @@ class AresDataInterface(ABC):
                             source_instance = cls.cache.get(output_hash)
 
                             data = source_instance.get(
-                                label_filter=element_value.label_filter,
-                                stepsize=element_value.stepsize,
+                                label_filter=wf_element_value.label_filter,
+                                stepsize=wf_element_value.stepsize,
                                 **kwargs,
                             )
 
@@ -203,7 +203,7 @@ class AresDataInterface(ABC):
                             output_path = eval_output_path(
                                 output_hash=output_hash,
                                 output_dir=output_dir,
-                                output_format=element_value.output_format,
+                                output_format=wf_element_value.output_format,
                                 wf_element_name=wf_element_name,
                             )
 
