@@ -725,7 +725,7 @@ def ares_plugin(plugin_input):
 
     Args:
         plugin_input: Dictionary containing all plugin configuration and data:
-            - element_name: Name of the workflow element
+            - wf_element_name: Name of the workflow element
             - parameter: Dict[str, AresParamInterface] - AresParameter storage with hashes as keys
             - plugin_path: str - Path to this plugin file
             - type: str - Element type ("plugin" or "sim_unit")
@@ -771,5 +771,5 @@ def ares_plugin(plugin_input):
                         AresDataInterface.create(
                             data=sim_result,
                             dependencies=dependencies,
-                            source_name=plugin_input.get("element_name"),
+                            source_name=plugin_input.get("wf_element_name"),
                         )

@@ -139,12 +139,17 @@ class AresParamInterface(ABC):
     @error_msg(
         exception_msg="Error while executing wf_element_handler in ares-parameter-interface.",
         log=logger,
-        include_args=["element_name", "element_value", "input_hash_list", "output_dir"],
+        include_args=[
+            "wf_element_name",
+            "element_value",
+            "input_hash_list",
+            "output_dir",
+        ],
     )
     @typechecked
     def wf_element_handler(
         cls,
-        element_name: str,
+        wf_element_name: str,
         element_value: ParameterElement,
         input_hash_list: list[list[str]] | None = None,
         output_dir: str | None = None,
@@ -155,7 +160,7 @@ class AresParamInterface(ABC):
         Decides between _load() and save() based on mode from ParameterElement.
 
         Args:
-            element_name (str): Name of the element being processed
+            wf_element_name (str): Name of the element being processed
             element_value (ParameterElement): ParameterElement containing mode, file_path, and output_format
             input_hash_list (list[list[str]] | None): Nested list of parameter hashes for writing operations
             output_dir (str | None): Output directory path for writing operations
@@ -197,7 +202,7 @@ class AresParamInterface(ABC):
                                 output_hash=output_hash,
                                 output_dir=output_dir,
                                 output_format=element_value.output_format,
-                                element_name=element_name,
+                                wf_element_name=wf_element_name,
                             )
 
                             target_instance._save(output_path=output_path, **kwargs)

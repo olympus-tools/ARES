@@ -41,18 +41,18 @@ def eval_output_path(
     output_hash: str,
     output_dir: str,
     output_format: str,
-    element_name: str,
+    wf_element_name: str,
 ) -> str:
     """Generate output file path with timestamp to prevent overwriting.
 
-    Creates a timestamped filename in the format: {element_name}_{hash}_{YYYYMMDDHHMMSS}.{format}
+    Creates a timestamped filename in the format: {wf_element_name}_{hash}_{YYYYMMDDHHMMSS}.{format}
     and ensures the output directory exists.
 
     Args:
         hash: Content hash to include in filename
         output_dir: Output directory path (will be created if not exists)
         output_format: File format/extension (without dot, e.g., 'dcm', 'json')
-        element_name: Element name to include in filename
+        wf_element_name: Element name to include in filename
 
     Returns:
         str: Complete absolute file path
@@ -61,7 +61,7 @@ def eval_output_path(
         output_dir, exist_ok=True
     )  # TODO: should it be somewheere else? => Jonas says yes
     timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
-    new_file_name = f"{element_name}_{output_hash[:8]}_{timestamp}.{output_format}"
+    new_file_name = f"{wf_element_name}_{output_hash[:8]}_{timestamp}.{output_format}"
     output_path = os.path.join(output_dir, new_file_name)
 
     return output_path
