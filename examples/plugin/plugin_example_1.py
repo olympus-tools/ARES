@@ -101,7 +101,7 @@ def plugin_example_1(plugin_input: dict[str, Any]):
                     combined_signals = new_signals.copy()
                     combined_signals.extend(element_data_obj.get())
                     AresDataInterface.create(
-                        signals=combined_signals,
+                        data=combined_signals,
                         dependencies=dependencies,
                         source_name=plugin_input.get("element_name"),
                     )

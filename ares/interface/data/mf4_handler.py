@@ -90,15 +90,15 @@ class MF4Handler(MDF, AresDataInterface):
 
         AresDataInterface.__init__(self, file_path=file_path, **kwargs)
 
-        signals = kwargs.pop("signals", [])
+        data = kwargs.pop("data", [])
         if file_path is None or file_path == "":
             super().__init__(**kwargs)
             self._available_signals: list[str] = []
 
-            if signals is None:
+            if data is None:
                 return
             else:
-                self.add(signals=signals, **kwargs)
+                self.add(data=data, **kwargs)
                 return
 
         else:
@@ -251,15 +251,15 @@ class MF4Handler(MDF, AresDataInterface):
         log=logger,
     )
     @typechecked
-    def add(self, signals: list[AresSignal], **kwargs) -> None:
+    def add(self, data: list[AresSignal], **kwargs) -> None:
         """Add AresSignal objects to mf4 file.
 
         Converts AresSignal objects to asammdf Signal format and appends them to the mf4 file.
         Supports scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
-        Optionally adds source information to signals for traceability.
+        Optionally adds source information to data for traceability.
 
         Args:
-            signals (list[AresSignal]): List of AresSignal objects to append to mf4 file.
+            data (list[AresSignal]): List of AresSignal objects to append to mf4 file.
                 - ndim == 1: Scalar value per time step
                 - ndim == 2: 1D array per time step (shape: cycles, array_size)
                 - ndim == 3: 2D array per time step (shape: cycles, rows, cols)
@@ -278,7 +278,7 @@ class MF4Handler(MDF, AresDataInterface):
         )
 
         signals_to_write = []
-        for sig in signals:
+        for sig in data:
             if sig.ndim == 1:
                 signals_to_write.append(
                     Signal(
@@ -321,4 +321,4 @@ class MF4Handler(MDF, AresDataInterface):
                 )
 
         self.append(signals_to_write)
-        [self._available_signals.append(sig.label) for sig in signals]
+        [self._available_signals.append(signal.label) for signal in data]
