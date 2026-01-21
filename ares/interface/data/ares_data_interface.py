@@ -69,7 +69,7 @@ class AresDataInterface(ABC):
     def __new__(
         cls,
         file_path: str | None = None,
-        signals: list[AresSignal] | None = None,
+        data: list[AresSignal] | None = None,
         **kwargs,
     ):
         """Implement flyweight pattern based on content hash.
@@ -78,20 +78,20 @@ class AresDataInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path (str | None): Path to the signals file to load
-            signals (list[AresSignal] | None): Optional list of AresSignal objects for initialization
+            file_path (str | None): Path to the data file to load
+            data (list[AresSignal] | None): Optional list of AresSignal objects for initialization
             **kwargs (Any): Additional arguments for subclass initialization
 
         Returns:
             AresDataInterface: New or cached instance based on content hash
         """
-        # neither file_path nor data provided - create uncached instance
+        # neither file_path nor signals provided - create uncached instance
         if file_path is None and data is None:
             empty_instance = super().__new__(cls)
             object.__setattr__(empty_instance, "hash", "empty_instance_no_hash")
             cls.cache["empty_instance_no_hash"] = empty_instance
             return empty_instance
-        # load signals from file if file_path provided
+        # load data from file if file_path provided
         elif file_path is not None:
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
@@ -180,7 +180,7 @@ class AresDataInterface(ABC):
                         if output_hash in cls.cache:
                             source_instance = cls.cache.get(output_hash)
 
-                            signals = source_instance.get(
+                            data = source_instance.get(
                                 label_filter=element_value.label_filter,
                                 stepsize=element_value.stepsize,
                                 **kwargs,
@@ -193,7 +193,7 @@ class AresDataInterface(ABC):
                                 target_instance, file_path=None
                             )
 
-                            target_instance.add(signals, **kwargs)
+                            target_instance.add(data, **kwargs)
 
                             output_path = eval_output_path(
                                 output_hash=output_hash,
@@ -251,7 +251,7 @@ class AresDataInterface(ABC):
         This method is used for cache lookup. It always calculates hash
         from a signal list for consistent hash generation.
 
-        Converts signals to a normalized dictionary format, then serializes
+        Converts data to a normalized dictionary format, then serializes
         to JSON with sorted keys to ensure consistent hash generation for
         identical signal content.
 
@@ -312,7 +312,7 @@ class AresDataInterface(ABC):
     def get(
         self, label_filter: list[str] | None = None, **kwargs
     ) -> list[AresSignal] | None:
-        """Get signals from the interface.
+        """Get data from the interface.
 
         Args:
             label_filter (list[str] | None): List of signal names to retrieve from the interface.
@@ -324,11 +324,11 @@ class AresDataInterface(ABC):
         pass
 
     @abstractmethod
-    def add(self, signals: list[AresSignal], **kwargs) -> None:
+    def add(self, data: list[AresSignal], **kwargs) -> None:
         """Add signals to the interface.
 
         Args:
-            signals (list[AresSignal]): List of AresSignal objects to add
+            data (list[AresSignal]): List of AresSignal objects to add
             **kwargs (Any): Additional format-specific arguments
         """
         pass

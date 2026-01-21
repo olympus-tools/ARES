@@ -179,7 +179,7 @@ class SimUnit:
         """
         dll_interface: dict[str, Any] = {}
 
-        # iterate over both signals and parameters
+        # iterate over both data and parameters
         for dd_element_name, dd_element_value in chain(
             self._dd.signals.items(), self._dd.parameters.items()
         ):
@@ -626,11 +626,11 @@ class SimUnit:
             time_step_idx (int): The index of the current time step.
         """
         # Separate signals and parameters
-        signals = {k: v for k, v in input.items() if isinstance(v, AresSignal)}
+        data = {k: v for k, v in input.items() if isinstance(v, AresSignal)}
         parameters = {k: v for k, v in input.items() if isinstance(v, AresParameter)}
 
-        if signals:
-            self._write_signals_to_dll(signals, time_step_idx)
+        if data:
+            self._write_signals_to_dll(data, time_step_idx)
         if parameters:
             self._write_parameters_to_dll(parameters)
 
@@ -769,7 +769,7 @@ def ares_plugin(plugin_input):
 
                     if sim_result is not None:
                         AresDataInterface.create(
-                            signals=sim_result,
+                            data=sim_result,
                             dependencies=dependencies,
                             source_name=plugin_input.get("element_name"),
                         )

@@ -115,7 +115,7 @@ def test_ares_mf4handler_file_write_get():
         value=np.array([1, 2, 3, 4], dtype=np.int64),
     )
 
-    test_data_write = MF4Handler(file_path=None, signals=[test_signal])
+    test_data_write = MF4Handler(file_path=None, data=[test_signal])
     test_signal_read = test_data_write.get()
 
     assert len(test_signal_read) == 1, (
