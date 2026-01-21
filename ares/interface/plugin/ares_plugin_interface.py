@@ -49,7 +49,7 @@ logger = create_logger(__name__)
 def AresPluginInterface(
     plugin_input: dict[str, Any],
 ):
-    """Execute plugin based on element_value configuration using importlib.
+    """Execute plugin based on wf_element_value configuration using importlib.
 
     Args:
         plugin_input (dict[str, Any]): Dictionary containing plugin configuration
