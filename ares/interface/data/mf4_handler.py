@@ -192,7 +192,6 @@ class MF4Handler(MDF, AresDataInterface):
         found_signals: list[Signal] = []
 
         for channel_name in label_filter:
-            logger.debug(f"Processing channel: {channel_name}")
             occurence = self.whereis(channel_name)
 
             if len(occurence) == 0:
@@ -226,12 +225,8 @@ class MF4Handler(MDF, AresDataInterface):
         for signal in found_signals:
             if hasattr(signal.samples.dtype, "names") and signal.samples.dtype.names:
                 value = signal.samples[signal.name]
-                logger.debug(
-                    f"Array signal '{signal.name}' extracted with shape: {value.shape}"
-                )
             else:
                 value = signal.samples
-                logger.debug(f"Scalar signal '{signal.name}' with shape: {value.shape}")
 
             ares_signals.append(
                 AresSignal(
