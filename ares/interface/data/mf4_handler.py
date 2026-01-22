@@ -288,6 +288,7 @@ class MF4Handler(MDF, AresDataInterface):
                         unit=sig.unit if sig.unit else "",
                         comment=sig.description if sig.description else "",
                         source=source,
+                        encoding="utf-8",
                     )
                 )
 
@@ -312,6 +313,7 @@ class MF4Handler(MDF, AresDataInterface):
                         unit=sig.unit if sig.unit else "",
                         comment=sig.description if sig.description else "",
                         source=source,
+                        encoding="utf-8",
                     )
                 )
 
