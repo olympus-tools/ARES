@@ -77,10 +77,13 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
 
+    fmt = "%(log_color)s%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s"
+    datefmt = "%d.%m.%Y %H:%M:%S"
+
     # set color formatter for stdout/stderr and formatter for files -> no color support
     color_formatter = colorlog.ColoredFormatter(
-        "%(log_color)s%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s",
-        datefmt="%d.%m.%Y %H:%M:%S",
+        fmt=fmt,
+        datefmt=datefmt,
         reset=True,
         log_colors={
             "DEBUG": "cyan",
@@ -95,8 +98,8 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
 
     # formatter for files
     file_formatter = logging.Formatter(
-        fmt="%(levelname)s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s",
-        datefmt="%d.%m.%Y %H:%M:%S",
+        fmt=fmt,
+        datefmt=datefmt,
     )
 
     stdout_handler.setFormatter(color_formatter)
