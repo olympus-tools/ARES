@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 import os
+import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import ClassVar
@@ -123,6 +124,7 @@ class AresDataInterface(ABC):
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(self, "dependencies", kwargs.get("dependencies", []))
+        object.__setattr__(self, "_vstack_regex", kwargs.pop("vstack_regex", []))
 
     @classmethod
     @typechecked
@@ -170,6 +172,8 @@ class AresDataInterface(ABC):
         match wf_element_value.mode:
             case "read":
                 for fp in wf_element_value.file_path:
+                    if wf_element_value.vstack_regex:
+                        kwargs.update({"vstack_regex": wf_element_value.vstack_regex})
                     cls.create(fp, **kwargs)
                 return None
 
@@ -314,6 +318,42 @@ class AresDataInterface(ABC):
 
         # resampling of each element based on resample function of signal
         [signal.resample(timestamps_resample) for signal in data]
+        return data
+
+    @staticmethod
+    @typechecked
+    def _vstack(data: list[AresSignal], regex: list[str]) -> list[AresSignal]:
+        """Vertical stack ares-signals matching given regex.
+
+        Args:
+            data (list[AresSignal]): List of AresSignal objects
+            regex (list[str]): Regex used to stack AresSignal's
+
+        Returns:
+            list[AresSignal]: List of AresSignal with vstacked signals.
+        """
+        for rg in regex:
+            pattern = re.compile(rg)
+            matches = [sig for sig in data if pattern.search(sig.label)]
+
+            if len(matches) == 0:
+                logger.warning(
+                    f"No signals matching regex {rg} - no vertical stacking applied."
+                )
+                continue
+
+            if all([len(sig.value) == len(matches[0].value) for sig in matches]):
+                sig_name = pattern.search(matches[0].label).group(1)
+                logger.info(
+                    f"Vertical stacking applied, stacking: {sig_name} <-- {[sig.label for sig in matches]}"
+                )
+                data.append(
+                    AresSignal(
+                        label=sig_name,
+                        timestamps=matches[0].timestamps,
+                        value=np.vstack([sig.value for sig in matches]).T,
+                    )
+                )
         return data
 
     @abstractmethod
