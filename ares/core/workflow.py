@@ -42,7 +42,7 @@ from typing import Any
 
 from pydantic_core import ValidationError
 
-from ares.pydantic_models.workflow_model import WorkflowModel
+from ares.pydantic_models.workflow_model import FIELD_IGNORE_LIST, WorkflowModel
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -119,9 +119,11 @@ class Workflow:
 
         for wf_element_name, wf_element_value in self.workflow.items():
             for field_name, field_value in wf_element_value.__dict__.items():
-                # Case 1: single Path
-                if isinstance(field_value, Path):
-                    field_value_str = str(field_value)
+                if field_value is None or field_name in FIELD_IGNORE_LIST:
+                    continue
+
+                # Case 1: single string
+                if isinstance(field_value, str):
                     if (
                         "/" in field_value_str
                         or "\\" in field_value_str
