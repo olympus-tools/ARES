@@ -40,6 +40,8 @@ from typing import Annotated, Any
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Literal
 
+FIELD_IGNORE_LIST = ["vstack_regex"]
+
 
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
@@ -55,6 +57,7 @@ class DataElement(BaseElement):
     file_path: list[str] | None = []
     input: list[str] | None = []
     label_filter: list[str] | None = None
+    vstack_regex: list[str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
@@ -65,9 +68,11 @@ class DataElement(BaseElement):
         """Validates that required fields are present based on the mode."""
         if self.mode == "read" and not self.file_path:
             raise ValueError("Field 'file_path' is required for mode='read'.")
-        if self.mode == "write" and (not self.input or not self.output_format):
+        if self.mode == "write" and (
+            (not self.input or not self.output_format) or (self.vstack_regex)
+        ):
             raise ValueError(
-                "Fields 'input' and 'output_format' are required for mode='write'."
+                "Fields 'input' and 'output_format' are required for mode='write'. Additional 'vstack_regex' can only be used in mode='input'."
             )
 
 

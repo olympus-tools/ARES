@@ -1,0 +1,16 @@
+{
+    "data_1": {
+        "type": "data",
+        "file_path": [
+            "../data/data_example_2.mf4"
+        ],
+        "mode": "read",
+        "vstack_regex": ["^[\\w\\s]+_\\[\\d+\\]$"]
+    },
+    "data_2": {
+        "type": "data",
+        "input": ["data_1"],
+        "mode": "write",
+        "output_format": "mf4"
+    }
+}
