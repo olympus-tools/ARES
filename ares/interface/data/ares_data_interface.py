@@ -33,6 +33,7 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+import os
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -131,10 +132,8 @@ class AresDataInterface(ABC):
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(
-            self, "dependencies", dependencies if dependencies is not None else []
-        )
-        object.__setattr__(self, "_vstack_pattern", vstack_pattern)
+        object.__setattr__(self, "dependencies", kwargs.get("dependencies", []))
+        object.__setattr__(self, "_vstack_regex", kwargs.pop("vstack_regex", []))
 
     @classmethod
     @typechecked
@@ -181,11 +180,10 @@ class AresDataInterface(ABC):
 
         match wf_element_value.mode:
             case "read":
-                for file_path in wf_element_value.file_path:
-                    cls.create(
-                        file_path=file_path,
-                        vstack_pattern=wf_element_value.vstack_pattern,
-                    )
+                for fp in wf_element_value.file_path:
+                    if wf_element_value.vstack_regex:
+                        kwargs.update({"vstack_regex": wf_element_value.vstack_regex})
+                    cls.create(fp, **kwargs)
                 return None
 
             case "write":
@@ -338,121 +336,38 @@ class AresDataInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _vstack(data: list[AresSignal], vstack_pattern: list[str]) -> list[AresSignal]:
-        """Vertical stack ares-signals matching given regex patterns.
-
-        Supports two stacking modes based on number of regex groups:
-        - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
-        - 3 groups: Stack 1D signals to 3D matrix using row/column indices
-            - group1 = signal name
-            - group2 = columns (axis-1)
-            - group3 = rows (axis-2)
+    def _vstack(data: list[AresSignal], regex: list[str]) -> list[AresSignal]:
+        """Vertical stack ares-signals matching given regex.
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
-            vstack_pattern (list[str]): Regex patterns for signal matching and stacking
+            regex (list[str]): Regex used to stack AresSignal's
 
         Returns:
-            list[AresSignal]: Original data list with newly stacked signals appended
+            list[AresSignal]: List of AresSignal with vstacked signals.
         """
-        for regex in vstack_pattern:
-            pattern = re.compile(regex)
+        for rg in regex:
+            pattern = re.compile(rg)
+            matches = [sig for sig in data if pattern.search(sig.label)]
 
-            # check pattern for groups - at least 1 group necessary for stacking
-            if pattern.groups == 0:
-                logger.debug(
-                    f"Vertical stacking for pattern '{regex}' is skipped."
-                    f"Pattern includes no group."
+            if len(matches) == 0:
+                logger.warning(
+                    f"No signals matching regex {rg} - no vertical stacking applied."
                 )
                 continue
 
-            # find all matching signals
-            pair_matches = [
-                (signal, pattern_result)
-                for signal in data
-                if (pattern_result := pattern.search(signal.label))
-            ]
-
-            # no matching signals found for pattern -> skipping this pattern
-            if not pair_matches:
-                continue
-
-            # iterate over groups, collect matching signals,pattern to stack in dict
-            signal_stack_dict = defaultdict(lambda: {"signals": [], "patterns": []})
-            for signal_match, pattern_match in pair_matches:
-                group_key = pattern_match.group(1)
-
-                signal_stack_dict[group_key]["signals"].append(signal_match)
-                signal_stack_dict[group_key]["patterns"].append(pattern_match)
-
-            # iterate over collected groups and stack them to combined signal
-            for signal_name, data_stack in signal_stack_dict.items():
-                signal_matches = data_stack["signals"]
-                pattern_matches = data_stack["patterns"]
-
-                # validate that all matching signals have same dimensions
-                reference_signal = signal_matches[0]
-                if not all(
-                    [
-                        signal.shape == reference_signal.shape
-                        for signal in signal_matches
-                    ]
-                ):
-                    logger.debug(
-                        f"Vertical stacking could not be applied. Dimension missmatch in stack: {[signal.label for signal in signal_matches]}"
+            if all([len(sig.value) == len(matches[0].value) for sig in matches]):
+                sig_name = pattern.search(matches[0].label).group(1)
+                logger.info(
+                    f"Vertical stacking applied, stacking: {sig_name} <-- {[sig.label for sig in matches]}"
+                )
+                data.append(
+                    AresSignal(
+                        label=sig_name,
+                        timestamps=matches[0].timestamps,
+                        value=np.vstack([sig.value for sig in matches]).T,
                     )
-                    continue
-
-                # 1D
-                if pattern.groups <= 2:
-                    logger.debug(
-                        f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}"
-                    )
-                    data.append(
-                        AresSignal(
-                            label=signal_name,
-                            timestamps=reference_signal.timestamps,
-                            value=np.vstack(
-                                [signal.value for signal in signal_matches]
-                            ).T,
-                        )
-                    )
-
-                # 2D
-                elif pattern.groups == 3:
-                    number_columns = 0
-                    number_rows = 0
-                    for pattern_result in pattern_matches:
-                        number_columns = max(
-                            number_columns, int(pattern_result.group(2))
-                        )
-                        number_rows = max(number_rows, int(pattern_result.group(3)))
-
-                    stacked_matrix = np.full(
-                        (
-                            number_rows + 1,
-                            number_columns + 1,
-                            len(reference_signal.timestamps),
-                        ),
-                        np.nan,
-                    )
-
-                    for signal, pattern_result in zip(signal_matches, pattern_matches):
-                        column_idx = int(pattern_result.group(2))
-                        row_idx = int(pattern_result.group(3))
-                        stacked_matrix[row_idx, column_idx, :] = signal.value
-
-                    logger.debug(
-                        f"Vertical stacking applied,stacking 2D signals to 3D:{signal_name} <-- {[signal.label for signal in signal_matches]}"
-                    )
-                    data.append(
-                        AresSignal(
-                            label=signal_name,
-                            timestamps=reference_signal.timestamps,
-                            value=stacked_matrix.transpose(2, 1, 0),
-                        )
-                    )
-
+                )
         return data
 
     @abstractmethod
