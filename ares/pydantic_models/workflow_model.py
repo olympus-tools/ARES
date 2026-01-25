@@ -40,6 +40,7 @@ from typing import Annotated, Any
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Literal
 
+# TODO: After thinking about it: in my oppinion, we should think about defining the fields with "paths" that are resolved instead of trying to automatically detect, resolve them
 FIELD_IGNORE_LIST = ["vstack_regex"]
 
 
