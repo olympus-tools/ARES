@@ -41,7 +41,7 @@ from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Literal
 
 # TODO: After thinking about it: in my oppinion, we should think about defining the fields with "paths" that are resolved instead of trying to automatically detect, resolve them
-FIELD_IGNORE_LIST = ["vstack_regex"]
+FIELD_IGNORE_LIST = ["vstack_pattern"]
 
 
 class BaseElement(BaseModel):
@@ -58,7 +58,7 @@ class DataElement(BaseElement):
     file_path: list[str] | None = []
     input: list[str] | None = []
     label_filter: list[str] | None = None
-    vstack_regex: list[str] | None = None
+    vstack_pattern: list[str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
@@ -70,10 +70,10 @@ class DataElement(BaseElement):
         if self.mode == "read" and not self.file_path:
             raise ValueError("Field 'file_path' is required for mode='read'.")
         if self.mode == "write" and (
-            (not self.input or not self.output_format) or (self.vstack_regex)
+            (not self.input or not self.output_format) or (self.vstack_pattern)
         ):
             raise ValueError(
-                "Fields 'input' and 'output_format' are required for mode='write'. Additional 'vstack_regex' can only be used in mode='input'."
+                "Fields 'input' and 'output_format' are required for mode='write'. Additional 'vstack_pattern' can only be used in mode='input'."
             )
 
 
