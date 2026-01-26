@@ -40,9 +40,6 @@ from typing import Annotated, Any
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Literal
 
-# TODO: After thinking about it: in my oppinion, we should think about defining the fields with "paths" that are resolved instead of trying to automatically detect, resolve them
-FIELD_IGNORE_LIST = ["vstack_pattern"]
-
 
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
@@ -55,7 +52,7 @@ class BaseElement(BaseModel):
 class DataElement(BaseElement):
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
-    file_path: list[str] | None = []
+    file_path: list[Path] | None = []
     input: list[str] | None = []
     label_filter: list[str] | None = None
     vstack_pattern: list[str] | None = None
@@ -69,18 +66,16 @@ class DataElement(BaseElement):
         """Validates that required fields are present based on the mode."""
         if self.mode == "read" and not self.file_path:
             raise ValueError("Field 'file_path' is required for mode='read'.")
-        if self.mode == "write" and (
-            (not self.input or not self.output_format) or (self.vstack_pattern)
-        ):
+        if self.mode == "write" and (not self.input or not self.output_format):
             raise ValueError(
-                "Fields 'input' and 'output_format' are required for mode='write'. Additional 'vstack_pattern' can only be used in mode='input'."
+                "Fields 'input' and 'output_format' are required for mode='write'."
             )
 
 
 class ParameterElement(BaseElement):
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
-    file_path: list[str] | None = []
+    file_path: list[Path] | None = []
     parameter: list[str] | None = []
     label_filter: list[str] | None = None
     output_format: Literal["json", "dcm"] | None = None
@@ -100,7 +95,7 @@ class ParameterElement(BaseElement):
 
 class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
-    file_path: str
+    file_path: Path
     plugin_name: str | None = None
 
     class Config:
@@ -109,17 +104,17 @@ class PluginElement(BaseElement):
 
 class SimUnitElement(PluginElement):
     type: Literal["sim_unit"] = "sim_unit"
-    plugin_path: str = Field(
+    plugin_path: Path = Field(
         default_factory=lambda: os.path.relpath(
             Path(__file__).parent.parent / "plugins" / "simunit.py",
             Path(__file__).parent,
         )
     )
-    file_path: str
+    file_path: Path
     stepsize: int
     input: list[str]
     parameter: list[str] | None = []
-    data_dictionary: str
+    data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
 
