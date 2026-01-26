@@ -181,7 +181,7 @@ class MF4Handler(MDF, AresDataInterface):
         )
 
         if self._vstack_regex and tmp_data:
-            logger.info(
+            logger.debug(
                 f"Vertical stacking will be applied considering regex: {self._vstack_regex}"
             )
             tmp_data = self._vstack(tmp_data, self._vstack_regex)
@@ -192,7 +192,7 @@ class MF4Handler(MDF, AresDataInterface):
         if stepsize is None:
             return tmp_data
         else:
-            logger.info(f"Resampling all signals to: {stepsize}")
+            logger.debug(f"Resampling all signals to: {stepsize}")
             return self._resample(data=tmp_data, stepsize=stepsize)
         else:
             return tmp_data
