@@ -5,7 +5,7 @@
             "../data/data_example_2.mf4"
         ],
         "mode": "read",
-        "vstack_regex": ["^[\\w\\s]+_\\[\\d+\\]$"]
+        "vstack_pattern": ["^[\\w\\s]+_\\[\\d+\\]$"]
     },
     "data_2": {
         "type": "data",
