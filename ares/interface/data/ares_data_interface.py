@@ -334,7 +334,7 @@ class AresDataInterface(ABC):
         """
         for rg in regex:
             pattern = re.compile(rg)
-            matches = [sig for sig in data if pattern.search(sig.label)]
+            matches = [signal for signal in data if pattern.search(signal.label)]
 
             if len(matches) == 0:
                 logger.warning(
@@ -342,16 +342,16 @@ class AresDataInterface(ABC):
                 )
                 continue
 
-            if all([len(sig.value) == len(matches[0].value) for sig in matches]):
+            if all([len(signal.value) == len(matches[0].value) for signal in matches]):
                 sig_name = pattern.search(matches[0].label).group(1)
-                logger.info(
-                    f"Vertical stacking applied, stacking: {sig_name} <-- {[sig.label for sig in matches]}"
+                logger.debug(
+                    f"Vertical stacking applied, stacking: {sig_name} <-- {[signal.label for signal in matches]}"
                 )
                 data.append(
                     AresSignal(
                         label=sig_name,
                         timestamps=matches[0].timestamps,
-                        value=np.vstack([sig.value for sig in matches]).T,
+                        value=np.vstack([signal.value for signal in matches]).T,
                     )
                 )
         return data
