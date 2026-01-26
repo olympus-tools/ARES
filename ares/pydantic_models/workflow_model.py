@@ -40,9 +40,6 @@ from typing import Annotated, Any
 from pydantic import BaseModel, Field, RootModel
 from typing_extensions import Literal
 
-# TODO: After thinking about it: in my oppinion, we should think about defining the fields with "paths" that are resolved instead of trying to automatically detect, resolve them
-FIELD_IGNORE_LIST = ["vstack_pattern"]
-
 
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
@@ -69,11 +66,9 @@ class DataElement(BaseElement):
         """Validates that required fields are present based on the mode."""
         if self.mode == "read" and not self.file_path:
             raise ValueError("Field 'file_path' is required for mode='read'.")
-        if self.mode == "write" and (
-            (not self.input or not self.output_format) or (self.vstack_pattern)
-        ):
+        if self.mode == "write" and (not self.input or not self.output_format):
             raise ValueError(
-                "Fields 'input' and 'output_format' are required for mode='write'. Additional 'vstack_pattern' can only be used in mode='input'."
+                "Fields 'input' and 'output_format' are required for mode='write'."
             )
 
 
