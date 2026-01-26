@@ -35,13 +35,13 @@ limitations under the License:
 
 import json
 import os
-import re
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from pydantic_core import ValidationError
 
-from ares.pydantic_models.workflow_model import FIELD_IGNORE_LIST, WorkflowModel
+from ares.pydantic_models.workflow_model import WorkflowModel
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -117,11 +117,9 @@ class Workflow:
 
         for wf_element_name, wf_element_value in self.workflow.items():
             for field_name, field_value in wf_element_value.__dict__.items():
-                if field_value is None or field_name in FIELD_IGNORE_LIST:
-                    continue
-
-                # Case 1: single string
-                if isinstance(field_value, str):
+                # Case 1: single Path
+                if isinstance(field_value, Path):
+                    field_value = str(field_value)
                     if (
                         "/" in field_value
                         or "\\" in field_value
@@ -138,11 +136,12 @@ class Workflow:
 
                 # Case 2: list of strings
                 elif isinstance(field_value, list) and all(
-                    isinstance(x, str) for x in field_value
+                    isinstance(x, Path) for x in field_value
                 ):
                     abs_paths = []
                     changed = False
                     for path in field_value:
+                        path = str(path)
                         if (
                             "/" in path
                             or "\\" in path
