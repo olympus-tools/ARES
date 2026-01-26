@@ -132,8 +132,8 @@ class AresDataInterface(ABC):
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(self, "dependencies", kwargs.get("dependencies", []))
-        object.__setattr__(self, "_vstack_regex", kwargs.pop("vstack_regex", []))
+        object.__setattr__(self, "dependencies", kwargs.pop("dependencies", []))
+        object.__setattr__(self, "_vstack_pattern", kwargs.pop("vstack_pattern", []))
 
     @classmethod
     @typechecked
@@ -181,8 +181,10 @@ class AresDataInterface(ABC):
         match wf_element_value.mode:
             case "read":
                 for fp in wf_element_value.file_path:
-                    if wf_element_value.vstack_regex:
-                        kwargs.update({"vstack_regex": wf_element_value.vstack_regex})
+                    if wf_element_value.vstack_pattern:
+                        kwargs.update(
+                            {"vstack_pattern": wf_element_value.vstack_pattern}
+                        )
                     cls.create(fp, **kwargs)
                 return None
 
