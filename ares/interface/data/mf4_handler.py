@@ -144,19 +144,28 @@ class MF4Handler(MDF, AresDataInterface):
     )
     @typechecked
     def get(
-        self, label_filter: list[str] | None = None, **kwargs
+        self,
+        label_filter: list[str] | None = None,
+        vstack_pattern: list[str] | None = None,
+        **kwargs,
     ) -> list[AresSignal] | None:
         """Get signals from mf4 file with optional resampling.
 
         Args:
             label_filter (list[str] | None): List of signal names or pattern to read from mf4 file.
                 If None, all available signals are read. Defaults to None.
+            vstack_pattern (list[str]): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments. 'stepsize' (int) triggers resampling.
 
         Returns:
             list[AresSignal] | None: List of AresSignal objects, optionally resampled to common time vector.
                 Returns None if no signals were found.
         """
+        vstack_pattern = (
+            self._vstack_pattern
+            if vstack_pattern is None
+            else vstack_pattern.append(self._vstack_pattern)
+        )
         stepsize = kwargs.pop("stepsize", None)
         tmp_data = (
             self._get_signals(label_filter=self._available_signals, **kwargs)
@@ -167,11 +176,11 @@ class MF4Handler(MDF, AresDataInterface):
             )
         )
 
-        if self._vstack_pattern and tmp_data:
+        if vstack_pattern:
             logger.debug(
                 f"Vertical stacking will be applied considering regex: {self._vstack_pattern}"
             )
-            tmp_data = self._vstack(tmp_data, self._vstack_pattern)
+            tmp_data = self._vstack(data=tmp_data, vstack_pattern=vstack_pattern)
 
         if not tmp_data:
             return None
