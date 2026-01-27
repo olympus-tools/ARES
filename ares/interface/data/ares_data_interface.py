@@ -323,12 +323,12 @@ class AresDataInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _vstack(data: list[AresSignal], regex: list[str]) -> list[AresSignal]:
+    def _vstack(data: list[AresSignal], vstack_pattern: list[str]) -> list[AresSignal]:
         """Vertical stack ares-signals matching given regex.
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
-            regex (list[str]): Regex used to stack AresSignal's
+            vstack_pattern (list[str]): Pattern (regex) used to stack AresSignal's
 
         Returns:
             list[AresSignal]: List of AresSignal with vstacked signals.
