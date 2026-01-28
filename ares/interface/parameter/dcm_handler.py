@@ -66,7 +66,9 @@ class DCMHandler(ParamDCM, AresParamInterface):
             file_path (Path | None): Optional absolute path to the dcm file to load
             **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
         """
-        AresParamInterface.__init__(self, file_path=file_path, **kwargs)
+        AresParamInterface.__init__(
+            self, file_path=file_path, dependencies=kwargs.pop("dependencies")
+        )
         ParamDCM.__init__(self, file_path=file_path)
 
     @override
