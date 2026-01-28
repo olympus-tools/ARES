@@ -52,29 +52,24 @@ This example demonstrates how to extend ARES using **Custom Plugins** written in
 
 ```mermaid
 flowchart LR
-    PARAM1(parameterset_1) --> PLUGIN1(plugin_1)
-    PARAM1 --> PARAM2(parameterset_2)
-    DATA1(data_1) --> PLUGIN1
-    DATA1 --> DATA2(data_2)
-    PLUGIN1 --> PARAM2
-    PLUGIN1 --> DATA2
-    PLUGIN1 --> DATA3(data_3)
-    PLUGIN1 --> DATA4(data_4)
-    PLUGIN1 --> PARAM3(parameterset_3)
+    parameterset_in_1(parameterset_in_1) --> plugin_1(plugin_1)
+    data_in_1(data_in_1) --> plugin_1
+    data_in_2(data_in_2) --> data_out_4(data_out_4)
+    data_in_1 --> data_out_1(data_out_1)
+    plugin_1 --> data_out_1
+    plugin_1 --> data_out_2(data_out_2)
+    plugin_1 --> data_out_3(data_out_3)
+    plugin_1 --> parameterset_out_1(parameterset_out_1)
+    plugin_1 --> parameterset_out_2(parameterset_out_2)
+    parameterset_in_1 --> parameterset_out_1
 
     classDef Parameters     color:#a44300, stroke:#a44300;
     classDef Data           color:#1e9bec, stroke:#1e9bec;
-    classDef SW_Unit        color:#d30000, stroke:#d30000;
     classDef Plugin         color:#e5d300, stroke:#e5d300;
 
-    class PARAM1 Parameters;
-    class PARAM2 Parameters;
-    class PARAM3 Parameters;
-    class DATA1 Data;
-    class DATA2 Data;
-    class DATA3 Data;
-    class DATA4 Data;
-    class PLUGIN1 Plugin;
+    class parameterset_in_1,parameterset_out_1,parameterset_out_2 Parameters;
+    class data_in_1,data_in_2,data_out_1,data_out_2,data_out_3,data_out_4 Data;
+    class plugin_1 Plugin;
 ```
 
 ### Run via CLI
@@ -105,31 +100,26 @@ This example demonstrates the core capability of ARES: executing compiled **Simu
 
 ```mermaid
 flowchart LR
-    PARAM1(parameterset_1) --> SIM1(simunit_1)
-    PARAM1 --> SIM2(simunit_2)
-    PARAM1 --> SIM3(simunit_3)
-    DATA1(data_1) --> SIM1
-    DATA1 --> SIM2
-    DATA1 --> SIM3
-    DATA2(data_2) --> SIM2
-    DATA1 --> DATA3(data_3)
-    DATA2 --> DATA3
-    SIM1 --> DATA3
-    SIM2 --> DATA3
-    SIM3 --> DATA3
+    parameterset_in_1(parameterset_in_1) --> simunit_1(simunit_1)
+    parameterset_in_1 --> simunit_2(simunit_2)
+    parameterset_in_1 --> simunit_3(simunit_3)
+    data_in_1(data_in_1) --> simunit_1
+    data_in_1 --> simunit_2
+    data_in_1 --> simunit_3
+    data_in_2(data_in_2) --> simunit_2
+    data_in_1 --> data_out_1(data_out_1)
+    data_in_2 --> data_out_1
+    simunit_1 --> data_out_1
+    simunit_2 --> data_out_1
+    simunit_3 --> data_out_1
 
     classDef Parameters     color:#a44300, stroke:#a44300;
     classDef Data           color:#1e9bec, stroke:#1e9bec;
     classDef SW_Unit        color:#d30000, stroke:#d30000;
-    classDef Plugin         color:#e5d300, stroke:#e5d300;
 
-    class PARAM1 Parameters;
-    class DATA1 Data;
-    class DATA2 Data;
-    class DATA3 Data;
-    class SIM1 SW_Unit;
-    class SIM2 SW_Unit;
-    class SIM3 SW_Unit;
+    class parameterset_in_1 Parameters;
+    class data_in_1,data_in_2,data_out_1 Data;
+    class simunit_1,simunit_2,simunit_3 SW_Unit;
 ```
 
 ### Run via CLI

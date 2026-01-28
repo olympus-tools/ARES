@@ -1,5 +1,5 @@
 {
-    "parameterset_1": {
+    "parameterset_in_1": {
         "type": "parameter",
         "file_path": [
             "../parameter/parameterset_example_1.dcm",
@@ -12,16 +12,22 @@
         "type": "plugin",
         "file_path": "../plugin/plugin_example_1.py",
         "plugin_name": "plugin_example_1",
-        "parameter": ["parameterset_1"],
-        "input": ["data_1"]
+        "parameter": ["parameterset_in_1"],
+        "input": ["data_in_1"]
     },
-    "parameterset_2": {
+    "data_out_4": {
+        "type": "data",
+        "input": ["data_in_2"],
+        "mode": "write",
+        "output_format": "mf4"
+    },
+    "parameterset_out_1": {
         "type": "parameter",
-        "parameter": ["plugin_1","parameterset_1"],
+        "parameter": ["plugin_1","parameterset_in_1"],
         "mode": "write",
         "output_format": "json"
     },
-    "data_1": {
+    "data_in_1": {
         "type": "data",
         "file_path": [
             "../data/data_example_1.mf4",
@@ -30,31 +36,39 @@
         ],
         "mode": "read"
     },
-    "data_2": {
+    "data_out_1": {
         "type": "data",
-        "input": ["data_1", "plugin_1"],
+        "input": ["data_in_1", "plugin_1"],
         "mode": "write",
         "output_format": "mf4"
     },
-    "data_3": {
+    "data_out_2": {
         "type": "data",
         "input": ["plugin_1"],
         "label_filter": ["plugin_example_1_signal"],
         "mode": "write",
         "output_format": "mf4"
     },
-    "data_4": {
+    "data_out_3": {
         "type": "data",
         "input": ["plugin_1"],
         "stepsize": 100,
         "mode": "write",
         "output_format": "mf4"
     },
-    "parameterset_3": {
+    "parameterset_out_2": {
         "type": "parameter",
         "parameter": ["plugin_1"],
         "label_filter": ["plugin_example_1_parameter"],
         "mode": "write",
         "output_format": "json"
+    },
+    "data_in_2": {
+        "type": "data",
+        "file_path": [
+            "../data/data_example_3.mf4"
+        ],
+        "mode": "read",
+        "vstack_pattern": ["^[\\w\\s]+_\\[\\d+\\]$"]
     }
 }
