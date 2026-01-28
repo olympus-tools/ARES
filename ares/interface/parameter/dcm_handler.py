@@ -33,6 +33,7 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+from pathlib import Path
 from typing import override
 
 from param_dcm.param_dcm import ParamDCM
@@ -58,11 +59,11 @@ class DCMHandler(ParamDCM, AresParamInterface):
     """
 
     @typechecked
-    def __init__(self, file_path: str | None = None, **kwargs):
+    def __init__(self, file_path: Path | None = None, **kwargs):
         """Initialize DCMHandler and optionally load a dcm file.
 
         Args:
-            file_path (str | None): Optional absolute path to the dcm file to load
+            file_path (Path | None): Optional absolute path to the dcm file to load
             **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
         """
         AresParamInterface.__init__(self, file_path=file_path, **kwargs)
@@ -76,7 +77,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
         include_args=["output_path"],
     )
     @typechecked
-    def _save(self, output_path: str, **kwargs) -> None:
+    def _save(self, output_path: Path, **kwargs) -> None:
         """Write parameters to dcm file.
 
         Args:

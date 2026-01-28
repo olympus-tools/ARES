@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 import json
+from pathlib import Path
 from typing import Any, override
 
 from ares.interface.parameter.ares_parameter import AresParameter
@@ -65,13 +66,13 @@ class JSONParamHandler(AresParamInterface):
     @typechecked
     def __init__(
         self,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         **kwargs,
     ):
         """Initialize JSONParamHandler from file or parameter list.
 
         Args:
-            file_path (str | None): Optional absolute path to the JSON file to load
+            file_path (Path | None): Optional absolute path to the JSON file to load
             **kwargs (Any): Additional arguments.
                 - parameters (list[AresParameter]): Optional list of AresParameter objects to initialize with
         """
@@ -92,7 +93,7 @@ class JSONParamHandler(AresParamInterface):
         include_args=["output_path"],
     )
     @typechecked
-    def _save(self, output_path: str, **kwargs) -> None:
+    def _save(self, output_path: Path, **kwargs) -> None:
         """Write parameters to JSON file.
 
         Args:

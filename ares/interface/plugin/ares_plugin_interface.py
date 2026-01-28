@@ -56,13 +56,13 @@ def AresPluginInterface(
     """
     try:
         plugin_path = plugin_input["plugin_path"]
-        module_name = f"ares_plugin_{Path(plugin_path).stem}_{os.getpid()}"
+        module_name = f"ares_plugin_{plugin_path.stem}_{os.getpid()}"
 
         # Create module specification
         spec = importlib.util.spec_from_file_location(module_name, plugin_path)
         if spec is None or spec.loader is None:
             logger.error(
-                f"{plugin_input.get('wf_element_name')}: Could not load plugin from {plugin_path}"
+                f"{plugin_input.get('wf_element_name')}: Could not load plugin {plugin_path}"
             )
             return
 
@@ -70,10 +70,10 @@ def AresPluginInterface(
         module = importlib.util.module_from_spec(spec)
 
         # Add plugin directory to sys.path temporarily
-        plugin_dir = str(Path(plugin_path).parent)
+        plugin_dir = plugin_path.parent
         path_added = False
-        if plugin_dir not in sys.path:
-            sys.path.insert(0, plugin_dir)
+        if str(plugin_dir) not in sys.path:
+            sys.path.insert(0, str(plugin_dir))
             path_added = True
 
         try:
@@ -91,23 +91,23 @@ def AresPluginInterface(
                 getattr(module, plugin_name)(plugin_input=plugin_input)
             else:
                 logger.error(
-                    f"{plugin_input.get('wf_element_name')}: Plugin {Path(plugin_path).name} does not have an 'ares_plugin' function"
+                    f"{plugin_input.get('wf_element_name')}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
                 )
                 return
 
             logger.debug(
-                f"{plugin_input.get('wf_element_name')}: Plugin {Path(plugin_path).name} executed successfully"
+                f"{plugin_input.get('wf_element_name')}: Plugin {plugin_path.name} executed successfully"
             )
 
         finally:
             # Cleanup
-            if path_added and plugin_dir in sys.path:
-                sys.path.remove(plugin_dir)
+            if path_added and str(plugin_dir) in sys.path:
+                sys.path.remove(str(plugin_dir))
             if module_name in sys.modules:
                 del sys.modules[module_name]
 
     except Exception as e:
         logger.error(
-            f"{plugin_input.get('wf_element_name')}: Plugin execution failed for {plugin_path}: {e}"
+            f"{plugin_input.get('wf_element_name')}: Plugin execution failed for {plugin_input['plugin_path'].name}: {e}"
         )
         return

@@ -35,6 +35,7 @@ limitations under the License:
 
 import re
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from ares.utils.decorators import typechecked_dev as typechecked
@@ -61,17 +62,16 @@ class ParamDCM:
     DCMValueLength = 6
 
     @typechecked
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: Path):
         """Initialize ParamDCM and optionally load a DCM file.
 
         DAMOS DCM format is defined on:
         https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
         Args:
-            file_path (str): Optional path to the DCM file to load. If None, an empty
-                parameter dictionary is created.
+            file_path (Path): Path to the DCM file to load.
         """
-        self.file_path: str = file_path
+        self.file_path: Path = file_path
         self.parameter: dict[str, Any] = self._load()
 
     def _load(self) -> dict[str, Any]:
@@ -289,7 +289,7 @@ class ParamDCM:
     @typechecked
     def write(
         self,
-        output_path: str,
+        output_path: Path,
         meta_data: dict[str, str],
     ):
         """Writes the loaded parameter model to a DCM file.
@@ -302,7 +302,7 @@ class ParamDCM:
         https://www.etas.com/ww/en/downloads/?path=%252F&page=1&order=asc&layout=table&search=TechNote_DCM_File_Formats.pdf
 
         Args:
-            output_path (str): The full path to the output DCM file.
+            output_path (Path): The full path to the output DCM file.
             meta_data (dict[str, str]): A dictionary containing metadata such as the ARES
                 version and the current username.
         """
