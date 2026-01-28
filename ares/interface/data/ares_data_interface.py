@@ -113,18 +113,27 @@ class AresDataInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(self, file_path: str | None, **kwargs):
+    def __init__(
+        self,
+        file_path: Path | None = None,
+        dependencies: list[str] | None = None,
+        vstack_pattern: list[str] | None = None,
+    ):
         """Initialize base attributes for all data handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
-            file_path (str | None): Path to the data file to load
+            file_path (Path | None): Path to the data file to load
+            dependencies (list[str] | None): List of dependencies for this data handler
+            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(self, "dependencies", kwargs.pop("dependencies", []))
-        object.__setattr__(self, "_vstack_pattern", kwargs.pop("vstack_pattern", []))
+        object.__setattr__(
+            self, "dependencies", dependencies if dependencies is not None else []
+        )
+        object.__setattr__(self, "_vstack_pattern", vstack_pattern)
 
     @classmethod
     @typechecked
@@ -171,12 +180,11 @@ class AresDataInterface(ABC):
 
         match wf_element_value.mode:
             case "read":
-                for fp in wf_element_value.file_path:
-                    if wf_element_value.vstack_pattern:
-                        kwargs.update(
-                            {"vstack_pattern": wf_element_value.vstack_pattern}
-                        )
-                    cls.create(fp, **kwargs)
+                for file_path in wf_element_value.file_path:
+                    cls.create(
+                        file_path=file_path,
+                        vstack_pattern=wf_element_value.vstack_pattern,
+                    )  # TODO: all file_path variables are now type Path
                 return None
 
             case "write":
@@ -196,6 +204,7 @@ class AresDataInterface(ABC):
                             data = source_instance.get(
                                 label_filter=wf_element_value.label_filter,
                                 stepsize=stepsize,
+                                vstack_pattern=wf_element_value.vstack_pattern,
                                 **kwargs,
                             )
 
@@ -222,7 +231,12 @@ class AresDataInterface(ABC):
 
     @classmethod
     @typechecked
-    def create(cls, file_path: str | None = None, **kwargs) -> "AresDataInterface":
+    def create(
+        cls,
+        file_path: str | None = None,
+        vstack_pattern: list[str] | None = None,
+        **kwargs,
+    ) -> "AresDataInterface":
         """Create data handler with automatic format detection.
 
         Uses file extension to select appropriate handler.
@@ -230,6 +244,7 @@ class AresDataInterface(ABC):
 
         Args:
             file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
@@ -243,7 +258,9 @@ class AresDataInterface(ABC):
             ext = ext.lower()
 
         handler_class = cls._handlers[ext]
-        return handler_class(file_path=file_path, **kwargs)
+        return handler_class(
+            file_path=file_path, vstack_pattern=vstack_pattern, **kwargs
+        )
 
     # XXX: Idea for later, should the hash function be abstact and calculated based on infromations provided by the intherited class after init?
     # + uniqueness of hash is easier applicable since attributes of the obj itself can be used, avaialable signals, lenght, timestamps
@@ -272,7 +289,7 @@ class AresDataInterface(ABC):
         Args:
             file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
             input_string (str | None): Input string to hash. Used if file_path is None.
-            **kwargs (Any): Additional format-specific arguments (unused)
+            **kwargs (Any): Additional arguments (ignored, but accepted for compatibility)
 
         Returns:
             str: SHA256 hash string of the content
@@ -334,14 +351,11 @@ class AresDataInterface(ABC):
         Returns:
             list[AresSignal]: List of AresSignal with vstacked signals.
         """
-        for rg in regex:
-            pattern = re.compile(rg)
+        for regex in vstack_pattern:
+            pattern = re.compile(regex)
             matches = [signal for signal in data if pattern.search(signal.label)]
 
             if len(matches) == 0:
-                logger.warning(
-                    f"No signals matching regex {rg} - no vertical stacking applied."
-                )
                 continue
 
             if all([len(signal.value) == len(matches[0].value) for signal in matches]):
@@ -360,12 +374,18 @@ class AresDataInterface(ABC):
 
     @abstractmethod
     def get(
-        self, label_filter: list[str] | None = None, **kwargs
+        self,
+        label_filter: list[str] | None = None,
+        stepsize: int | None = None,
+        vstack_pattern: list[str] | None = None,
+        **kwargs,
     ) -> list[AresSignal] | None:
         """Get data from the interface.
 
         Args:
             label_filter (list[str] | None): List of signal names to retrieve from the interface.
+            stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
+            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
