@@ -110,7 +110,11 @@ class AresParamInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(self, file_path: Path | None, **kwargs):
+    def __init__(
+        self,
+        file_path: Path | None,
+        dependencies: list[str] | None = [],
+    ):
         """Initialize base attributes for all parameter handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
@@ -120,9 +124,7 @@ class AresParamInterface(ABC):
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(
-            self, "dependencies", dependencies if dependencies is not None else []
-        )
+        object.__setattr__(self, "dependencies", dependencies)
 
     @classmethod
     @typechecked
