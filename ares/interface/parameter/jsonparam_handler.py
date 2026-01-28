@@ -76,7 +76,9 @@ class JSONParamHandler(AresParamInterface):
             **kwargs (Any): Additional arguments.
                 - parameters (list[AresParameter]): Optional list of AresParameter objects to initialize with
         """
-        super().__init__(file_path=file_path, **kwargs)
+        super().__init__(
+            file_path=file_path, dependencies=kwargs.pop("dependencies", None)
+        )
         self.parameter: dict[str, dict[str, Any]] = {}
 
         if file_path:
