@@ -35,6 +35,7 @@ limitations under the License:
 
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -63,10 +64,10 @@ class Workflow:
             file_path (str | None): Path to the workflow JSON file (*.json).
         """
         self._file_path: str | None = file_path
-        self.workflow: WorkflowModel | None = self._load_and_validate_wf()
+        self.workflow: WorkflowModel = self._load_and_validate_wf()
         self._evaluate_relative_paths()
-        self.workflow_sinks: list[str] | None = self._find_sinks()
-        self.workflow_order: list[str] | None = self._eval_workflow_order()
+        self.workflow_sinks: list[str] = self._find_sinks()
+        self.workflow_order: list[str] = self._eval_workflow_order()
         self._sort_workflow()
         self._eval_element_workflow()
 
@@ -81,12 +82,11 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def _load_and_validate_wf(self) -> WorkflowModel | None:
+    def _load_and_validate_wf(self) -> WorkflowModel:
         """Reads and validates the workflow JSON file using Pydantic.
 
         Returns:
-            WorkflowModel | None: A Pydantic object representing the workflow,
-                or None in case of an error.
+            WorkflowModel: A Pydantic object representing the workflow.
         """
         with open(self._file_path, "r", encoding="utf-8") as file:
             workflow_raw = json.load(file)
@@ -136,7 +136,7 @@ class Workflow:
 
                 # Case 2: list of strings
                 elif isinstance(field_value, list) and all(
-                    isinstance(x, Path) for x in field_value
+                    isinstance(file_path, Path) for file_path in field_value
                 ):
                     abs_paths = []
                     changed = False
@@ -169,7 +169,7 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def _find_sinks(self) -> list[str] | None:
+    def _find_sinks(self) -> list[str]:
         """Identifies the endpoints (sinks) of the workflow.
 
         These are elements that are not referenced as `input`, `dataset`, or `init`
@@ -177,8 +177,7 @@ class Workflow:
         analysis of the execution order.
 
         Returns:
-            list[str] | None: A list of strings containing the names of the endpoint elements,
-                or `None` in case of an error.
+            list[str]: A list of strings containing the names of the endpoint elements.
         """
         wf_sinks: list[str] = []
         ref_input_list: list[str] = []
@@ -229,15 +228,15 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def _eval_workflow_order(self) -> list[str] | None:
+    def _eval_workflow_order(self) -> list[str]:
         """Determines the correct execution order of the workflow elements.
 
         This is done by recursively searching backward from the sinks to the sources.
         The function logs the determined order.
 
         Returns:
-            list[str] | None: A list of strings containing the elements in their execution
-                order, or `None` in case of an error.
+            list[str]: A list of strings containing the elements in their execution
+                order.
         """
         workflow_order: list[str] = []
 
@@ -247,7 +246,7 @@ class Workflow:
                 logger.error(
                     f"Failed to determine execution path for sink '{wf_sink}'.",
                 )
-                return None
+                raise
             for step in path:
                 if step not in workflow_order:
                     workflow_order.append(step)
