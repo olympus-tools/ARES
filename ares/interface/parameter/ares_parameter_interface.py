@@ -110,18 +110,13 @@ class AresParamInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(
-        self,
-        file_path: Path | None,
-        dependencies: list[str] | None = None,
-    ):
+    def __init__(self, file_path: Path | None, **kwargs):
         """Initialize base attributes for all parameter handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
             file_path (Path | None): Path to the parameter file to load
-            dependencies (list[str] | None): Optional list of parameter labels that this instance depends on
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)

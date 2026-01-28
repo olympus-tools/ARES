@@ -74,7 +74,7 @@ class MF4Handler(MDF, AresDataInterface):
     @typechecked
     def __init__(
         self,
-        file_path: str | None,
+        file_path: Path | None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ):
@@ -85,7 +85,7 @@ class MF4Handler(MDF, AresDataInterface):
         In write mode, creates an empty MDF instance plus adds signals if any are given.
 
         Args:
-            file_path (str | None): Path to the mf4 file to load or write.
+            file_path (Path | None): Path to the mf4 file to load or write.
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """

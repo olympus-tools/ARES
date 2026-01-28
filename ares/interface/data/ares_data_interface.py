@@ -33,7 +33,6 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -186,7 +185,7 @@ class AresDataInterface(ABC):
                     cls.create(
                         file_path=file_path,
                         vstack_pattern=wf_element_value.vstack_pattern,
-                    )  # TODO: all file_path variables are now type Path
+                    )
                 return None
 
             case "write":
@@ -235,7 +234,7 @@ class AresDataInterface(ABC):
     @typechecked
     def create(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ) -> "AresDataInterface":
@@ -245,7 +244,7 @@ class AresDataInterface(ABC):
         All handlers share the same flyweight cache.
 
         Args:
-            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 

@@ -63,7 +63,7 @@ class Workflow:
         Args:
             file_path (Path): Path to the workflow JSON file (*.json).
         """
-        self._file_path: str | None = file_path
+        self._file_path: Path = file_path
         self.workflow: WorkflowModel = self._load_and_validate_wf()
         self._evaluate_relative_paths()
         self.workflow_sinks: list[str] = self._find_sinks()
@@ -121,7 +121,7 @@ class Workflow:
             for field_name, field_value in wf_element_value.__dict__.items():
                 # Case 1: single Path
                 if isinstance(field_value, Path):
-                    field_value = str(field_value)
+                    field_value_str = str(field_value)
                     if (
                         "/" in field_value_str
                         or "\\" in field_value_str
@@ -141,7 +141,7 @@ class Workflow:
                     abs_paths = []
                     changed = False
                     for path in field_value:
-                        path = str(path)
+                        path_str = str(path)
                         if (
                             "/" in path_str
                             or "\\" in path_str
