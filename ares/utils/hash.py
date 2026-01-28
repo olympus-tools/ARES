@@ -34,9 +34,10 @@ limitations under the License:
 """
 
 import hashlib
+from pathlib import Path
 
 
-def bin_based_hash(file_path: str) -> str:
+def bin_based_hash(file_path: Path) -> str:
     hasher = hashlib.sha256()
     with open(file_path, "rb") as f:
         while chunk := f.read(4096):

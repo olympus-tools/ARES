@@ -33,10 +33,10 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
+from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
@@ -69,7 +69,7 @@ class AresDataInterface(ABC):
     @typechecked
     def __new__(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         data: list[AresSignal] | None = None,
         **kwargs,
     ):
@@ -79,7 +79,7 @@ class AresDataInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path (str | None): Path to the data file to load
+            file_path (Path | None): Path to the data file to load
             data (list[AresSignal] | None): Optional list of AresSignal objects for initialization
             **kwargs (Any): Additional arguments for subclass initialization
 
@@ -163,7 +163,7 @@ class AresDataInterface(ABC):
         wf_element_name: str,
         wf_element_value: DataElement,
         input_hash_list: list[list[str]] | None = None,
-        output_dir: str | None = None,
+        output_dir: Path | None = None,
         **kwargs,
     ) -> None:
         """Central handler method for data operations.
@@ -174,7 +174,7 @@ class AresDataInterface(ABC):
             wf_element_name (str): Name of the element being processed
             wf_element_value (DataElement): DataElement containing mode, file_path, and output_format
             input_hash_list (list[list[str]] | None): Nested list of data hashes for writing operations
-            output_dir (str | None): Output directory path for writing operations
+            output_dir (Path | None): Output directory path for writing operations
             **kwargs (Any): Additional format-specific arguments
         """
 
@@ -184,7 +184,7 @@ class AresDataInterface(ABC):
                     cls.create(
                         file_path=file_path,
                         vstack_pattern=wf_element_value.vstack_pattern,
-                    )  # TODO: all file_path variables are now type Path
+                    )
                 return None
 
             case "write":
@@ -233,7 +233,7 @@ class AresDataInterface(ABC):
     @typechecked
     def create(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ) -> "AresDataInterface":
@@ -243,7 +243,7 @@ class AresDataInterface(ABC):
         All handlers share the same flyweight cache.
 
         Args:
-            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
@@ -254,17 +254,13 @@ class AresDataInterface(ABC):
         if file_path is None:
             ext = ".mf4"
         else:
-            _, ext = os.path.splitext(file_path)
-            ext = ext.lower()
+            ext = file_path.suffix.lower()
 
         handler_class = cls._handlers[ext]
         return handler_class(
             file_path=file_path, vstack_pattern=vstack_pattern, **kwargs
         )
 
-    # XXX: Idea for later, should the hash function be abstact and calculated based on infromations provided by the intherited class after init?
-    # + uniqueness of hash is easier applicable since attributes of the obj itself can be used, avaialable signals, lenght, timestamps
-    # - for each new element type an implementation is necessary
     @staticmethod
     @error_msg(
         exception_msg="Hash of ares-data-interface could not be calculated.",
@@ -273,7 +269,7 @@ class AresDataInterface(ABC):
     )
     @typechecked
     def _calculate_hash(
-        file_path: str | None = None,
+        file_path: Path | None = None,
         input_string: str | None = None,
         **kwargs,
     ) -> str:
@@ -287,7 +283,7 @@ class AresDataInterface(ABC):
         identical signal content.
 
         Args:
-            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
             input_string (str | None): Input string to hash. Used if file_path is None.
             **kwargs (Any): Additional arguments (ignored, but accepted for compatibility)
 
@@ -404,11 +400,11 @@ class AresDataInterface(ABC):
         pass
 
     @abstractmethod
-    def _save(self, output_path: str, **kwargs) -> None:
+    def _save(self, output_path: Path, **kwargs) -> None:
         """Write signals to file.
 
         Args:
-            output_path (str): Absolute path where the data file should be written
+            output_path (Path): Absolute path where the data file should be written
             **kwargs (Any): Additional format-specific arguments
         """
         pass

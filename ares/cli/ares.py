@@ -35,6 +35,7 @@ limitations under the License:
 
 import getpass
 import logging
+from pathlib import Path
 
 import click
 
@@ -69,14 +70,14 @@ def cli():
     "-wf",
     "--workflow",
     required=True,
-    type=click.Path(exists=True, dir_okay=False),
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
     help="Absolute file path of to the workflow *.json file.",
 )
 @click.option(
     "-o",
     "--output",
     default=None,
-    type=click.Path(file_okay=False),
+    type=click.Path(file_okay=False, path_type=Path),
     help="Absolute path to the output directory.",
 )
 @click.option(

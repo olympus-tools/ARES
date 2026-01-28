@@ -34,8 +34,8 @@ limitations under the License:
 """
 
 import json
-import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import ClassVar
 
 from ares.interface.parameter.ares_parameter import AresParameter
@@ -66,7 +66,7 @@ class AresParamInterface(ABC):
     @typechecked
     def __new__(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         parameters: list[AresParameter] | None = None,
         **kwargs,
     ):
@@ -76,7 +76,7 @@ class AresParamInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path (str | None): Path to the parameter file to load
+            file_path (Path | None): Path to the parameter file to load
             parameters (list[AresParameter] | None): Optional list of AresParameter objects for initialization
             **kwargs (Any): Additional arguments for subclass initialization
 
@@ -110,13 +110,13 @@ class AresParamInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(self, file_path: str | None, **kwargs):
+    def __init__(self, file_path: Path | None, **kwargs):
         """Initialize base attributes for all parameter handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
-            file_path (str | None): Path to the parameter file to load
+            file_path (Path | None): Path to the parameter file to load
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
@@ -152,7 +152,7 @@ class AresParamInterface(ABC):
         wf_element_name: str,
         wf_element_value: ParameterElement,
         input_hash_list: list[list[str]] | None = None,
-        output_dir: str | None = None,
+        output_dir: Path | None = None,
         **kwargs,
     ) -> None:
         """Central handler method for parameter operations.
@@ -163,14 +163,14 @@ class AresParamInterface(ABC):
             wf_element_name (str): Name of the element being processed
             wf_element_value (ParameterElement): ParameterElement containing mode, file_path, and output_format
             input_hash_list (list[list[str]] | None): Nested list of parameter hashes for writing operations
-            output_dir (str | None): Output directory path for writing operations
+            output_dir (Path | None): Output directory path for writing operations
             **kwargs (Any): Additional format-specific arguments
         """
 
         match wf_element_value.mode:
             case "read":
-                for fp in wf_element_value.file_path:
-                    cls.create(file_path=fp, **kwargs)
+                for file_path in wf_element_value.file_path:
+                    cls.create(file_path=file_path, **kwargs)
                 return None
 
             case "write":
@@ -211,14 +211,14 @@ class AresParamInterface(ABC):
 
     @classmethod
     @typechecked
-    def create(cls, file_path: str | None = None, **kwargs) -> "AresParamInterface":
+    def create(cls, file_path: Path | None = None, **kwargs) -> "AresParamInterface":
         """Create parameter handler with automatic format detection.
 
         Uses file extension to select appropriate handler.
         All handlers share the same flyweight cache.
 
         Args:
-            file_path (str | None): Path to the parameter file to load. If None, defaults to JSON handler.
+            file_path (Path | None): Path to the parameter file to load. If None, defaults to JSON handler.
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
@@ -228,8 +228,7 @@ class AresParamInterface(ABC):
         if file_path is None:
             ext = ".json"
         else:
-            _, ext = os.path.splitext(file_path)
-            ext = ext.lower()
+            ext = file_path.suffix.lower()
 
         handler_class = cls._handlers[ext]
         return handler_class(file_path=file_path, **kwargs)
@@ -300,11 +299,11 @@ class AresParamInterface(ABC):
         pass
 
     @abstractmethod
-    def _save(self, output_path: str, **kwargs) -> None:
+    def _save(self, output_path: Path, **kwargs) -> None:
         """Write parameters to file.
 
         Args:
-            output_path (str): Absolute path where the parameter file should be written
+            output_path (Path): Absolute path where the parameter file should be written
             **kwargs (Any): Additional format-specific arguments
         """
         pass

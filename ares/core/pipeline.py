@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 import os
+from pathlib import Path
 from typing import Any
 
 from ares.core.workflow import Workflow
@@ -42,7 +43,6 @@ from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.interface.plugin.ares_plugin_interface import AresPluginInterface
 from ares.utils.decorators import error_msg
 from ares.utils.logger import create_logger
-from ares.utils.paths import get_project_root
 
 logger = create_logger(__name__)
 
@@ -52,7 +52,7 @@ logger = create_logger(__name__)
     log=logger,
     include_args=["wf_path", "output_dir"],
 )
-def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) -> None:
+def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) -> None:
     """Executes the ARES simulation pipeline based on a defined workflow.
 
     This function orchestrates the entire simulation process, from data acquisition and
@@ -61,8 +61,8 @@ def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) ->
     the necessary objects (Data, SimUnit, Parameter, etc.).
 
     Args:
-        wf_path (str): The absolute path to the workflow's JSON file.
-        output_dir (str | None): The absolute path to the output directory. If `None`,
+        wf_path (Path): The absolute path to the workflow's JSON file.
+        output_dir (Path | None): The absolute path to the output directory. If `None`,
             results are written to a subdirectory 'output' in the workflow file's directory.
         meta_data (dict[str, Any]): Current ARES and workstation meta data.
     """
@@ -70,7 +70,7 @@ def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) ->
     ares_wf = Workflow(file_path=wf_path)
 
     if output_dir is None:
-        output_dir = os.path.join(os.path.dirname(wf_path), "output")
+        output_dir = Path(wf_path).parent / "output"
 
     param_storage: dict[str, AresParamInterface] = AresParamInterface.cache
     data_storage: dict[str, AresDataInterface] = AresDataInterface.cache
@@ -114,11 +114,8 @@ def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) ->
                 plugin_input["wf_element_name"] = wf_element_name
 
                 if wf_element_value.type == "sim_unit":
-                    plugin_input["plugin_path"] = os.path.join(
-                        get_project_root(),
-                        "ares",
-                        "plugins",
-                        "simunit.py",
+                    plugin_input["plugin_path"] = (
+                        Path(__file__).parent.parent / "plugins" / "simunit.py"
                     )
                 else:
                     plugin_input["plugin_path"] = plugin_input["file_path"]
