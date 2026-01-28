@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 import os
+from pathlib import Path
 from typing import Any
 
 from ares.core.workflow import Workflow
@@ -53,7 +54,7 @@ logger = create_logger(__name__)
     log=logger,
     include_args=["wf_path", "output_dir"],
 )
-def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) -> None:
+def pipeline(wf_path: Path, output_dir: str | None, meta_data: dict[str, Any]) -> None:
     """Executes the ARES simulation pipeline based on a defined workflow.
 
     This function orchestrates the entire simulation process, from data acquisition and
@@ -62,7 +63,7 @@ def pipeline(wf_path: str, output_dir: str | None, meta_data: dict[str, Any]) ->
     the necessary objects (Data, SimUnit, Parameter, etc.).
 
     Args:
-        wf_path (str): The absolute path to the workflow's JSON file.
+        wf_path (Path): The absolute path to the workflow's JSON file.
         output_dir (str | None): The absolute path to the output directory. If `None`,
             results are written to a subdirectory 'output' in the workflow file's directory.
         meta_data (dict[str, Any]): Current ARES and workstation meta data.

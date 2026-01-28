@@ -724,13 +724,16 @@ def ares_plugin(plugin_input):
     """ARES plugin entrypoint for sim_unit elements.
 
     Args:
-        plugin_input: Dictionary containing all plugin configuration and data:
-            - wf_element_name: Name of the workflow element
-            - parameter: Dict[str, AresParamInterface] - AresParameter storage with hashes as keys
-            - plugin_path: str - Path to this plugin file
-            - type: str - Element type ("plugin" or "sim_unit")
-            - element_workflow: List[str] - Workflow elements
-            - ... other fields from WorkflowElement
+        plugin_input (dict): Dictionary containing all plugin configuration and data.
+            wf_element_name (str): Name of the workflow element.
+            parameter (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
+            plugin_path (Path): Path to this plugin file.
+            type (str): Element type ("plugin" or "sim_unit").
+            element_workflow (list[str]): Workflow elements.
+            ...: Other fields from WorkflowElement as needed.
+
+    Returns:
+        None
     """
 
     element_parameter_lists: list[list[AresParamInterface]] = plugin_input.get(

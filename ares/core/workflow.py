@@ -56,14 +56,14 @@ class Workflow:
     @typechecked
     def __init__(
         self,
-        file_path: str | None = None,
+        file_path: Path | None = None,
     ):
         """Initializes a Workflow object by reading and validating a workflow JSON file.
 
         Args:
-            file_path (str | None): Path to the workflow JSON file (*.json).
+            file_path (Path | None): Path to the workflow JSON file (*.json).
         """
-        self._file_path: str | None = file_path
+        self._file_path: Path | None = file_path
         self.workflow: WorkflowModel = self._load_and_validate_wf()
         self._evaluate_relative_paths()
         self.workflow_sinks: list[str] = self._find_sinks()
@@ -88,7 +88,7 @@ class Workflow:
         Returns:
             WorkflowModel: A Pydantic object representing the workflow.
         """
-        with open(self._file_path, "r", encoding="utf-8") as file:
+        with open(str(self._file_path), "r", encoding="utf-8") as file:
             workflow_raw = json.load(file)
 
         workflow_raw_pydantic = WorkflowModel.model_validate(workflow_raw)
@@ -114,6 +114,8 @@ class Workflow:
         """
         base_dir = os.path.dirname(os.path.abspath(self._file_path))
         path_eval_pattern = r"\.[a-zA-Z0-9]+$"
+
+        # TODO: make relative path evaluation easier and more intuitive
 
         for wf_element_name, wf_element_value in self.workflow.items():
             for field_name, field_value in wf_element_value.__dict__.items():

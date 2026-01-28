@@ -33,10 +33,10 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
+from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
@@ -69,7 +69,7 @@ class AresDataInterface(ABC):
     @typechecked
     def __new__(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         data: list[AresSignal] | None = None,
         **kwargs,
     ):
@@ -79,7 +79,7 @@ class AresDataInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path (str | None): Path to the data file to load
+            file_path (Path | None): Path to the data file to load
             data (list[AresSignal] | None): Optional list of AresSignal objects for initialization
             **kwargs (Any): Additional arguments for subclass initialization
 
@@ -115,7 +115,7 @@ class AresDataInterface(ABC):
     @typechecked
     def __init__(
         self,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         dependencies: list[str] | None = [],
         vstack_pattern: list[str] | None = None,
     ):
@@ -124,7 +124,7 @@ class AresDataInterface(ABC):
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
-            file_path (str | None): Path to the data file to load
+            file_path (Path | None): Path to the data file to load
             dependencies (list[str] | None): List of dependencies for this data handler
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to subclass
@@ -230,7 +230,7 @@ class AresDataInterface(ABC):
     @typechecked
     def create(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ) -> "AresDataInterface":
@@ -240,7 +240,7 @@ class AresDataInterface(ABC):
         All handlers share the same flyweight cache.
 
         Args:
-            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
@@ -251,8 +251,7 @@ class AresDataInterface(ABC):
         if file_path is None:
             ext = ".mf4"
         else:
-            _, ext = os.path.splitext(file_path)
-            ext = ext.lower()
+            ext = file_path.suffix.lower()
 
         handler_class = cls._handlers[ext]
         return handler_class(
@@ -270,7 +269,7 @@ class AresDataInterface(ABC):
     )
     @typechecked
     def _calculate_hash(
-        file_path: str | None = None,
+        file_path: Path | None = None,
         input_string: str | None = None,
     ) -> str:
         """Calculate hash from signal list.
@@ -283,7 +282,7 @@ class AresDataInterface(ABC):
         identical signal content.
 
         Args:
-            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
             input_string (str | None): Input string to hash. Used if file_path is None.
 
         Returns:

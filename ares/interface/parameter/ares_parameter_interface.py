@@ -34,8 +34,8 @@ limitations under the License:
 """
 
 import json
-import os
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import ClassVar
 
 from ares.interface.parameter.ares_parameter import AresParameter
@@ -43,7 +43,7 @@ from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import bin_based_hash, str_based_hash
+from ares.utils.hash import str_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
@@ -66,7 +66,7 @@ class AresParamInterface(ABC):
     @typechecked
     def __new__(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         parameters: list[AresParameter] | None = None,
         **kwargs,
     ):
@@ -76,7 +76,7 @@ class AresParamInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path (str | None): Path to the parameter file to load
+            file_path (Path | None): Path to the parameter file to load
             parameters (list[AresParameter] | None): Optional list of AresParameter objects for initialization
             **kwargs (Any): Additional arguments for subclass initialization
 
@@ -110,13 +110,13 @@ class AresParamInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(self, file_path: str | None, **kwargs):
+    def __init__(self, file_path: Path | None, **kwargs):
         """Initialize base attributes for all parameter handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
-            file_path (str | None): Path to the parameter file to load
+            file_path (Path | None): Path to the parameter file to load
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
@@ -169,8 +169,8 @@ class AresParamInterface(ABC):
 
         match wf_element_value.mode:
             case "read":
-                for fp in wf_element_value.file_path:
-                    cls.create(file_path=fp, **kwargs)
+                for file_path in wf_element_value.file_path:
+                    cls.create(file_path=file_path, **kwargs)
                 return None
 
             case "write":
@@ -211,14 +211,14 @@ class AresParamInterface(ABC):
 
     @classmethod
     @typechecked
-    def create(cls, file_path: str | None = None, **kwargs) -> "AresParamInterface":
+    def create(cls, file_path: Path | None = None, **kwargs) -> "AresParamInterface":
         """Create parameter handler with automatic format detection.
 
         Uses file extension to select appropriate handler.
         All handlers share the same flyweight cache.
 
         Args:
-            file_path (str | None): Path to the parameter file to load. If None, defaults to JSON handler.
+            file_path (Path | None): Path to the parameter file to load. If None, defaults to JSON handler.
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
@@ -228,8 +228,7 @@ class AresParamInterface(ABC):
         if file_path is None:
             ext = ".json"
         else:
-            _, ext = os.path.splitext(file_path)
-            ext = ext.lower()
+            ext = file_path.suffix.lower()
 
         handler_class = cls._handlers[ext]
         return handler_class(file_path=file_path, **kwargs)
