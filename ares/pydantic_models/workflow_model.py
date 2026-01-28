@@ -64,12 +64,14 @@ class DataElement(BaseElement):
 
     def validate_mode_requirements(self):
         """Validates that required fields are present based on the mode."""
-        if self.mode == "read" and not self.file_path:
-            raise ValueError("Field 'file_path' is required for mode='read'.")
-        if self.mode == "write" and (not self.input or not self.output_format):
-            raise ValueError(
-                "Fields 'input' and 'output_format' are required for mode='write'."
-            )
+        if self.mode == "read":
+            if not self.file_path:
+                raise ValueError("Field 'file_path' is required for mode='read'.")
+        if self.mode == "write":
+            if not self.input:
+                raise ValueError("Field 'input' is required for mode='write'.")
+            if not self.output_format:
+                raise ValueError("Field 'output_format' is required for mode='write'.")
 
 
 class ParameterElement(BaseElement):

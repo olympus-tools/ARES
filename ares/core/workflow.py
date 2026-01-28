@@ -35,6 +35,7 @@ limitations under the License:
 
 import json
 import os
+import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -62,7 +63,7 @@ class Workflow:
         Args:
             file_path (Path): Path to the workflow JSON file (*.json).
         """
-        self._file_path: Path = file_path
+        self._file_path: str | None = file_path
         self.workflow: WorkflowModel = self._load_and_validate_wf()
         self._evaluate_relative_paths()
         self.workflow_sinks: list[str] = self._find_sinks()
@@ -135,7 +136,7 @@ class Workflow:
 
                 # Case 2: list of Paths
                 elif isinstance(field_value, list) and all(
-                    isinstance(x, Path) for x in field_value
+                    isinstance(file_path, Path) for file_path in field_value
                 ):
                     abs_paths = []
                     changed = False
