@@ -132,8 +132,10 @@ class AresDataInterface(ABC):
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(self, "dependencies", kwargs.pop("dependencies", []))
-        object.__setattr__(self, "_vstack_pattern", kwargs.pop("vstack_pattern", []))
+        object.__setattr__(
+            self, "dependencies", dependencies if dependencies is not None else []
+        )
+        object.__setattr__(self, "_vstack_pattern", vstack_pattern)
 
     @classmethod
     @typechecked
@@ -180,12 +182,11 @@ class AresDataInterface(ABC):
 
         match wf_element_value.mode:
             case "read":
-                for fp in wf_element_value.file_path:
-                    if wf_element_value.vstack_pattern:
-                        kwargs.update(
-                            {"vstack_pattern": wf_element_value.vstack_pattern}
-                        )
-                    cls.create(fp, **kwargs)
+                for file_path in wf_element_value.file_path:
+                    cls.create(
+                        file_path=file_path,
+                        vstack_pattern=wf_element_value.vstack_pattern,
+                    )  # TODO: all file_path variables are now type Path
                 return None
 
             case "write":
@@ -234,7 +235,7 @@ class AresDataInterface(ABC):
     @typechecked
     def create(
         cls,
-        file_path: Path | None = None,
+        file_path: str | None = None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ) -> "AresDataInterface":
@@ -244,7 +245,7 @@ class AresDataInterface(ABC):
         All handlers share the same flyweight cache.
 
         Args:
-            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
@@ -348,14 +349,11 @@ class AresDataInterface(ABC):
         Returns:
             list[AresSignal]: List of AresSignal with vstacked signals.
         """
-        for rg in regex:
-            pattern = re.compile(rg)
+        for regex in vstack_pattern:
+            pattern = re.compile(regex)
             matches = [signal for signal in data if pattern.search(signal.label)]
 
             if len(matches) == 0:
-                logger.warning(
-                    f"No signals matching regex {rg} - no vertical stacking applied."
-                )
                 continue
 
             if all([len(signal.value) == len(matches[0].value) for signal in matches]):

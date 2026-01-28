@@ -74,7 +74,7 @@ class MF4Handler(MDF, AresDataInterface):
     @typechecked
     def __init__(
         self,
-        file_path: Path | None,
+        file_path: str | None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ):
@@ -85,7 +85,7 @@ class MF4Handler(MDF, AresDataInterface):
         In write mode, creates an empty MDF instance plus adds signals if any are given.
 
         Args:
-            file_path (Path | None): Path to the mf4 file to load or write.
+            file_path (str | None): Path to the mf4 file to load or write.
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
@@ -148,6 +148,7 @@ class MF4Handler(MDF, AresDataInterface):
     def get(
         self,
         label_filter: list[str] | None = None,
+        stepsize: int | None = None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
@@ -156,7 +157,8 @@ class MF4Handler(MDF, AresDataInterface):
         Args:
             label_filter (list[str] | None): List of signal names or pattern to read from mf4 file.
                 If None, all available signals are read. Defaults to None.
-            vstack_pattern (list[str]): Pattern (regex) used to stack AresSignal's
+            stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
+            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments. 'stepsize' (int) triggers resampling.
 
         Returns:
@@ -166,9 +168,9 @@ class MF4Handler(MDF, AresDataInterface):
         vstack_pattern = (
             self._vstack_pattern
             if vstack_pattern is None
-            else vstack_pattern.append(self._vstack_pattern)
+            else (self._vstack_pattern or []) + vstack_pattern
         )
-        stepsize = kwargs.pop("stepsize", None)
+
         tmp_data = (
             self._get_signals(label_filter=self._available_signals, **kwargs)
             if label_filter is None
@@ -178,18 +180,16 @@ class MF4Handler(MDF, AresDataInterface):
             )
         )
 
-        if vstack_pattern:
-            logger.debug(
-                f"Vertical stacking will be applied considering regex: {self._vstack_pattern}"
-            )
-            tmp_data = self._vstack(data=tmp_data, vstack_pattern=vstack_pattern)
-
         if not tmp_data:
             return None
 
-        if stepsize is None:
-            return tmp_data
-        else:
+        if vstack_pattern:
+            logger.debug(
+                f"Vertical stacking will be applied considering regex: {vstack_pattern}"
+            )
+            tmp_data = self._vstack(data=tmp_data, vstack_pattern=vstack_pattern)
+
+        if stepsize:
             logger.debug(f"Resampling all signals to: {stepsize}")
             return self._resample(data=tmp_data, stepsize=stepsize)
         else:
