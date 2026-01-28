@@ -219,7 +219,7 @@ class SimUnit:
 
         if not dll_interface:
             logger.warning(
-                f"There is no data dictionary variable that could be mapped successfully to simulation unit.",
+                "There is no data dictionary variable that could be mapped successfully to simulation unit.",
             )
             return None
         return dll_interface
@@ -243,6 +243,7 @@ class SimUnit:
             Any: The `ctypes` function object for `ares_simunit`, or `None` if the
                 function cannot be found in the library.
         """
+        # TODO: Should function name be defined in dd or in workflow file (same as for plugin entry point name)?
         if self._dd.meta_data and self._dd.meta_data.function_name:
             function_name = self._dd.meta_data.function_name
         else:
@@ -476,7 +477,7 @@ class SimUnit:
                 return None
 
         logger.debug(
-            f"Mapping dynamic simulation input to data source has been successfully finished."
+            "Mapping dynamic simulation input to data source has been successfully finished."
         )
         return mapped_input
 
@@ -764,6 +765,7 @@ def ares_plugin(plugin_input):
                         data=element_data_obj.get(
                             stepsize=plugin_input["stepsize"],
                             label_filter=label_filter_signal,
+                            vstack_pattern=plugin_input.get("vstack_pattern"),
                         ),
                         parameters=element_parameter_obj.get(
                             label_filter=label_filter_parameter
