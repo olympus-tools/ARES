@@ -42,6 +42,7 @@ from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from ares.utils.resolve_label_filter import resolve_label_filter
 
 logger = create_logger(__name__)
 
@@ -129,6 +130,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
 
         Args:
             label_filter (list[str] | None): List of parameter names to retrieve from the interface.
+            label_filter (list[str] | None): List of parameter names or pattern to retrieve from the interface.
                 If None, all parameters are returned. Defaults to None.
             **kwargs: Additional format-specific arguments
 
@@ -136,15 +138,11 @@ class DCMHandler(ParamDCM, AresParamInterface):
             list[AresParameter] | None: List of AresParameter objects, or None if no parameters were found
         """
         if label_filter:
-            items = {}
-            for label in label_filter:
-                if label in self.parameter:
-                    items[label] = self.parameter[label]
-                    logger.debug(f"Parameter '{label}' found in DCM parameter file.")
-                else:
-                    logger.warning(
-                        f"Parameter '{label}' not found in DCM parameter file."
-                    )
+            items = {
+                k: v
+                for k, v in self.parameter.items()
+                if k in resolve_label_filter(label_filter, list(self.parameter.keys()))
+            }
         else:
             items = self.parameter
 

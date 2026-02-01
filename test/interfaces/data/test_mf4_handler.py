@@ -97,10 +97,14 @@ def test_ares_mf4handler_file_read_get():
             file_path=mf4_filepath,
         )
 
-    test_signals = test_data.get(["input_value"])
+    test_signal = test_data.get(["input_value"])
+    test_signals = test_data.get([".*_"])
 
-    assert len(test_signals) == 1, "Wrong number of signals were extracted."
-    assert test_signals[0].label == "input_value", "The wrong signal was extracted."
+    assert len(test_signal) == 1, "Wrong number of signals were extracted."
+    assert test_signal[0].label == "input_value", "The wrong signal was extracted."
+    assert len(test_signals) != 1, (
+        "Too few singals were extracted. Regex pattern should extract all available signals."
+    )
 
 
 def test_ares_mf4handler_file_write_get():
