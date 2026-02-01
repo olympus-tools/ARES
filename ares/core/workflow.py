@@ -182,57 +182,43 @@ class Workflow:
                 or `None` in case of an error.
         """
         wf_sinks: list[str] = []
+        ref_input_list: list[str] = []
 
-        for wf_element_name_1, wf_element_value_1 in self.workflow.items():
-            call_count = 0
+        for wf_element_value in self.workflow.values():
+            if hasattr(wf_element_value, "parameter") and wf_element_value.parameter:
+                ref_input_list.extend(wf_element_value.parameter)
 
-            for wf_element_value_2 in self.workflow.values():
-                ref_input_list: list[str] = []
+            if (
+                hasattr(wf_element_value, "cancel_condition")
+                and wf_element_value.cancel_condition
+            ):
+                if hasattr(wf_element_value, "init") and wf_element_value.init:
+                    ref_input_list.extend(wf_element_value.init)
+            else:
+                if hasattr(wf_element_value, "input") and wf_element_value.input:
+                    ref_input_list.extend(wf_element_value.input)
 
-                if (
-                    hasattr(wf_element_value_2, "parameter")
-                    and wf_element_value_2.parameter
-                ):
-                    ref_input_list.extend(wf_element_value_2.parameter)
+        poss_sinks = [
+            key for key in self.workflow.keys() if key not in set(ref_input_list)
+        ]
 
-                if (
-                    hasattr(wf_element_value_2, "cancel_condition")
-                    and wf_element_value_2.cancel_condition
-                ):
-                    if hasattr(wf_element_value_2, "init") and wf_element_value_2.init:
-                        ref_input_list.extend(wf_element_value_2.init)
-                else:
-                    if (
-                        hasattr(wf_element_value_2, "input")
-                        and wf_element_value_2.input
-                    ):
-                        ref_input_list.extend(wf_element_value_2.input)
+        for sink in poss_sinks:
+            wf_element_value = self.workflow.get(sink)
 
-                # counting how often a wf element is referenced in other elements
-                if ref_input_list:
-                    for ref_input_list_member in ref_input_list:
-                        if ref_input_list_member == wf_element_name_1:
-                            call_count += 1
-                            break
-
-            if call_count == 0 and (
-                hasattr(wf_element_value_1, "parameter")
-                and wf_element_value_1.parameter is None
-                or hasattr(wf_element_value_1, "input")
-                and wf_element_value_1.input is None
+            if (
+                hasattr(wf_element_value, "parameter")
+                and wf_element_value.parameter is None
+            ) or (
+                hasattr(wf_element_value, "input") and wf_element_value.input is None
             ):
                 logger.debug(
-                    f"""Workflow element "{wf_element_name_1}" is a unused workflow source."""
-                )
-            elif call_count > 0:
-                logger.debug(
-                    f"""Workflow element "{wf_element_name_1}" is referenced {call_count} time(s) in other workflow elements."""
+                    f"""Workflow element "{sink}" is a unused workflow source."""
                 )
             else:
                 logger.debug(
-                    f"""Workflow element "{wf_element_name_1}" is a workflow endpoint (sink)."""
+                    f"""Workflow element "{sink}" is a workflow endpoint (sink)."""
                 )
-                wf_sinks.append(wf_element_name_1)
+                wf_sinks.append(sink)
 
         return wf_sinks
 
