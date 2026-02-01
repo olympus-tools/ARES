@@ -8,8 +8,7 @@
             "datatype": "float",
             "size": [],
             "input_alternatives": [
-                0,
-                "test_alternative"
+                "filter_output"
             ]
         },
         "derivation_output": {
