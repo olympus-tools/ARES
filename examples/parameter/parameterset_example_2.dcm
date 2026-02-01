@@ -94,7 +94,7 @@ FESTWERT sample_time
     LANGNAME "Schrittweite der Software Komponente"
     FUNKTION SWC
     EINHEIT_W "ms"
-    WERT    1000
+    WERT    2000
 END
 
 FESTWERT cutoff_freq
