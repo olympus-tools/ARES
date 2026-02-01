@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "ARES example 1",
+            "name": "ARES example data_caching",
             "type": "debugpy",
             "request": "launch",
             "python": "${workspaceFolder}/.venv/bin/python",
@@ -10,7 +10,7 @@
             "args": [
                 "pipeline",
                 "--workflow",
-                "${workspaceFolder}/examples/workflow/workflow_example_1.json",
+                "${workspaceFolder}/examples/workflow/data_interface/data_caching.wf.json",
                 "--output",
                 "${workspaceFolder}/examples/output/",
                 "--log-level",
@@ -21,7 +21,7 @@
             "postDebugTask": "clean-light"
         },
         {
-            "name": "ARES example 2",
+            "name": "ARES example data_convertion",
             "type": "debugpy",
             "request": "launch",
             "python": "${workspaceFolder}/.venv/bin/python",
@@ -29,7 +29,259 @@
             "args": [
                 "pipeline",
                 "--workflow",
-                "${workspaceFolder}/examples/workflow/workflow_example_2.json",
+                "${workspaceFolder}/examples/workflow/data_interface/data_convertion.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example data_labelfilter",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/data_interface/data_labelfilter.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example data_resampling",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/data_interface/data_resampling.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example data_vstack",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/data_interface/data_vstack.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example param_caching",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/parameter_interface/param_caching.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example param_convertion",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/parameter_interface/param_convertion.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example param_labelfilter",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/parameter_interface/param_labelfilter.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example plugin_manipulation",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/plugin/plugin_manipulation.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example simunit_dependencies",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/sim_unit/simunit_dependencies.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-simunit-all",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example simunit_interface_alt",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/sim_unit/simunit_interface_alt.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-simunit-all",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example simunit_interface_alt_default",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/sim_unit/simunit_interface_alt_default.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-simunit-all",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example simunit_interface_alt_value",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/sim_unit/simunit_interface_alt_value.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-simunit-all",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example simunit_interface_std",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/sim_unit/simunit_interface_std.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-simunit-all",
+            "postDebugTask": "clean-light"
+        },
+        {
+            "name": "ARES example simunit_vstack",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/sim_unit/simunit_vstack.wf.json",
                 "--output",
                 "${workspaceFolder}/examples/output/",
                 "--log-level",
