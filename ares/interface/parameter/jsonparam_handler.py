@@ -56,6 +56,12 @@ class JSONParamHandler(AresParamInterface):
     will automatically return the same cached instance.
     """
 
+    @error_msg(
+        exception_msg="Error in jsonparam-handler init function.",
+        log=logger,
+        include_args=["file_path"],
+        exception_map={FileNotFoundError: "JSON parameter file not found."},
+    )
     @typechecked
     def __init__(
         self,
@@ -73,13 +79,8 @@ class JSONParamHandler(AresParamInterface):
         self.parameter: dict[str, dict[str, Any]] = {}
 
         if file_path:
-            try:
-                with open(file_path, "r", encoding="utf-8") as f:
-                    self.parameter = json.load(f)
-            except Exception as e:
-                logger.warning(
-                    f"Error initializing JSONParamHandler with {file_path}: {e}"
-                )
+            with open(file_path, "r", encoding="utf-8") as f:
+                self.parameter = json.load(f)
         elif "parameters" in kwargs:
             self.add(kwargs["parameters"])
 
@@ -133,10 +134,10 @@ class JSONParamHandler(AresParamInterface):
         """
         for param in parameters:
             self.parameter[param.label] = {
-                "description": param.description
-                if param.description is not None
-                else "",
-                "unit": param.unit if param.unit is not None else "",
+                "description": param.description,
+                "name_breakpoints_1": param.name_breakpoints_1,
+                "name_breakpoints_2": param.name_breakpoints_2,
+                "unit": param.unit,
                 "value": param.value.tolist(),
             }
 
@@ -172,8 +173,10 @@ class JSONParamHandler(AresParamInterface):
             AresParameter(
                 label=parameter_name,
                 value=parameter_value.get("value", 0.0),
-                description=parameter_value.get("description", "n/m"),
-                unit=parameter_value.get("unit", "n/m"),
+                name_breakpoints_1=parameter_value.get("name_breakpoints_1", None),
+                name_breakpoints_2=parameter_value.get("name_breakpoints_2", None),
+                description=parameter_value.get("description", None),
+                unit=parameter_value.get("unit", None),
             )
             for parameter_name, parameter_value in items.items()
         ]

@@ -105,10 +105,10 @@ class DCMHandler(ParamDCM, AresParamInterface):
         """
         for param in parameters:
             self.parameter[param.label] = {
-                "description": param.description
-                if param.description is not None
-                else "",
-                "unit": param.unit if param.unit is not None else "",
+                "description": param.description,
+                "name_breakpoints_1": param.name_breakpoints_1,
+                "name_breakpoints_2": param.name_breakpoints_2,
+                "unit": param.unit,
                 "value": param.value.tolist(),
             }
 
@@ -144,8 +144,10 @@ class DCMHandler(ParamDCM, AresParamInterface):
             AresParameter(
                 label=parameter_name,
                 value=parameter_value.get("value", 0.0),
-                description=parameter_value.get("description", "n/m"),
-                unit=parameter_value.get("unit", "n/m"),
+                name_breakpoints_1=parameter_value.get("name_breakpoints_1", None),
+                name_breakpoints_2=parameter_value.get("name_breakpoints_2", None),
+                description=parameter_value.get("description", None),
+                unit=parameter_value.get("unit", None),
             )
             for parameter_name, parameter_value in items.items()
         ]
