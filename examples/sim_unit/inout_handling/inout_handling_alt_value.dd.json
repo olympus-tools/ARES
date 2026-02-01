@@ -1,0 +1,30 @@
+{
+    "meta_data": {
+        "function_name": "ares_simunit_2"
+    },
+	"signals":{
+		"signal_scalar": {
+			"type": "inout",
+			"datatype": "int32",
+			"size": [],
+			"input_alternatives": [5]
+		},
+		"signal_array1d": {
+			"type": "inout",
+			"datatype": "uint32",
+			"size": [4],
+			"input_alternatives": [
+				[1, 2, 3, 4]
+			]
+		},
+		"signal_array2d": {
+			"type": "inout",
+			"datatype": "float",
+			"size": [2, 3],
+			"input_alternatives": [
+				[[1.1, 2.2, 3.3],[4.4, 5.5, 6.6]]
+			]
+		}
+	},
+	"parameters":{}
+}

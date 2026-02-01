@@ -36,29 +36,22 @@ limitations under the License:
 #include "inout_handling.h"
 #include <stdint.h>
 
-int32_t parameter_scalar = 0;
-uint32_t parameter_array1d[3] = {0};
-float parameter_array2d[2][3] = {{0}};
+int32_t parameter_scalar_output = 1000;
+uint32_t parameter_array1d_output[3] = {1000u};
+float parameter_array2d_output[2][3] = {{1000.f}};
 
-int32_t signal_scalar = 0;
-uint32_t signal_array1d[4] = {0};
-float signal_array2d[2][3] = {{0}};
-
-int32_t alt_signal_scalar = 0;
-uint32_t alt_signal_array1d[4] = {0};
-float alt_signal_array2d[2][3] = {{0}};
+int32_t signal_scalar = 1000;
+uint32_t signal_array1d[4] = {1000u};
+float signal_array2d[2][3] = {{1000.f}};
 
 void ares_simunit_2()
 {
     inout_handling(
-        &parameter_scalar,
-        parameter_array1d,
-        parameter_array2d,
         &signal_scalar,
         signal_array1d,
         signal_array2d,
-        &alt_signal_scalar,
-        alt_signal_array1d,
-        alt_signal_array2d
+        &parameter_scalar_output,
+        parameter_array1d_output,
+        parameter_array2d_output
     );
 }

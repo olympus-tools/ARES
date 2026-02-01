@@ -38,6 +38,11 @@ limitations under the License:
 
 #include <stdint.h>
 
+// parameter inputs
+extern int32_t parameter_scalar[1];
+extern uint32_t parameter_array1d[3];
+extern float parameter_array2d[2][3];
+
 /**
  * @brief Demonstrates in-place modification of scalar, 1D, and 2D array parameters and signals.
  *
@@ -50,20 +55,15 @@ limitations under the License:
  * @param[in,out] signal_scalar         Scalar signal (int32_t[1]), incremented by 2.
  * @param[in,out] signal_array1d        1D signal array (uint32_t[4]), each element incremented by 2, 3, 4, 5.
  * @param[in,out] signal_array2d        2D signal array (float[2][3]), each element incremented by 1.0 to 7.0.
- * @param[in,out] alt_signal_scalar     Alternative scalar signal (int32_t[1]), incremented by 1.
- * @param[in,out] alt_signal_array1d    Alternative 1D signal array (uint32_t[4]), each element incremented by 1, 2, 3, 4.
- * @param[in,out] alt_signal_array2d    Alternative 2D signal array (float[2][3]), each element incremented by 1.0 to 6.0.
- */
+*/
+
 void inout_handling(
-	int32_t parameter_scalar[1],
-	uint32_t parameter_array1d[3],
-	float parameter_array2d[2][3],
 	int32_t signal_scalar[1],
 	uint32_t signal_array1d[4],
 	float signal_array2d[2][3],
-	int32_t alt_signal_scalar[1],
-	uint32_t alt_signal_array1d[4],
-	float alt_signal_array2d[2][3]
+	int32_t parameter_scalar_output[1],
+	uint32_t parameter_array1d_output[3],
+	float parameter_array2d_output[2][3]
 );
 
 #endif // INOUT_HANDLING_H
