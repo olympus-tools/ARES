@@ -38,12 +38,19 @@ limitations under the License:
 
 #include <math.h>
 
+// parameter inputs
+extern float cutoff_freq;   // parameter input for cutoff frequency
+extern float sample_time;   // parameter input for sample time
+
 /**
  * @brief First order low pass filter using cutoff frequency.
  *
  * @param[in] input_value Input signal to be filtered.
  * @return Current filter value.
+ *
+ * @note sample_time is expected in milliseconds and will be converted to seconds internally.
  */
+
 float lowpassfilter_first_order(float input_value);
 
 #endif // LOWPASSFILTERFIRSTORDER_H

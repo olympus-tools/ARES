@@ -35,19 +35,27 @@ limitations under the License:
 
 #include "derivation.h"
 
-float last_input_value = 0.f;
-float sample_time = 0.f;
+// static variables
+float last_derivation_input = 0.f;   // static variable to store the last input value
+
+// parameter inputs
+float sample_time = 0.0f;       // parameter input for sample time
 
 /**
  * @brief Calculates the numerical derivative of the input signal.
  *
- * @param[in] input_value Current input signal value.
+ * @param[in] derivation_input Current input signal value.
  * @return Numerical derivative value.
  */
-float derivation(float input_value)
+
+float derivation(float derivation_input)
 {
     if (sample_time == 0.0f) {
-        return 0.0f;
+        return 0.f;
     }
-    return (input_value - last_input_value) / sample_time;
+
+    float derivation = (derivation_input - last_derivation_input) / sample_time;
+    last_derivation_input = derivation_input;
+
+    return derivation;
 }

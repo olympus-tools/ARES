@@ -36,12 +36,16 @@ limitations under the License:
 #ifndef DERIVATION_H
 #define DERIVATION_H
 
+// parameter inputs
+extern float sample_time;    // parameter input for sample time
+
 /**
  * @brief Calculates the numerical derivative of the input signal.
  *
- * @param[in] input_value Current input signal value.
+ * @param[in] derivation_input Current input signal value.
  * @return Numerical derivative value.
  */
-float derivation(float input_value);
+
+float derivation(float derivation_input);
 
 #endif // DERIVATION_H

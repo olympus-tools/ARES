@@ -35,7 +35,10 @@ limitations under the License:
 
 #include "lowpassfilterfirstorder.h"
 
+// static variables
 float filter_last_output = 0.f;
+
+// parameter inputs
 float cutoff_freq = 0.f;
 float sample_time = 0.f;
 
@@ -47,6 +50,7 @@ float sample_time = 0.f;
  *
  * @note sample_time is expected in milliseconds and will be converted to seconds internally.
  */
+
 float lowpassfilter_first_order(float input_value)
 {
     // Convert sample_time from milliseconds to seconds
