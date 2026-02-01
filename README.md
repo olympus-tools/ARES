@@ -174,6 +174,7 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `input`            | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name.                    |
+| `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name or pattern.         |
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
 
 #### Parameter Element (`type="parameter"`)
@@ -188,6 +189,7 @@ Handles parameter sets that remain constant throughout the simulation duration. 
 | `parameter`        | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"dcm"`, `"json"`   | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific parameters by name.                 |
+| `label_filter`     | No         | `list[str]` |                     | Filter specific parameters by name or pattern.      |
 
 #### Simulation Unit (`type="sim_unit"`)
 
