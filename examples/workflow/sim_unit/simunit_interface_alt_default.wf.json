@@ -1,0 +1,24 @@
+{
+    "data_in_1": {
+        "type": "data",
+        "mode": "read",
+        "file_path": [
+            "../../data/data_example_4.mf4"
+        ]
+    },
+    "data_out_1": {
+        "type": "data",
+        "mode": "write",
+        "input": ["simunit_1"],
+        "output_format": "mf4"
+    },
+    "simunit_1": {
+        "type": "sim_unit",
+        "file_path": "../../sim_unit/inout_handling/inout_handling.so",
+        "data_dictionary": "../../sim_unit/inout_handling/inout_handling.dd.json",
+        "stepsize": 1000,
+        "input": [
+            "data_in_1"
+        ]
+    }
+}

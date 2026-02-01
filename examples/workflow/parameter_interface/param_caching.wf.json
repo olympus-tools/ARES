@@ -1,0 +1,17 @@
+{
+    "parameterset_in_1": {
+        "type": "parameter",
+        "mode": "read",
+        "file_path": [
+            "../../parameter/parameterset_example_1.dcm",
+            "../../parameter/parameterset_example_1.json",
+            "../../parameter/parameterset_example_2.dcm"
+        ]
+    },
+    "parameterset_out_1": {
+        "type": "parameter",
+        "mode": "write",
+        "parameter": ["parameterset_in_1"],
+        "output_format": "json"
+    }
+}

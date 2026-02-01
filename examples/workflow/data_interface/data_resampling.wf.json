@@ -1,0 +1,16 @@
+{
+    "data_in_1": {
+        "type": "data",
+        "mode": "read",
+        "file_path": [
+            "../../data/data_example_1.mf4"
+        ]
+    },
+    "data_out_1": {
+        "type": "data",
+        "mode": "write",
+        "input": ["data_in_1"],
+        "stepsize": 2000,
+        "output_format": "mf4"
+    }
+}
