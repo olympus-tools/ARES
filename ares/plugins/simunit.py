@@ -73,8 +73,8 @@ class SimUnit:
     @typechecked
     def __init__(
         self,
-        file_path: str = None,
-        dd_path: str = None,
+        file_path: str,
+        dd_path: str,
     ):
         """Initializes the simulation unit and sets up all required simulation parameters.
 
@@ -86,8 +86,8 @@ class SimUnit:
         - Stores all configuration parameters as instance variables
 
         Args:
-            file_path (str, optional): Path to the shared library file (.so, .dll, .dylib).
-            dd_path (str, optional): Path to the Data Dictionary JSON file.
+            file_path (str): Path to the shared library file (.so, .dll, .dylib).
+            dd_path (str): Path to the Data Dictionary JSON file.
         """
 
         self.file_path: str = file_path
