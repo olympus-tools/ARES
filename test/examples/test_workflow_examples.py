@@ -38,18 +38,41 @@ import re
 import subprocess
 from pathlib import Path
 
+import pytest
 
-def test_ares_pipeline_example_2(tmp_path, caplog):
-    """
-    Executes an ARES pipeline example and asserts its successful completion
+
+@pytest.mark.parametrize(
+    "workflow_file",
+    [
+        "workflow/data_interface/data_caching.wf.json",
+        "workflow/data_interface/data_labelfilter.wf.json",
+        "workflow/data_interface/data_resampling.wf.json",
+        "workflow/parameter_interface/param_caching.wf.json",
+        "workflow/parameter_interface/param_convertion.wf.json",
+        "workflow/parameter_interface/param_labelfilter.wf.json",
+        "workflow/plugin/plugin_manipulation.wf.json",
+        "workflow/sim_unit/simunit_dependencies.wf.json",
+        "workflow/sim_unit/simunit_interface_alt.wf.json",
+        "workflow/sim_unit/simunit_interface_alt_default.wf.json",
+        "workflow/sim_unit/simunit_interface_alt_value.wf.json",
+        "workflow/sim_unit/simunit_interface_std.wf.json",
+    ],
+)
+def test_workflow_example(workflow_file: str, tmp_path):
+    """Test all workflow examples from the examples Makefile.
+
+    This test executes each workflow and asserts its successful completion
     and the absence of errors.
-    """
 
+    Args:
+        workflow_file (str): Relative path to the workflow file from examples directory.
+        tmp_path (Path): pytest fixture providing temporary directory.
+    """
     project_root = Path(__file__).resolve().parent.parent.parent
     python_executable = (
         project_root / ".venv" / ("Scripts" if os.name == "nt" else "bin") / "python"
     )
-    workflow_file = project_root / "examples/workflow/workflow_example_2.json"
+    workflow_path = project_root / "examples" / workflow_file
 
     output_dir = tmp_path / "output"
     output_dir.mkdir()
@@ -60,7 +83,7 @@ def test_ares_pipeline_example_2(tmp_path, caplog):
         "ares",
         "pipeline",
         "--workflow",
-        str(workflow_file),
+        str(workflow_path),
         "--output",
         str(output_dir),
         "--log-level",
@@ -70,22 +93,28 @@ def test_ares_pipeline_example_2(tmp_path, caplog):
     env = dict(**os.environ)
     env["PYTHONPATH"] = str(project_root)
 
-    with caplog.at_level("DEBUG"):
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=120,
-            cwd=project_root,
-            env=env,
-            check=True,
-        )
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        timeout=120,
+        cwd=project_root,
+        env=env,
+    )
 
     clean_stdout = re.sub(r"\x1b\[[0-9;]*m", "", result.stdout)
+    clean_stderr = re.sub(r"\x1b\[[0-9;]*m", "", result.stderr)
+
+    assert result.returncode == 0, (
+        f"Pipeline failed with return code {result.returncode}:\n"
+        f"STDOUT:\n{clean_stdout}\n"
+        f"STDERR:\n{clean_stderr}"
+    )
 
     assert "ERROR" not in clean_stdout, f"Pipeline reported ERRORs:\n{clean_stdout}"
 
     success_string = "ARES pipeline successfully finished."
     assert success_string in clean_stdout, (
-        f"Success string '{success_string}' not found in output.\n{clean_stdout}"
+        f"Success string '{success_string}' not found in output.\n"
+        f"STDOUT:\n{clean_stdout}"
     )
