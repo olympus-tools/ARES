@@ -51,48 +51,60 @@ source_1 = Source(
 
 # 2.1 input_value signal
 # Timestamps: 0.0s to 19.0s, step 1.0s (20 samples)
-timestamps_input = np.arange(0.0, 20.0, 1.0)
-samples_input = np.where(timestamps_input >= 10, 1, 0)
-input_value = Signal(
+step_size_scalar = 1.0
+signal_name_scalar = "input_value"
+
+timestamps_input = np.arange(0.0, 20.0, step_size_scalar)
+samples_input = np.where(timestamps_input >= 10, 1, 0).astype(np.float32)
+signal_scalar = Signal(
     samples=samples_input,
     timestamps=timestamps_input,
-    name="input_value",
+    name=signal_name_scalar,
     source=source_1,
-    comment="",
+    comment=f"Scalar float32 input signal with step at 10s and step size {step_size_scalar}s",
 )
 
-# 2.2 signal_scalar - scalar int32 signal
-# Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
-timestamps_scalar = np.arange(0.0, 20.0, 0.5)
-signal_scalar_samples = np.arange(len(timestamps_scalar), dtype=np.int32)
+# 2.2 input_value signal
+# Timestamps: 0.0s to 19.0s, step 1.0s (20 samples)
+step_size_scalar = 1.0
+signal_name_scalar = "signal_scalar_alt"
+
+timestamps_input = np.arange(0.0, 20.0, step_size_scalar)
+samples_input = np.where(timestamps_input >= 10, 1, 0).astype(np.float32)
 signal_scalar = Signal(
-    samples=signal_scalar_samples,
-    timestamps=timestamps_scalar,
-    name="signal_scalar",
+    samples=samples_input,
+    timestamps=timestamps_input,
+    name=signal_name_scalar,
     source=source_1,
-    comment="Scalar int32 signal for inout_handling example",
+    comment=f"Scalar float32 input signal with step at 10s and step size {step_size_scalar}s",
 )
 
 # 2.3 signal_array1d - 1D array with 4 elements (float64)
 # Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
-timestamps_array1d = np.arange(0.0, 20.0, 0.5)
+step_size_array1d = 0.5
+signal_name_array1d = "signal_array1d_alt"
+
+timestamps_array1d = np.arange(0.0, 30.0, step_size_array1d)
 signal_array1d_samples = np.zeros((len(timestamps_array1d), 4), dtype=np.float64)
 for i in range(len(timestamps_array1d)):
     signal_array1d_samples[i] = [i * 1.0, i * 2.0, i * 3.0, i * 4.0]
 
-types_1d = [("signal_array1d_xyz", "(4,)<f8")]
+types_1d = [(f"{signal_name_array1d}", "(4,)<f8")]
 signal_array1d = Signal(
     samples=np.rec.fromarrays([signal_array1d_samples], dtype=np.dtype(types_1d)),
     timestamps=timestamps_array1d,
-    name="signal_array1d_xyz",
+    name=signal_name_array1d,
     unit="A",
     source=source_1,
-    comment="1D array signal (4 elements) per time step",
+    comment=f"1D array signal (4 elements) per time step with step size {step_size_array1d}s",
 )
 
 # 2.4 signal_array2d - 2D array with 2x3 elements (float64)
 # Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
-timestamps_array2d = np.arange(0.0, 20.0, 0.5)
+step_size_array2d = 0.7
+signal_name_array2d = "signal_array2d_alt"
+
+timestamps_array2d = np.arange(0.0, 20.0, step_size_array2d)
 signal_array2d_samples = np.zeros((len(timestamps_array2d), 2, 3), dtype=np.float64)
 for i in range(len(timestamps_array2d)):
     signal_array2d_samples[i] = [
@@ -100,34 +112,27 @@ for i in range(len(timestamps_array2d)):
         [i * 4.0, i * 5.0, i * 6.0],
     ]
 
-types_2d = [("signal_array2d", "(2, 3)<f8")]
+types_2d = [(f"{signal_name_array2d}", "(2, 3)<f8")]
 signal_array2d = Signal(
     samples=np.rec.fromarrays([signal_array2d_samples], dtype=np.dtype(types_2d)),
     timestamps=timestamps_array2d,
-    name="signal_array2d",
+    name=signal_name_array2d,
     unit="N",
     source=source_1,
-    comment="2D array signal (2x3 elements) per time step",
+    comment=f"2D array signal (2x3 elements) per time step with step size {step_size_array2d}s",
 )
 
 # 3. Create a new MDF file and append all signals
 mdf = MDF()
-mdf.append(input_value)
 mdf.append(signal_scalar)
 mdf.append(signal_array1d)
 mdf.append(signal_array2d)
 
-# 4. Define the output path and save the file
 output_dir = Path("examples/data")
-file_name = "data_example_3.mf4"
+
+file_name = "data_example_4.mf4"
 file_path = output_dir / file_name
-
-# Create the examples directory if it doesn't exist
 output_dir.mkdir(parents=True, exist_ok=True)
-
-# Save the MDF object to the specified file path
 mdf.save(file_path, overwrite=True)
 
-print(
-    f"Signals 'input_value', 'signal_scalar', 'signal_array1d', 'signal_array2d' successfully created and saved to '{file_path}'."
-)
+print(f"MF4 data source created and saved at: {file_path}")
