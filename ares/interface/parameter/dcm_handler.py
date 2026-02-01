@@ -136,7 +136,15 @@ class DCMHandler(ParamDCM, AresParamInterface):
             list[AresParameter] | None: List of AresParameter objects, or None if no parameters were found
         """
         if label_filter:
-            items = {k: v for k, v in self.parameter.items() if k in label_filter}
+            items = {}
+            for label in label_filter:
+                if label in self.parameter:
+                    items[label] = self.parameter[label]
+                    logger.debug(f"Parameter '{label}' found in DCM parameter file.")
+                else:
+                    logger.warning(
+                        f"Parameter '{label}' not found in DCM parameter file."
+                    )
         else:
             items = self.parameter
 

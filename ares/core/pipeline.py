@@ -47,7 +47,6 @@ from ares.utils.paths import get_project_root
 logger = create_logger(__name__)
 
 
-# TODO: use meta_data from files like e.g. mf4,mat,????
 @error_msg(
     exception_msg="Error while executing ARES pipeline.",
     log=logger,
