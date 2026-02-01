@@ -50,12 +50,16 @@ class AresParameter:
     Attributes:
         label (str): Name or identifier of the parameter (required).
         value (npt.NDArray): The parameter value as numpy array - can be scalar (0D), 1D, or 2D (required).
+        name_breakpoints_1 (str | None): Optional name of the first breakpoint axis (for 1D or 2D parameters).
+        name_breakpoints_2 (str | None): Optional name of the second breakpoint axis (for 2D parameters).
         description (str | None): Optional textual description of the parameter.
         unit (str | None): Optional physical unit of the parameter (e.g., 'km/h', '°C', 'm/s').
     """
 
     label: str
     value: npt.NDArray
+    name_breakpoints_1: str | None = None
+    name_breakpoints_2: str | None = None
     description: str | None = None
     unit: str | None = None
 

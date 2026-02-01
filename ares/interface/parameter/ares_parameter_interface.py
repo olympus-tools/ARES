@@ -43,7 +43,7 @@ from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import bin_based_hash, str_based_hash
+from ares.utils.hash import str_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
