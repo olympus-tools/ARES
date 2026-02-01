@@ -20,6 +20,7 @@
 #   - make simunit_vstack => TODO: not implemented yet
 
 VENV_DIR ?= ../.venv
+ARES ?= "$(VENV_DIR)/bin/ares"
 
 .PHONY: all
 all: data_caching \
@@ -38,7 +39,7 @@ all: data_caching \
 .PHONY: data_caching
 data_caching:
 	@echo "Running data_caching example..."
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/data_interface/data_caching.wf.json \
 		--output output/ \
 		--log-level=10
@@ -54,7 +55,7 @@ data_caching:
 .PHONY: data_labelfilter
 data_labelfilter:
 	@echo "Running data_labelfilter example..."
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/data_interface/data_labelfilter.wf.json \
 		--output output/ \
 		--log-level=10
@@ -62,7 +63,7 @@ data_labelfilter:
 .PHONY: data_resampling
 data_resampling:
 	@echo "Running data_resampling example..."
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/data_interface/data_resampling.wf.json \
 		--output output/ \
 		--log-level=10
@@ -78,7 +79,7 @@ data_resampling:
 .PHONY: param_caching
 param_caching:
 	@echo "Running param_caching example..."
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/parameter_interface/param_caching.wf.json \
 		--output output/ \
 		--log-level=10
@@ -86,7 +87,7 @@ param_caching:
 .PHONY: param_convertion
 param_convertion:
 	@echo "Running param_convertion example..."
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/parameter_interface/param_convertion.wf.json \
 		--output output/ \
 		--log-level=10
@@ -94,7 +95,7 @@ param_convertion:
 .PHONY: param_labelfilter
 param_labelfilter:
 	@echo "Running param_labelfilter example..."
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/parameter_interface/param_labelfilter.wf.json \
 		--output output/ \
 		--log-level=10
@@ -102,7 +103,7 @@ param_labelfilter:
 .PHONY: plugin_manipulation
 plugin_manipulation:
 	@echo "Running plugin_manipulation example..."
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/plugin/plugin_manipulation.wf.json \
 		--output output/ \
 		--log-level=10
@@ -112,7 +113,7 @@ simunit_dependencies:
 	@echo "Running simunit_dependencies example..."
 	$(MAKE) -C sim_unit derivation
 	$(MAKE) -C sim_unit lowpassfilterfirstorder
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/sim_unit/simunit_dependencies.wf.json \
 		--output output/ \
 		--log-level=10
@@ -121,7 +122,7 @@ simunit_dependencies:
 simunit_interface_alt:
 	@echo "Running simunit_interface_alt example..."
 	$(MAKE) -C sim_unit inout-handling
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/sim_unit/simunit_interface_alt.wf.json \
 		--output output/ \
 		--log-level=10
@@ -130,7 +131,7 @@ simunit_interface_alt:
 simunit_interface_alt_default:
 	@echo "Running simunit_interface_alt_default example..."
 	$(MAKE) -C sim_unit inout-handling
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/sim_unit/simunit_interface_alt_default.wf.json \
 		--output output/ \
 		--log-level=10
@@ -139,7 +140,7 @@ simunit_interface_alt_default:
 simunit_interface_alt_value:
 	@echo "Running simunit_interface_alt_value example..."
 	$(MAKE) -C sim_unit inout-handling
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/sim_unit/simunit_interface_alt_value.wf.json \
 		--output output/ \
 		--log-level=10
@@ -148,7 +149,7 @@ simunit_interface_alt_value:
 simunit_interface_std:
 	@echo "Running simunit_interface_std example..."
 	$(MAKE) -C sim_unit inout-handling
-	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+	@$(ARES) pipeline \
 		-wf workflow/sim_unit/simunit_interface_std.wf.json \
 		--output output/ \
 		--log-level=10

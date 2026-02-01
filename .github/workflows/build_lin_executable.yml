@@ -33,13 +33,9 @@ jobs:
         run: |
           make -C examples/sim_unit all
 
-      - name: Run Example 1 with Executable
+      - name: Run all workflow examples with Executable
         run: |
-          ./dist/ares pipeline --workflow examples/workflow/workflow_example_1.json --output examples/output/ --log-level 10
-
-      - name: Run Example 2 with Executable
-        run: |
-          ./dist/ares pipeline --workflow examples/workflow/workflow_example_2.json --output examples/output/ --log-level 10
+          make -C examples ARES=../dist/ares
 
       - name: Cleanup ARES Environment
         uses: ./.github/workflow-actions/cleanup-ares
