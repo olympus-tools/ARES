@@ -1,0 +1,447 @@
+{
+    "parameter_scalar": {
+        "description": "scalar int32 parameter",
+        "unit": "",
+        "value": [1]
+    },
+    "parameter_array1d": {
+        "description": "1D uint32 parameter array",
+        "unit": "",
+        "value": [2, 3, 4]
+    },
+    "parameter_array2d": {
+        "description": "2D float parameter array",
+        "unit": "",
+        "value": [[5.0, 6.0, 7.0], [8.0, 9.0, 10.0]]
+    },
+    "Drosselklappe_Kennlinie": {
+        "description": "Drehmomentkennlinie in Abhaengigkeit des Drosselklappenwinkels",
+        "unit": "Nm",
+        "name_breakpoints_1": "Drosselklappe_Struktur_Y",
+        "value": [
+            -4.0,
+            -4.0,
+            -2.0,
+            0.0,
+            1.0,
+            2.0,
+            3.0,
+            3.0,
+            4.0,
+            4.0,
+            4.0,
+            4.0,
+            5.0,
+            6.0,
+            8.0,
+            10.0,
+            12.0,
+            14.0,
+            15.0
+        ]
+    },
+    "Ladedruck_Kennfeld": {
+        "description": "Ladedruckkennfeld in Abhaengigkeit von Drehzahl und Drosselklappe",
+        "unit": "bar",
+        "name_breakpoints_1": "Drehzahl_Struktur_X",
+        "name_breakpoints_2": "Drosselklappe_Struktur_Y",
+        "value": [
+            [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.18,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.37,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.55,
+                0.16,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.74,
+                0.33,
+                0.02,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                0.92,
+                0.51,
+                0.2,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                1.0,
+                0.7,
+                0.38,
+                0.14,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                1.0,
+                0.87,
+                0.56,
+                0.32,
+                0.12,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                1.0,
+                1.0,
+                0.73,
+                0.5,
+                0.31,
+                0.15,
+                0.01,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+            ],
+            [
+                1.0,
+                1.0,
+                0.91,
+                0.67,
+                0.49,
+                0.35,
+                0.23,
+                0.12,
+                0.01,
+                0.0,
+                0.0
+            ],
+            [
+                1.0,
+                1.0,
+                1.0,
+                0.86,
+                0.69,
+                0.56,
+                0.45,
+                0.37,
+                0.29,
+                0.1,
+                0.0
+            ],
+            [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.88,
+                0.76,
+                0.67,
+                0.61,
+                0.56,
+                0.45,
+                0.15
+            ],
+            [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                0.96,
+                0.89,
+                0.85,
+                0.83,
+                0.8,
+                0.58
+            ],
+            [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+            ]
+        ]
+    },
+    "Oelstand_Minimum": {
+        "description": "Minimaler Oelstand fuer die Warnanzeige",
+        "unit": "L",
+        "value": 5.0
+    },
+    "sample_time": {
+        "description": "Schrittweite der Software Komponente",
+        "unit": "ms",
+        "value": 1000
+    },
+    "cutoff_freq": {
+        "description": "Eckfrequenz des PT1 Glieds",
+        "unit": "Hz",
+        "value": 0.053
+    },
+    "Injektor_Timing_Map_2D": {
+        "description": "Festgelegte Timing-Werte fuer Injektoren",
+        "unit": "ms",
+        "value": [
+            [
+                0.05,
+                0.05,
+                0.05
+            ],
+            [
+                1.0,
+                2.0,
+                3.0
+            ]
+        ]
+    },
+    "Lambdasonden_Werte_1D": {
+        "description": "Festgelegte Lambda-Sonden-Werte",
+        "unit": "Rn",
+        "value": [
+            0.05,
+            0.05,
+            0.05
+        ]
+    },
+    "Drehzahl_Struktur_X": {
+        "description": "Gemeinsame Stützstellenverteilung für die Drehzahlachse",
+        "unit": "rpm",
+        "value": [
+            1000.0,
+            1500.0,
+            2000.0,
+            2500.0,
+            3000.0,
+            3500.0,
+            4000.0,
+            4500.0,
+            5000.0,
+            5500.0,
+            6000.0
+        ]
+    },
+    "Drosselklappe_Struktur_Y": {
+        "description": "Gemeinsame Stützstellenverteilung für die Drosselklappe",
+        "unit": "deg",
+        "value": [
+            -20.0,
+            -15.0,
+            -10.0,
+            -5.0,
+            0.0,
+            5.0,
+            10.0,
+            15.0,
+            20.0,
+            25.0,
+            30.0,
+            35.0,
+            40.0,
+            45.0
+        ]
+    },
+    "Zylinderfuellung_Kennlinie": {
+        "description": "Zylinderfuellung in Abhaengigkeit von der Drehzahl",
+        "unit": "%",
+        "name_breakpoints_1": "Zylinderfuellung_Kennlinie_static_breakpoints_1",
+        "value": [
+            1.0,
+            1.5,
+            1.8,
+            2.5,
+            3.1,
+            4.0
+        ]
+    },
+    "Zylinderfuellung_Kennlinie_static_breakpoints_1": {
+        "description": "breakpoints 1 to static axis Zylinderfuellung_Kennlinie",
+        "unit": "rpm",
+        "value": [
+            0.0,
+            1000.0,
+            2000.0,
+            3000.0,
+            4000.0,
+            5000.0
+        ]
+    },
+    "Zahnrad_Anzahl_Gang_Kennlinie": {
+        "description": "Anzahl der Zaehne pro Gang fuer ein Getriebe",
+        "unit": "Zaehne",
+        "name_breakpoints_1": "Zahnrad_Anzahl_Gang_Kennlinie_static_breakpoints_1",
+        "value": [
+            25.0,
+            22.0,
+            20.0,
+            18.0,
+            16.0
+        ]
+    },
+    "Zahnrad_Anzahl_Gang_Kennlinie_static_breakpoints_1": {
+        "description": "breakpoints 1 to static axis Zahnrad_Anzahl_Gang_Kennlinie",
+        "unit": "Gang",
+        "value": [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+        ]
+    },
+    "Dataset_Name": {
+        "description": "Name des Datensatzes",
+        "value": "asdfasdfas234xi-234"
+    },
+    "Zylindertemp_Kennfeld": {
+        "description": "Temperatur des Zylinders in Abhaengigkeit von Drehzahl und Drehmoment",
+        "unit": "degC",
+        "name_breakpoints_1": "Zylindertemp_Kennfeld_static_breakpoints_1",
+        "name_breakpoints_2": "Zylindertemp_Kennfeld_static_breakpoints_2",
+        "value": [
+            [
+                100.0,
+                110.0,
+                120.0
+            ],
+            [
+                120.0,
+                130.0,
+                140.0
+            ],
+            [
+                140.0,
+                150.0,
+                160.0
+            ],
+            [
+                160.0,
+                170.0,
+                180.0
+            ]
+        ]
+    },
+    "Zylindertemp_Kennfeld_static_breakpoints_1": {
+        "description": "breakpoints 1 to static axis Zylindertemp_Kennfeld",
+        "unit": "rpm",
+        "value": [
+            1000.0,
+            2000.0,
+            3000.0
+        ]
+    },
+    "Zylindertemp_Kennfeld_static_breakpoints_2": {
+        "description": "breakpoints 2 to static axis Zylindertemp_Kennfeld",
+        "unit": "Nm",
+        "value": [
+            0.0,
+            50.0,
+            100.0,
+            150.0
+        ]
+    },
+    "Lueftersteuerung_Kennfeld_Fix": {
+        "description": "Steuerung des Kuehlerluefters in Abhaengigkeit von Geschwindigkeit und Motortemperatur",
+        "unit": "Stufe",
+        "name_breakpoints_1": "Lueftersteuerung_Kennfeld_Fix_static_breakpoints_1",
+        "name_breakpoints_2": "Lueftersteuerung_Kennfeld_Fix_static_breakpoints_2",
+        "value": [
+            [
+                1.0,
+                1.0,
+                2.0,
+                3.0
+            ],
+            [
+                2.0,
+                3.0,
+                3.0,
+                4.0
+            ]
+        ]
+    },
+    "Lueftersteuerung_Kennfeld_Fix_static_breakpoints_1": {
+        "description": "breakpoints 1 to static axis Lueftersteuerung_Kennfeld_Fix",
+        "unit": "km/h",
+        "value": [
+            10.0,
+            20.0,
+            30.0,
+            40.0
+        ]
+    },
+    "Lueftersteuerung_Kennfeld_Fix_static_breakpoints_2": {
+        "description": "breakpoints 2 to static axis Lueftersteuerung_Kennfeld_Fix",
+        "unit": "degC",
+        "value": [
+            80.0,
+            90.0
+        ]
+    }
+}
