@@ -200,7 +200,8 @@ class AresDataInterface(ABC):
                                 target_instance, file_path=None
                             )
 
-                            target_instance.add(data, **kwargs)
+                            if data is not None:
+                                target_instance.add(data, **kwargs)
 
                             output_path = eval_output_path(
                                 output_hash=output_hash,

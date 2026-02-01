@@ -92,6 +92,7 @@ class SimUnit:
 
         self.file_path: str = file_path
         self.dd_path: str = dd_path
+        self.function_name: str
 
         self._dd: DataDictionaryModel | None = self._load_and_validate_dd(
             dd_path=dd_path
@@ -204,22 +205,22 @@ class SimUnit:
                     self._library, dd_element_name
                 )
                 logger.info(
-                    f"Data dictionary variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}' could be mapped successfully to simulation unit.",
+                    f"Data dictionary variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}' found successfully in simulation unit.",
                 )
             except AttributeError as e:
                 logger.warning(
-                    f"Failed to map data dictionary variable '{dd_element_name}' to simulation unit: Symbol not found or type mismatch. {e}",
+                    f"Failed to find data dictionary variable '{dd_element_name}' in simulation unit: Symbol not found or type mismatch. {e}",
                 )
                 continue
             except Exception as e:
                 logger.warning(
-                    f"An unexpected failure occurred while mapping data dictionary variable '{dd_element_name}' to simulation unit: {e}",
+                    f"An unexpected failure occurred while finding data dictionary variable '{dd_element_name}' in simulation unit: {e}",
                 )
                 continue
 
         if not dll_interface:
             logger.warning(
-                f"There is no data dictionary variable that could be mapped successfully to simulation unit.",
+                "There is no data dictionary variable that could be found in simulation unit.",
             )
             return None
         return dll_interface
@@ -244,15 +245,15 @@ class SimUnit:
                 function cannot be found in the library.
         """
         if self._dd.meta_data and self._dd.meta_data.function_name:
-            function_name = self._dd.meta_data.function_name
+            self.function_name = self._dd.meta_data.function_name
         else:
-            function_name = "ares_simunit"
+            self.function_name = "ares_simunit"
 
-        sim_function = getattr(self._library, function_name)
+        sim_function = getattr(self._library, self.function_name)
         sim_function.argtypes = []
         sim_function.restype = None
         logger.debug(
-            f"Ares simulation unit '{function_name}' successfully set up.",
+            f"Ares simulation unit '{self.function_name}' successfully set up.",
         )
         return sim_function
 
@@ -280,7 +281,7 @@ class SimUnit:
             list[AresSignal] | None: List of AresSignal objects containing output signals for all
                 time steps, or `None` if an error occurs during the simulation.
         """
-        logger.info(f"Starting ares simulation...")
+        logger.info("Starting ares simulation...")
 
         sim_result: dict[str, np.ndarray] = {}
         time_steps = len(data[0].timestamps) if data else 1
@@ -294,7 +295,9 @@ class SimUnit:
                 f"{max(data[0].timestamps) - min(data[0].timestamps)} seconds",
             )
         else:
-            logger.info(f"No input data provided => executing single time step.")
+            logger.info(
+                "No input data (time array) provided => executing single time step."
+            )
 
         mapped_input = self._map_sim_input_data(
             data_dict=data_dict, time_steps=time_steps
@@ -331,7 +334,7 @@ class SimUnit:
             else:
                 sim_result["timestamps"][time_step_idx] = 0.0
 
-        logger.info(f"ares simulation successfully finished.")
+        logger.info("ares simulation successfully finished.")
         return [
             AresSignal(
                 label=signal_name,
@@ -476,7 +479,7 @@ class SimUnit:
                 return None
 
         logger.debug(
-            f"Mapping dynamic simulation input to data source has been successfully finished."
+            "Mapping dynamic simulation input to data source has been successfully finished."
         )
         return mapped_input
 
@@ -581,7 +584,7 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"Warning writing signal '{dd_element_name}' to 'ares_simunit' function: {e}",
+                    f"Warning writing signal '{dd_element_name}' to '{self.function_name}' function: {e}",
                 )
 
     @typechecked
@@ -602,7 +605,7 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"Warning writing parameter '{dd_element_name}' to 'ares_simunit' function: {e}",
+                    f"Warning writing parameter '{dd_element_name}' to '{self.function_name}' function not possible: {e}",
                 )
 
     @safely_run(
@@ -678,44 +681,49 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"Reading output value '{dd_element_name}' from 'ares_simunit' function has not been successful: {e}",
+                    f"Reading output value '{dd_element_name}' from '{self.function_name}' function has not been successful: {e}",
                 )
 
         return step_result
 
-    def signal_keys(self) -> list[str]:
-        """Returns a list of signal keys defined in the Data Dictionary.
+    def input_signal_keys(self) -> list[str]:
+        """Returns a list of unique signal keys defined in the Data Dictionary.
 
         Includes both signal names from the DD and string entries from input_alternatives.
 
         Returns:
-            list[str]: A list of signal keys and alternative signal names.
+            list[str]: A list of unique signal keys and alternative signal names.
         """
         signal_keys = []
 
         for dd_element_name, dd_element_value in self._dd.signals.items():
             if dd_element_value.type in ["in", "inout"]:
-                signal_keys.append(dd_element_name)
+                if dd_element_name not in signal_keys:
+                    signal_keys.append(dd_element_name)
                 if (
                     hasattr(dd_element_value, "input_alternatives")
                     and dd_element_value.input_alternatives
                 ):
-                    for alt in dd_element_value.input_alternatives:
-                        if isinstance(alt, str):
-                            signal_keys.append(alt)
+                    for alternative in dd_element_value.input_alternatives:
+                        if (
+                            isinstance(alternative, str)
+                            and alternative not in signal_keys
+                        ):
+                            signal_keys.append(alternative)
 
         return signal_keys
 
     def parameter_keys(self) -> list[str]:
-        """Returns a list of parameter keys defined in the Data Dictionary.
+        """Returns a list of unique parameter keys defined in the Data Dictionary.
 
         Returns:
-            list[str]: A list of parameter keys.
+            list[str]: A list of unique parameter keys.
         """
         parameter_keys = []
 
         for parameter_name in self._dd.parameters.keys():
-            parameter_keys.append(parameter_name)
+            if parameter_name not in parameter_keys:
+                parameter_keys.append(parameter_name)
 
         return parameter_keys
 
@@ -748,7 +756,7 @@ def ares_plugin(plugin_input):
         dd_path=plugin_input["data_dictionary"],
     )
 
-    label_filter_signal = sim_unit.signal_keys()
+    label_filter_signal = sim_unit.input_signal_keys()
     label_filter_parameter = sim_unit.parameter_keys()
 
     for element_parameter_list in element_parameter_lists:
