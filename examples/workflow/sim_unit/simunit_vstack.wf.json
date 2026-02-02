@@ -3,7 +3,7 @@
         "type": "data",
         "mode": "read",
         "file_path": [
-            "../../data/data_example_3.mf4"
+            "../../data/data_example_5.mf4"
         ]
     },
     "parameterset_in_1": {
@@ -16,11 +16,15 @@
     "simunit_1": {
         "type": "sim_unit",
         "file_path": "../../sim_unit/inout_handling/inout_handling.so",
-        "data_dictionary": "../../sim_unit/inout_handling/inout_handling.dd.json",
+        "data_dictionary": "../../sim_unit/inout_handling/inout_handling_vstack.dd.json",
         "stepsize": 1000,
         "parameter": ["parameterset_in_1"],
         "input": [
             "data_in_1"
+        ],
+        "vstack_pattern": [
+            "^[\\w\\s]+_\\[\\d+\\]$",
+            "^[\\w\\s]+_\\[\\d+\\]\\[\\d+\\]$"
         ]
     },
     "data_out_1": {
