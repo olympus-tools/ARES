@@ -184,6 +184,7 @@ class Workflow:
         wf_sinks: list[str] = []
         ref_input_list: list[str] = []
 
+        # loop searches all referenced elements from workflow-json
         for wf_element_value in self.workflow.values():
             if hasattr(wf_element_value, "parameter") and wf_element_value.parameter:
                 ref_input_list.extend(wf_element_value.parameter)
@@ -198,11 +199,13 @@ class Workflow:
                 if hasattr(wf_element_value, "input") and wf_element_value.input:
                     ref_input_list.extend(wf_element_value.input)
 
-        poss_sinks = [
+        # referenced elements MUST NOT be sinks
+        possible_sinks = [
             key for key in self.workflow.keys() if key not in set(ref_input_list)
         ]
 
-        for sink in poss_sinks:
+        # validate possible-sinks
+        for sink in possible_sinks:
             wf_element_value = self.workflow.get(sink)
 
             if (
