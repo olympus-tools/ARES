@@ -67,42 +67,23 @@ signal_scalar = Signal(
 # 2.3 signal_array1d - Create 4 separate signals for each array element
 # Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
 step_size_array1d = 0.5
-signal_name_array1d_01 = "signal_array1d_vstack"
+signal_name_array1d = "signal_array1d_vstack"
 
-timestamps_array1d_01 = np.arange(0.0, 30.0, step_size_array1d)
-signal_array1d_list_01 = []
+timestamps_array1d = np.arange(0.0, 30.0, step_size_array1d)
+signal_array1d_list = []
 for idx in range(4):
     samples = np.array(
-        [i * (idx + 1.0) for i in range(len(timestamps_array1d_01))], dtype=np.float64
+        [i * (idx + 1.0) for i in range(len(timestamps_array1d))], dtype=np.float64
     )
     signal = Signal(
         samples=samples,
-        timestamps=timestamps_array1d_01,
-        name=f"{signal_name_array1d_01}_[{idx}]",
+        timestamps=timestamps_array1d,
+        name=f"{signal_name_array1d}_[{idx}]",
         unit="A",
         source=source_1,
         comment=f"1D array element [{idx}] with step size {step_size_array1d}s",
     )
-    signal_array1d_list_01.append(signal)
-
-step_size_array1d = 0.5
-signal_name_array1d_02 = "signal_another_array1d_vstack"
-
-timestamps_array1d_02 = np.arange(0.0, 30.0, step_size_array1d)
-signal_array1d_list_02 = []
-for idx in range(4):
-    samples = np.array(
-        [i * (idx + 1.0) for i in range(len(timestamps_array1d_02))], dtype=np.float64
-    )
-    signal = Signal(
-        samples=samples,
-        timestamps=timestamps_array1d_02,
-        name=f"{signal_name_array1d_02}_[{idx}]",
-        unit="A",
-        source=source_1,
-        comment=f"1D array element [{idx}] with step size {step_size_array1d}s",
-    )
-    signal_array1d_list_02.append(signal)
+    signal_array1d_list.append(signal)
 
 # 2.4 signal_array2d - Create 2x3=6 separate signals for each array element
 # Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
@@ -130,9 +111,7 @@ for row in range(2):
 # 3. Create a new MDF file and append all signals
 mdf = MDF()
 mdf.append(signal_scalar)
-for signal in signal_array1d_list_01:
-    mdf.append(signal)
-for signal in signal_array1d_list_02:
+for signal in signal_array1d_list:
     mdf.append(signal)
 for signal in signal_array2d_list:
     mdf.append(signal)
@@ -143,10 +122,5 @@ file_name = "data_example_5.mf4"
 file_path = output_dir / file_name
 output_dir.mkdir(parents=True, exist_ok=True)
 mdf.save(file_path, overwrite=True)
-print(f"MF4 data source created and saved at: {file_path}")
 
-file_name = "data_example_6.mf4"
-file_path = output_dir / file_name
-output_dir.mkdir(parents=True, exist_ok=True)
-mdf.save(file_path, overwrite=True)
 print(f"MF4 data source created and saved at: {file_path}")
