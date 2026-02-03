@@ -41,7 +41,7 @@ from ares.utils.decorators import typechecked_dev as typechecked
 @typechecked
 def resolve_label_filter(
     label_filter: list[str],
-    available_elements: list[str] | None = None,
+    available_elements: list[str],
 ) -> list[str]:
     """Resolve regex-pattern in "label_filter". Function is a general approach for all ares interaces (e.g. data/parameter).
 
@@ -53,11 +53,10 @@ def resolve_label_filter(
         list[str]: List of element names to extract from interace.
     """
     result_list: list[str] = []
-    for pattern in label_filter:
-        rg = re.compile(pattern)
+    for regex in label_filter:
+        pattern = re.compile(regex)
         result_list.extend(
-            [element for element in available_elements if rg.search(element)]
+            [element for element in available_elements if pattern.search(element)]
         )
 
-    # make unique and return
     return list(set(result_list))
