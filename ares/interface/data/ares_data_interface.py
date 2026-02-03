@@ -34,7 +34,6 @@ limitations under the License:
 """
 
 import os
-import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import ClassVar
@@ -317,32 +316,6 @@ class AresDataInterface(ABC):
         [signal.resample(timestamps_resample) for signal in data]
         return data
 
-    @typechecked
-    def _resolve_label_filter(
-        self,
-        label_filter: list[str],
-        available_signals: list[str] | None = None,
-    ) -> list[str]:
-        """Resolve regex-pattern in "label_filter". Function is a general approach for all data interaces.
-        Can be overriden in case specific dataclasses implement better/their own solutions (e.g. asammdf).
-
-        Args:
-            label_filter (list[str]): List of signal names/search pattern to retrieve.
-            available_signals (list [str]): List of available signals to use given label_filter on (general implementation).
-
-        Returns:
-            list[str]: List of signal names to extract from given data interace.
-        """
-        signal_list: list[str] = []
-        for pattern in label_filter:
-            rg = re.compile(pattern)
-            signal_list.extend(
-                [signal for signal in available_signals if rg.search(signal)]
-            )
-
-        # make unique and return
-        return list(set(signal_list))
-
     @abstractmethod
     def get(
         self, label_filter: list[str] | None = None, **kwargs
@@ -350,7 +323,6 @@ class AresDataInterface(ABC):
         """Get data from the interface.
 
         Args:
-            label_filter (list[str] | None): List of signal names to retrieve from the interface.
             label_filter (list[str] | None): List of signal names or pattern to retrieve from the interface.
             **kwargs (Any): Additional format-specific arguments
 

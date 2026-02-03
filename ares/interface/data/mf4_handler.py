@@ -149,7 +149,6 @@ class MF4Handler(MDF, AresDataInterface):
         """Get signals from mf4 file with optional resampling.
 
         Args:
-            label_filter (list[str] | None): List of signal names to read from mf4 file.
             label_filter (list[str] | None): List of signal names or pattern to read from mf4 file.
                 If None, all available signals are read. Defaults to None.
             **kwargs (Any): Additional arguments. 'stepsize' (int) triggers resampling.
@@ -173,11 +172,9 @@ class MF4Handler(MDF, AresDataInterface):
         else:
             return self._resample(data=tmp_data, stepsize=stepsize)
 
-    @override
     def _resolve_label_filter(
         self,
         label_filter: list[str],
-        available_signals: list[str] | None = None,
     ) -> list[str]:
         """internal function implementation of utility function "resolve_label_filter()".
         Function overrides general implementation in "ares_data_interface" and uses the 'search()' provided by the asammdf package.
@@ -185,14 +182,13 @@ class MF4Handler(MDF, AresDataInterface):
 
         Args:
             label_filter (list[str]): List of signal names/search pattern to retrieve.
-            available_signals (list [str] | None): List of available signals to use given label_filter on (general implementation).
 
         Returns:
             list[str]: List of signal names to extract from given data interace.
         """
         signal_list: list[str] = []
-        for pattern in label_filter:
-            signal_list.extend(self.search(pattern, mode="regex"))
+        for regex in label_filter:
+            signal_list.extend(self.search(regex, mode="regex"))
 
         return list(set(signal_list))
 
