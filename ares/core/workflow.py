@@ -188,7 +188,6 @@ class Workflow:
         for wf_element_value in self.workflow.values():
             if hasattr(wf_element_value, "parameter") and wf_element_value.parameter:
                 ref_input_list.extend(wf_element_value.parameter)
-
             if (
                 hasattr(wf_element_value, "cancel_condition")
                 and wf_element_value.cancel_condition
@@ -210,10 +209,8 @@ class Workflow:
 
             if (
                 hasattr(wf_element_value, "parameter")
-                and wf_element_value.parameter is None
-            ) or (
-                hasattr(wf_element_value, "input") and wf_element_value.input is None
-            ):
+                and not wf_element_value.parameter
+            ) and (hasattr(wf_element_value, "input") and not wf_element_value.input):
                 logger.debug(
                     f"""Workflow element "{sink}" is a unused workflow source."""
                 )

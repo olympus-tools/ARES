@@ -111,7 +111,7 @@ class SimUnitElement(PluginElement):
     )
     file_path: str
     stepsize: int
-    input: list[str]
+    input: list[str] | None = []
     parameter: list[str] | None = []
     data_dictionary: str
     init: list[str] | None = []
