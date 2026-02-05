@@ -200,7 +200,9 @@ class Workflow:
 
         # referenced elements MUST NOT be sinks
         possible_sinks = [
-            key for key in self.workflow.keys() if key not in set(ref_input_list)
+            wf_element_name
+            for wf_element_name in self.workflow.keys()
+            if wf_element_name not in set(ref_input_list)
         ]
 
         # validate possible-sinks
