@@ -74,6 +74,7 @@ class ParamDCM:
         self.file_path: str = file_path
         self.parameter: dict[str, Any] = self._load()
 
+    @typechecked
     def _load(self) -> dict[str, Any]:
         """Parses a DCM file and converts it to a validated ParameterModel object.
 
