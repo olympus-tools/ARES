@@ -21,6 +21,8 @@ Before you begin, please read our [Code of Conduct](CODE_OF_CONDUCT.md) to ensur
 
 ---
 
+**⚠️ NOTE:** Linux is highly recommended for contributing to ARES, as the launch.json and make commands are designed Linux.
+
 ## 1. Getting Started
 
 ### 1.1 Development Setup
@@ -53,8 +55,6 @@ To set up your development environment:
 
 5. **VSCode Debugging (optional):**
    If you use Visual Studio Code, launch configurations for debugging the examples are already set up in `.vscode/launch.json`. You can use these to debug ARES workflows directly from the IDE.
-
-**⚠️ NOTE:** Currently ARES is only supported for Linux.
 
 ### 1.2 Running Tests
 

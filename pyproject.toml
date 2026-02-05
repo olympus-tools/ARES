@@ -7,8 +7,8 @@ name = "ares"
 description = "automated rapid embedded simulation"
 readme = "README.md"
 authors = [
-  {name = "Andrä Carotta", email = "not_yet@ares.com"},
-  {name = "Jonas Bleich", email = "not_yet@ares.com"},
+  {name = "Andrä Carotta"},
+  {name = "Jonas Bleich"},
 ]
 license = {file = "LICENSE"}
 requires-python = ">=3.13,<3.14"
