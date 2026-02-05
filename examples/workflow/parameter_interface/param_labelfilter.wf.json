@@ -6,12 +6,22 @@
             "../../parameter/parameterset_example_1.json"
         ]
     },
+    "parameterset_in_2": {
+        "type": "parameter",
+        "mode": "read",
+        "file_path": [
+            "../../parameter/parameterset_example_1.dcm"
+        ]
+    },
     "parameterset_out_1": {
         "type": "parameter",
         "mode": "write",
-        "parameter": ["parameterset_in_1"],
+        "parameter": [
+            "parameterset_in_1",
+            "parameterset_in_2"
+        ],
         "label_filter": [
-            "sample_time"
+            "_Struktur_"
         ],
         "output_format": "json"
     }
