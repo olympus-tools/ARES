@@ -11,7 +11,7 @@
         "mode": "write",
         "input": ["data_in_1"],
         "label_filter": [
-            "input_value"
+            "signal_"
         ],
         "output_format": "mf4"
     }
