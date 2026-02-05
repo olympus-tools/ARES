@@ -159,9 +159,12 @@ class MF4Handler(MDF, AresDataInterface):
         """
         stepsize = kwargs.pop("stepsize", None)
         tmp_data = (
-            self._get_signals(self._available_signals)
+            self._get_signals(label_filter=self._available_signals, **kwargs)
             if label_filter is None
-            else self._get_signals(self._resolve_label_filter(label_filter), **kwargs)
+            else self._get_signals(
+                label_filter=self._resolve_label_filter(label_filter=label_filter),
+                **kwargs,
+            )
         )
 
         if not tmp_data:
@@ -177,8 +180,8 @@ class MF4Handler(MDF, AresDataInterface):
         label_filter: list[str],
     ) -> list[str]:
         """internal function implementation of utility function "resolve_label_filter()".
-        Function overrides general implementation in "ares_data_interface" and uses the 'search()' provided by the asammdf package.
-        It uses the 'search()' provided by the asammdf package.
+        Function overrides general implementation in "ares_data_interface" and uses the 'search()'
+        provided by the asammdf package. It uses the 'search()' provided by the asammdf package.
 
         Args:
             label_filter (list[str]): List of signal names/search pattern to retrieve.

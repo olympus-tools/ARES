@@ -129,25 +129,27 @@ class DCMHandler(ParamDCM, AresParamInterface):
         Uses safe dictionary access to handle missing optional fields.
 
         Args:
-            label_filter (list[str] | None): List of parameter names or pattern to retrieve from the interface.
-                If None, all parameters are returned. Defaults to None.
+            label_filter (list[str] | None): List of parameter names or pattern to retrieve
+            from the interface. If None, all parameters are returned. Defaults to None.
             **kwargs: Additional format-specific arguments
 
         Returns:
-            list[AresParameter] | None: List of AresParameter objects, or None if no parameters were found
+            list[AresParameter] | None: List of AresParameter objects, or None if no
+                parameters were found
         """
-        if self.parameter.keys() == None:
-            return None
 
         if label_filter:
-            items = {
+            parameter_tmp = {
                 parameter_name: parameter_value
                 for parameter_name, parameter_value in self.parameter.items()
                 if parameter_name
-                in resolve_label_filter(label_filter, list(self.parameter.keys()))
+                in resolve_label_filter(
+                    label_filter=label_filter,
+                    available_elements=list(self.parameter.keys()),
+                )
             }
         else:
-            items = self.parameter
+            parameter_tmp = self.parameter
 
         result = [
             AresParameter(
@@ -158,7 +160,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
                 description=parameter_value.get("description", None),
                 unit=parameter_value.get("unit", None),
             )
-            for parameter_name, parameter_value in items.items()
+            for parameter_name, parameter_value in parameter_tmp.items()
         ]
 
         return result if result else None
