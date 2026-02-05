@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  build-executable:
+  build-lin-executable:
     runs-on: ubuntu-latest
 
     steps:
