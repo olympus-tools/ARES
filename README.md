@@ -173,7 +173,6 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `file_path`        | If `read`  | `list[str]` |                     | Path(s) to input data files (e.g., `.mf4`).         |
 | `input`            | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
-| `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name.                    |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name or pattern.         |
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
 
@@ -188,7 +187,6 @@ Handles parameter sets that remain constant throughout the simulation duration. 
 | `file_path`        | If `read`  | `list[str]` |                     | Path(s) to parameter files (e.g., `.dcm`, `.json`). |
 | `parameter`        | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"dcm"`, `"json"`   | Target file format.                                 |
-| `label_filter`     | No         | `list[str]` |                     | Filter specific parameters by name.                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific parameters by name or pattern.      |
 
 #### Simulation Unit (`type="sim_unit"`)

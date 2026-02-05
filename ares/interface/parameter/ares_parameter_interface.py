@@ -281,7 +281,6 @@ class AresParamInterface(ABC):
         """Get parameters from the interface.
 
         Args:
-            label_filter (list[str] | None): List of parameter names to retrieve from the interface.
             label_filter (list[str] | None): List of parameter names or pattern to retrieve from the interface.
             **kwargs (Any): Additional format-specific arguments
 
