@@ -338,88 +338,98 @@ class AresDataInterface(ABC):
     @staticmethod
     @typechecked
     def _vstack(data: list[AresSignal], vstack_pattern: list[str]) -> list[AresSignal]:
-        """Vertical stack ares-signals matching given regex.
+        """Vertical stack ares-signals matching given regex patterns.
+
+        Supports two stacking modes based on number of regex groups:
+        - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
+        - 3 groups: Stack 1D signals to 3D matrix using row/column indices
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
-            vstack_pattern (list[str]): Pattern (regex) used to stack AresSignal's
+            vstack_pattern (list[str]): Regex patterns for signal matching and stacking
 
         Returns:
-            list[AresSignal]: List of AresSignal with vstacked signals.
+            list[AresSignal]: Original data list with newly stacked signals appended
         """
         for regex in vstack_pattern:
             pattern = re.compile(regex)
 
+            # check pattern for groups - at least 1 group necessary for stacking
             if pattern.groups == 0:
                 logger.debug(
-                    f"Vertical stacking for pattern '{regex}' is skipped. Pattern includes no group."
+                    f"Vertical stacking for pattern '{regex}' is skipped."
+                    f"Pattern includes no group."
                 )
                 continue
 
-            matches = [
+            # find all matching signals
+            pair_matches = [
                 (signal, pattern_result)
                 for signal in data
                 if (pattern_result := pattern.search(signal.label))
             ]
 
-            if len(matches) == 0:
+            # no matching signals found for pattern, sipping
+            if not pair_matches:
+                continue
+            else:
+                signal_matches, pattern_matches = zip(*pair_matches)
+
+            # validate that all matching signals have same dimensions
+            reference_signal = signal_matches[0]
+            if not all(
+                [signal.shape == reference_signal.shape for signal in signal_matches]
+            ):
                 continue
 
-            if all(
-                [
-                    len(match[0].value) == len(matches[0][0].value)
-                    and len(match[0].value.shape) == len(matches[0][0].value.shape)
-                    and match[0].value.shape[0] == matches[0][0].value.shape[0]
-                    for match in matches
-                ]
-            ):
-                sig_name = matches[0][1].group(1)
+            # get stack signal name from 1st group
+            sig_name = pattern_matches[0].group(1)
 
-                # 1D
-                if pattern.groups <= 2:
-                    logger.debug(
-                        f"Vertical stacking applied, stacking 1D signals to 2D: {sig_name} <-- {[match[0].label for match in matches]}"
+            # 1D
+            if pattern.groups <= 2:
+                logger.debug(
+                    f"Vertical stacking applied, stacking 1D signals to 2D: {sig_name} <-- {[signal.label for signal in signal_matches]}"
+                )
+                data.append(
+                    AresSignal(
+                        label=sig_name,
+                        timestamps=reference_signal.timestamps,
+                        value=np.vstack([signal.value for signal in signal_matches]).T,
                     )
-                    data.append(
-                        AresSignal(
-                            label=sig_name,
-                            timestamps=matches[0][0].timestamps,
-                            value=np.vstack([match[0].value for match in matches]).T,
-                        )
-                    )
-                # 2D
-                elif pattern.groups == 3:
-                    number_columns = 0
-                    number_rows = 0
-                    for _, pattern_result in matches:
-                        number_columns = max(
-                            number_columns, int(pattern_result.group(2))
-                        )
-                        number_rows = max(number_rows, int(pattern_result.group(3)))
+                )
 
-                    stacked_matrix = np.full(
-                        (
-                            number_rows + 1,
-                            number_columns + 1,
-                            len(matches[0][0].timestamps),
-                        ),
-                        np.nan,
-                    )
-                    for signal, pattern_result in matches:
-                        column_idx = int(pattern_result.group(2))
-                        row_idx = int(pattern_result.group(3))
-                        stacked_matrix[row_idx, column_idx, :] = signal.value
+            # 2D
+            elif pattern.groups == 3:
+                number_columns = 0
+                number_rows = 0
+                for pattern_result in pattern_matches:
+                    number_columns = max(number_columns, int(pattern_result.group(2)))
+                    number_rows = max(number_rows, int(pattern_result.group(3)))
 
-                    logger.debug(
-                        f"Vertical stacking applied,stacking 2D signals to 3D:{sig_name} <-- {[match[0].label for match in matches]}"
+                stacked_matrix = np.full(
+                    (
+                        number_rows + 1,
+                        number_columns + 1,
+                        len(reference_signal.timestamps),
+                    ),
+                    np.nan,
+                )
+
+                for signal, pattern_result in zip(signal_matches, pattern_matches):
+                    column_idx = int(pattern_result.group(2))
+                    row_idx = int(pattern_result.group(3))
+                    stacked_matrix[row_idx, column_idx, :] = signal.value
+
+                logger.debug(
+                    f"Vertical stacking applied,stacking 2D signals to 3D:{sig_name} <-- {[signal.label for signal in signal_matches]}"
+                )
+                data.append(
+                    AresSignal(
+                        label=sig_name,
+                        timestamps=reference_signal.timestamps,
+                        value=stacked_matrix.transpose(2, 0, 1),
                     )
-                    data.append(
-                        AresSignal(
-                            label=sig_name,
-                            timestamps=matches[0][0].timestamps,
-                            value=stacked_matrix.transpose(2, 0, 1),
-                        )
-                    )
+                )
 
         return data
 
