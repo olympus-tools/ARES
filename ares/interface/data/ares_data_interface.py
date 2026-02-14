@@ -344,6 +344,9 @@ class AresDataInterface(ABC):
         Supports two stacking modes based on number of regex groups:
         - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
         - 3 groups: Stack 1D signals to 3D matrix using row/column indices
+                    - group1 = signal name
+                    - group2 = columns (axis-1)
+                    - group3 = rows (axis-2)
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
@@ -370,12 +373,11 @@ class AresDataInterface(ABC):
                 if (pattern_result := pattern.search(signal.label))
             ]
 
-            # no matching signals found for pattern, skipping
-            # else unzip tuple for better code readability
+            # no matching signals found for pattern -> skipping this pattern
             if not pair_matches:
                 continue
 
-            # iterate over groups, collect matching signals,pattern to stack
+            # iterate over groups, collect matching signals,pattern to stack in dict
             signal_stack_dict = defaultdict(lambda: {"signals": [], "patterns": []})
             for signal_match, pattern_match in pair_matches:
                 group_key = pattern_match.group(1)
@@ -383,7 +385,7 @@ class AresDataInterface(ABC):
                 signal_stack_dict[group_key]["signals"].append(signal_match)
                 signal_stack_dict[group_key]["patterns"].append(pattern_match)
 
-            # iterate collected groups and stack them
+            # iterate over collected groups and stack them to combined signal
             for sig_name, data_stack in signal_stack_dict.items():
                 signal_matches = data_stack["signals"]
                 pattern_matches = data_stack["patterns"]
@@ -396,6 +398,9 @@ class AresDataInterface(ABC):
                         for signal in signal_matches
                     ]
                 ):
+                    logger.debug(
+                        f"Vertical stacking could not be applied. Dimension missmatch in stack: {[signal.label for signal in signal_matches]}"
+                    )
                     continue
 
                 # 1D
@@ -444,7 +449,7 @@ class AresDataInterface(ABC):
                         AresSignal(
                             label=sig_name,
                             timestamps=reference_signal.timestamps,
-                            value=stacked_matrix.transpose(2, 0, 1),
+                            value=stacked_matrix.transpose(2, 1, 0),
                         )
                     )
 
