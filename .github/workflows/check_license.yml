@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - master
-    paths:
+    paths-ignore:
       - 'pyproject.toml'
       - 'NOTICE'
       - 'scripts/analyze_dependencies.py'
