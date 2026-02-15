@@ -113,7 +113,7 @@ class AresParamInterface(ABC):
     def __init__(
         self,
         file_path: Path | None,
-        dependencies: list[str] | None = [],
+        dependencies: list[str] | None = None,
     ):
         """Initialize base attributes for all parameter handlers.
 
@@ -121,10 +121,13 @@ class AresParamInterface(ABC):
 
         Args:
             file_path (Path | None): Path to the parameter file to load
+            dependencies (list[str] | None): Optional list of parameter labels that this instance depends on
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(self, "dependencies", dependencies)
+        object.__setattr__(
+            self, "dependencies", dependencies if dependencies is not None else []
+        )
 
     @classmethod
     @typechecked
