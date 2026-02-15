@@ -344,9 +344,9 @@ class AresDataInterface(ABC):
         Supports two stacking modes based on number of regex groups:
         - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
         - 3 groups: Stack 1D signals to 3D matrix using row/column indices
-                    - group1 = signal name
-                    - group2 = columns (axis-1)
-                    - group3 = rows (axis-2)
+            - group1 = signal name
+            - group2 = columns (axis-1)
+            - group3 = rows (axis-2)
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
@@ -386,7 +386,7 @@ class AresDataInterface(ABC):
                 signal_stack_dict[group_key]["patterns"].append(pattern_match)
 
             # iterate over collected groups and stack them to combined signal
-            for sig_name, data_stack in signal_stack_dict.items():
+            for signal_name, data_stack in signal_stack_dict.items():
                 signal_matches = data_stack["signals"]
                 pattern_matches = data_stack["patterns"]
 
@@ -406,11 +406,11 @@ class AresDataInterface(ABC):
                 # 1D
                 if pattern.groups <= 2:
                     logger.debug(
-                        f"Vertical stacking applied, stacking 1D signals to 2D: {sig_name} <-- {[signal.label for signal in signal_matches]}"
+                        f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}"
                     )
                     data.append(
                         AresSignal(
-                            label=sig_name,
+                            label=signal_name,
                             timestamps=reference_signal.timestamps,
                             value=np.vstack(
                                 [signal.value for signal in signal_matches]
@@ -443,11 +443,11 @@ class AresDataInterface(ABC):
                         stacked_matrix[row_idx, column_idx, :] = signal.value
 
                     logger.debug(
-                        f"Vertical stacking applied,stacking 2D signals to 3D:{sig_name} <-- {[signal.label for signal in signal_matches]}"
+                        f"Vertical stacking applied,stacking 2D signals to 3D:{signal_name} <-- {[signal.label for signal in signal_matches]}"
                     )
                     data.append(
                         AresSignal(
-                            label=sig_name,
+                            label=signal_name,
                             timestamps=reference_signal.timestamps,
                             value=stacked_matrix.transpose(2, 1, 0),
                         )
