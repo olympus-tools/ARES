@@ -34,9 +34,11 @@ limitations under the License:
 """
 
 import os
+from pathlib import Path
 
 import numpy as np
 import pytest
+from asammdf.blocks.utils import MdfException
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.data.mf4_handler import MF4Handler
@@ -46,12 +48,14 @@ def test_ares_mf4handler_file_init_read():
     """
     Test if mf4handler can be initialized with mf4-file mode "read".
     """
-    mf4_filepath = os.path.join(
-        os.path.dirname(__file__),
-        "../../../examples/data/data_example_1.mf4",
+    mf4_filepath = Path(
+        os.path.join(
+            os.path.dirname(__file__),
+            "../../../examples/data/data_example_1.mf4",
+        )
     )
 
-    if os.path.isfile(mf4_filepath):
+    if mf4_filepath.is_file():
         test_data = MF4Handler(
             file_path=mf4_filepath,
         )
@@ -61,25 +65,25 @@ def test_ares_mf4handler_file_init_write():
     """
     Test if mf4handler can be initialized with mf4-file mode "write".
     """
-    mf4_filepath = os.path.join(os.path.dirname(__file__), "test_file.mf4")
+    mf4_filepath = Path(os.path.join(os.path.dirname(__file__), "test_file.mf4"))
     test_data_write01 = MF4Handler(file_path=None, signals=[])
     test_data_write01._save(mf4_filepath)
 
-    if not os.path.isfile(mf4_filepath):
+    if not mf4_filepath.is_file():
         assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
     else:
-        os.remove(mf4_filepath)
+        mf4_filepath.unlink()
 
     test_data_write02 = MF4Handler(file_path=None, signals=[])
     test_data_write02._save(mf4_filepath)
 
-    if not os.path.isfile(mf4_filepath):
+    if not mf4_filepath.is_file():
         assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
     else:
-        os.remove(mf4_filepath)
+        mf4_filepath.unlink()
 
     # WARN: The following part in the test leads to an recursion in asammdf. This is on purpose!
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(MdfException):
         test_data_read = MF4Handler(file_path=mf4_filepath)
 
 
@@ -87,12 +91,14 @@ def test_ares_mf4handler_file_read_get():
     """
     Test if mf4handler can read signals from mf4-files.
     """
-    mf4_filepath = os.path.join(
-        os.path.dirname(__file__),
-        "../../../examples/data/data_example_1.mf4",
+    mf4_filepath = Path(
+        os.path.join(
+            os.path.dirname(__file__),
+            "../../../examples/data/data_example_1.mf4",
+        )
     )
 
-    if os.path.isfile(mf4_filepath):
+    if mf4_filepath.is_file():
         test_data = MF4Handler(
             file_path=mf4_filepath,
         )
@@ -111,7 +117,7 @@ def test_ares_mf4handler_file_write_get():
     """
     Test if mf4handler can read signals from created mf4-file.
     """
-    mf4_filepath = os.path.join(os.path.dirname(__file__), "test_file.mf4")
+    mf4_filepath = Path(os.path.join(os.path.dirname(__file__), "test_file.mf4"))
 
     test_signal = AresSignal(
         label="test_signal",
@@ -130,7 +136,7 @@ def test_ares_mf4handler_file_write_get():
     )
 
     test_data_write._save(mf4_filepath)
-    if not os.path.isfile(mf4_filepath):
+    if not mf4_filepath.is_file():
         assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
     else:
-        os.remove(mf4_filepath)
+        mf4_filepath.unlink()

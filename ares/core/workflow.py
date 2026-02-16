@@ -37,6 +37,7 @@ import json
 import os
 import re
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from pydantic_core import ValidationError
@@ -55,18 +56,18 @@ class Workflow:
     @typechecked
     def __init__(
         self,
-        file_path: str | None = None,
+        file_path: Path,
     ):
         """Initializes a Workflow object by reading and validating a workflow JSON file.
 
         Args:
-            file_path (str | None): Path to the workflow JSON file (*.json).
+            file_path (Path): Path to the workflow JSON file (*.json).
         """
-        self._file_path: str | None = file_path
-        self.workflow: WorkflowModel | None = self._load_and_validate_wf()
+        self._file_path: Path = file_path
+        self.workflow: WorkflowModel = self._load_and_validate_wf()
         self._evaluate_relative_paths()
-        self.workflow_sinks: list[str] | None = self._find_sinks()
-        self.workflow_order: list[str] | None = self._eval_workflow_order()
+        self.workflow_sinks: list[str] = self._find_sinks()
+        self.workflow_order: list[str] = self._eval_workflow_order()
         self._sort_workflow()
         self._eval_element_workflow()
 
@@ -81,14 +82,13 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def _load_and_validate_wf(self) -> WorkflowModel | None:
+    def _load_and_validate_wf(self) -> WorkflowModel:
         """Reads and validates the workflow JSON file using Pydantic.
 
         Returns:
-            WorkflowModel | None: A Pydantic object representing the workflow,
-                or None in case of an error.
+            WorkflowModel: A Pydantic object representing the workflow.
         """
-        with open(self._file_path, "r", encoding="utf-8") as file:
+        with open(str(self._file_path), "r", encoding="utf-8") as file:
             workflow_raw = json.load(file)
 
         workflow_raw_pydantic = WorkflowModel.model_validate(workflow_raw)
@@ -108,50 +108,47 @@ class Workflow:
         """Converts all relative file paths in workflow elements to absolute paths.
 
         This method iterates over all workflow elements and inspects each of their fields.
-        If a field contains a string or a list of strings that appear to be file paths,
+        If a field contains a Path or a list of Paths that appear to be file paths,
         it converts any relative paths into absolute paths based on the directory of the
         workflow JSON file (`self._file_path`). Absolute paths are left unchanged.
         """
-        base_dir = os.path.dirname(os.path.abspath(self._file_path))
+        base_dir = self._file_path.parent
         path_eval_pattern = r"\.[a-zA-Z0-9]+$"
+
+        # TODO: make relative path evaluation easier and more intuitive
 
         for wf_element_name, wf_element_value in self.workflow.items():
             for field_name, field_value in wf_element_value.__dict__.items():
-                if field_value is None:
-                    continue
-
-                # Case 1: single string
-                if isinstance(field_value, str):
+                # Case 1: single Path
+                if isinstance(field_value, Path):
+                    field_value_str = str(field_value)
                     if (
-                        "/" in field_value
-                        or "\\" in field_value
-                        or re.search(path_eval_pattern, field_value) is not None
+                        "/" in field_value_str
+                        or "\\" in field_value_str
+                        or re.search(path_eval_pattern, field_value_str) is not None
                     ):
-                        if not os.path.isabs(field_value):
-                            abs_path = os.path.abspath(
-                                os.path.join(base_dir, field_value)
-                            )
+                        if not field_value.is_absolute():
+                            abs_path = (base_dir / field_value).resolve()
                             setattr(wf_element_value, field_name, abs_path)
                             logger.debug(
                                 f"Resolved relative path in workflow file for '{wf_element_name}.{field_name}': {abs_path}",
                             )
 
-                # Case 2: list of strings
+                # Case 2: list of Paths
                 elif isinstance(field_value, list) and all(
-                    isinstance(x, str) for x in field_value
+                    isinstance(file_path, Path) for file_path in field_value
                 ):
                     abs_paths = []
                     changed = False
                     for path in field_value:
+                        path_str = str(path)
                         if (
-                            "/" in path
-                            or "\\" in path
-                            or re.search(path_eval_pattern, path) is not None
+                            "/" in path_str
+                            or "\\" in path_str
+                            or re.search(path_eval_pattern, path_str) is not None
                         ):
-                            if not os.path.isabs(path):
-                                abs_paths.append(
-                                    os.path.abspath(os.path.join(base_dir, path))
-                                )
+                            if not path.is_absolute():
+                                abs_paths.append((base_dir / path).resolve())
                                 changed = True
                             else:
                                 abs_paths.append(path)
@@ -170,7 +167,7 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def _find_sinks(self) -> list[str] | None:
+    def _find_sinks(self) -> list[str]:
         """Identifies the endpoints (sinks) of the workflow.
 
         These are elements that are not referenced as `input`, `dataset`, or `init`
@@ -178,8 +175,7 @@ class Workflow:
         analysis of the execution order.
 
         Returns:
-            list[str] | None: A list of strings containing the names of the endpoint elements,
-                or `None` in case of an error.
+            list[str]: A list of strings containing the names of the endpoint elements.
         """
         wf_sinks: list[str] = []
         ref_input_list: list[str] = []
@@ -230,15 +226,15 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def _eval_workflow_order(self) -> list[str] | None:
+    def _eval_workflow_order(self) -> list[str]:
         """Determines the correct execution order of the workflow elements.
 
         This is done by recursively searching backward from the sinks to the sources.
         The function logs the determined order.
 
         Returns:
-            list[str] | None: A list of strings containing the elements in their execution
-                order, or `None` in case of an error.
+            list[str]: A list of strings containing the elements in their execution
+                order.
         """
         workflow_order: list[str] = []
 
@@ -248,7 +244,7 @@ class Workflow:
                 logger.error(
                     f"Failed to determine execution path for sink '{wf_sink}'.",
                 )
-                return None
+                raise
             for step in path:
                 if step not in workflow_order:
                     workflow_order.append(step)
@@ -384,11 +380,11 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def save(self, output_dir: str) -> None:
+    def save(self, output_dir: Path) -> None:
         """Writes the current, processed workflow object to a JSON file.
 
         Args:
-            output_dir (str): The path where the workflow should be saved.
+            output_dir (Path): The path where the workflow should be saved.
         """
         output_file_path = self._eval_output_path(
             dir_path=output_dir, output_format="json"
@@ -407,24 +403,23 @@ class Workflow:
         instance_el=["_file_path"],
     )
     @typechecked
-    def _eval_output_path(self, dir_path: str, output_format: str) -> str | None:
+    def _eval_output_path(self, dir_path: Path, output_format: str) -> Path:
         """Adds a timestamps to the filename and returns a complete, absolute file path.
 
         The timestamps prevents overwriting. The format is `*_YYYYMMDD_HHMMSS*` before
         the file extension.
 
         Args:
-            dir_path (str): The absolute path to the output directory.
+            dir_path (Path): The absolute path to the output directory.
             output_format (str): The desired file extension (e.g., 'mf4'). The leading dot
                 is added automatically.
 
         Returns:
-            str | None: The new, complete file path with a timestamps, or `None` if an
-                error occurs.
+            Path: The new, complete file path with a timestamps.
         """
-        os.makedirs(dir_path, exist_ok=True)
-        file_name = os.path.splitext(os.path.basename(self._file_path))[0]
+        dir_path.mkdir(parents=True, exist_ok=True)
+        file_name = self._file_path.stem
         timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
         new_file_name = f"{file_name}_{timestamps}.{output_format}"
-        full_path = os.path.join(dir_path, new_file_name)
+        full_path = dir_path / new_file_name
         return full_path

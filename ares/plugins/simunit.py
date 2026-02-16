@@ -36,6 +36,7 @@ limitations under the License:
 import ctypes
 import json
 from itertools import chain
+from pathlib import Path
 from typing import Any, ClassVar, TypeVar
 
 import numpy as np
@@ -73,8 +74,8 @@ class SimUnit:
     @typechecked
     def __init__(
         self,
-        file_path: str,
-        dd_path: str,
+        file_path: Path,
+        dd_path: Path,
     ):
         """Initializes the simulation unit and sets up all required simulation parameters.
 
@@ -86,12 +87,12 @@ class SimUnit:
         - Stores all configuration parameters as instance variables
 
         Args:
-            file_path (str): Path to the shared library file (.so, .dll, .dylib).
-            dd_path (str): Path to the Data Dictionary JSON file.
+            file_path (Path): Path to the shared library file (.so, .dll, .dylib).
+            dd_path (Path): Path to the Data Dictionary JSON file.
         """
 
-        self.file_path: str = file_path
-        self.dd_path: str = dd_path
+        self.file_path: Path = file_path
+        self.dd_path: Path = dd_path
         self.function_name: str
 
         self._dd: DataDictionaryModel | None = self._load_and_validate_dd(
@@ -112,14 +113,14 @@ class SimUnit:
         instance_el=["dd_path"],
     )
     @typechecked
-    def _load_and_validate_dd(self, dd_path: str) -> DataDictionaryModel | None:
+    def _load_and_validate_dd(self, dd_path: Path) -> DataDictionaryModel | None:
         """Loads the Data Dictionary from a JSON file and validates its structure using Pydantic.
 
         If the file cannot be found or parsed, or if validation fails, an error is
         logged and `None` is returned.
 
         Args:
-            dd_path (str): The path to the Data Dictionary JSON file.
+            dd_path (Path): The path to the Data Dictionary JSON file.
 
         Returns:
             DataDictionaryModel | None: The loaded and validated Data Dictionary as a Pydantic
@@ -220,7 +221,7 @@ class SimUnit:
 
         if not dll_interface:
             logger.warning(
-                "There is no data dictionary variable that could be found in simulation unit.",
+                "There is no data dictionary variable that could be found in simulation unit."
             )
             return None
         return dll_interface
@@ -244,6 +245,7 @@ class SimUnit:
             Any: The `ctypes` function object for `ares_simunit`, or `None` if the
                 function cannot be found in the library.
         """
+        # TODO: Should function name be defined in dd or in workflow file (same as for plugin entry point name)?
         if self._dd.meta_data and self._dd.meta_data.function_name:
             self.function_name = self._dd.meta_data.function_name
         else:
@@ -732,13 +734,16 @@ def ares_plugin(plugin_input):
     """ARES plugin entrypoint for sim_unit elements.
 
     Args:
-        plugin_input: Dictionary containing all plugin configuration and data:
-            - wf_element_name: Name of the workflow element
-            - parameter: Dict[str, AresParamInterface] - AresParameter storage with hashes as keys
-            - plugin_path: str - Path to this plugin file
-            - type: str - Element type ("plugin" or "sim_unit")
-            - element_workflow: List[str] - Workflow elements
-            - ... other fields from WorkflowElement
+        plugin_input (dict): Dictionary containing all plugin configuration and data.
+            wf_element_name (str): Name of the workflow element.
+            parameter (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
+            plugin_path (Path): Path to this plugin file.
+            type (str): Element type ("plugin" or "sim_unit").
+            element_workflow (list[str]): Workflow elements.
+            ...: Other fields from WorkflowElement as needed.
+
+    Returns:
+        None
     """
 
     element_parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
@@ -769,6 +774,7 @@ def ares_plugin(plugin_input):
                         data=element_data_obj.get(
                             stepsize=plugin_input["stepsize"],
                             label_filter=label_filter_signal,
+                            vstack_pattern=plugin_input.get("vstack_pattern"),
                         ),
                         parameters=element_parameter_obj.get(
                             label_filter=label_filter_parameter

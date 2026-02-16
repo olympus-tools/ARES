@@ -4,7 +4,7 @@
 #   - make data_convertion => TODO: currently just one data type supported
 #   - make data_labelfilter
 #   - make data_resampling
-#   - make data_vstack => TODO: not implemented yet
+#   - make data_vstack
 # Parameter interface examples
 #   - make param_caching
 #   - make param_convertion
@@ -17,7 +17,7 @@
 #   - make simunit_interface_alt_default
 #   - make simunit_interface_alt_value
 #   - make simunit_interface_std
-#   - make simunit_vstack => TODO: not implemented yet
+#   - make simunit_vstack
 
 VENV_DIR ?= ../.venv
 ARES ?= "$(VENV_DIR)/bin/ares"
@@ -26,6 +26,7 @@ ARES ?= "$(VENV_DIR)/bin/ares"
 all: data_caching \
      data_labelfilter \
      data_resampling \
+     data_vstack \
      param_caching \
      param_convertion \
      param_labelfilter \
@@ -34,7 +35,8 @@ all: data_caching \
      simunit_interface_alt \
      simunit_interface_alt_default \
      simunit_interface_alt_value \
-     simunit_interface_std
+     simunit_interface_std \
+     simunit_vstack
 
 .PHONY: data_caching
 data_caching:
@@ -68,13 +70,13 @@ data_resampling:
 		--output output/ \
 		--log-level=10
 
-# .PHONY: data_vstack
-# data_vstack:
-# 	@echo "Running data_vstack example..."
-# 	@"$(VENV_DIR)/bin/python" -m ares pipeline \
-# 		-wf workflow/data_interface/data_vstack.wf.json \
-# 		--output output/ \
-# 		--log-level=10
+.PHONY: data_vstack
+data_vstack:
+	@echo "Running data_vstack example..."
+	@$(ARES) pipeline \
+		-wf workflow/data_interface/data_vstack.wf.json \
+		--output output/ \
+		--log-level=10
 
 .PHONY: param_caching
 param_caching:
@@ -154,13 +156,13 @@ simunit_interface_std:
 		--output output/ \
 		--log-level=10
 
-# .PHONY: simunit_vstack
-# simunit_vstack:
-# 	@echo "Running simunit_vstack example..."
-# 	$(MAKE) -C sim_unit inout-handling
-# 	@"$(VENV_DIR)/bin/python" -m ares pipeline \
-# 		-wf workflow/sim_unit/simunit_vstack.wf.json \
-# 		--output output/ \
-# 		--log-level=10
+.PHONY: simunit_vstack
+simunit_vstack:
+	@echo "Running simunit_vstack example..."
+	$(MAKE) -C sim_unit inout-handling
+	@$(ARES) pipeline \
+		-wf workflow/sim_unit/simunit_vstack.wf.json \
+		--output output/ \
+		--log-level=10
 
 

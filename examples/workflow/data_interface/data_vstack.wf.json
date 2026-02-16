@@ -3,15 +3,18 @@
         "type": "data",
         "mode": "read",
         "file_path": [
-            "../../data/data_example_3.mf4"
+            "../../data/data_example_5.mf4"
         ],
-        "vstack_pattern": ["^[\\w\\s]+_\\[\\d+\\]$"]
+        "vstack_pattern": [
+            "([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",
+            "([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$"
+        ]
     },
     "data_in_2": {
         "type": "data",
         "mode": "read",
         "file_path": [
-            "../../data/data_example_3.mf4"
+            "../../data/data_example_6.mf4"
         ]
     },
     "data_out_1": {
@@ -25,6 +28,9 @@
         "mode": "write",
         "input": ["data_in_2"],
         "output_format": "mf4",
-        "vstack_pattern": ["^[\\w\\s]+_\\[\\d+\\]$"]
+        "vstack_pattern": [
+            "([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",
+            "([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$"
+        ]
     }
 }

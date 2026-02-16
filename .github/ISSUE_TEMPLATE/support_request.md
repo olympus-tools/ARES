@@ -2,7 +2,7 @@
 name: Support Request
 about: Got a question or need help?
 title: 'Support Request'
-labels: support, documentation
+labels: support
 assignees: ''
 
 ---

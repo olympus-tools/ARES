@@ -164,11 +164,35 @@ python -m ares pipeline \
 *   **Purpose**: Convert between different data formats (e.g., MF4 to CSV, HDF5).
 *   **Status**: Currently only MF4 format is supported. This example is planned for future implementation.
 
-### 2.5. Data Vertical Stack (TODO)
+### 2.5. Data Vertical Stack
 
 *   **Workflow**: `examples/workflow/data_interface/data_vstack.wf.json`
-*   **Purpose**: Vertically stack multiple data files by concatenating their time series.
-*   **Status**: Planned for future implementation to enable time-series concatenation of multiple measurements.
+*   **Purpose**: Demonstrates vertical stacking (concatenation) of signals using regex pattern matching to create multi-dimensional arrays.
+*   **Key Concepts**:
+    *   Reading MF4 data files with signals matching specific naming patterns.
+    *   Using regex patterns with capturing groups to identify related signals.
+    *   Automatic stacking based on number of groups:
+        *   1-2 groups: Stack 1D signals into 2D arrays (columns).
+        *   3 groups: Stack 1D signals into 3D arrays (matrices with columns and rows).
+    *   Pattern convention: `group(1)` = base name, `group(2)` = column index, `group(3)` = row index.
+    *   Writing stacked signals to output with simplified naming.
+
+```mermaid
+flowchart LR
+    data_in_1(data_in_1) --> data_out_1(data_out_1)
+
+    classDef Data color:#1e9bec, stroke:#1e9bec;
+
+    class data_in_1,data_out_1 Data;
+```
+
+**Run via CLI:**
+```bash
+python -m ares pipeline \
+    --workflow examples/workflow/data_interface/data_vstack.wf.json \
+    --output examples/output/ \
+    --log-level 20
+```
 
 ## 3. Parameter Interface Examples
 
@@ -484,8 +508,41 @@ python -m ares pipeline \
     --log-level 20
 ```
 
-### 5.6. SimUnit Vertical Stack (TODO)
+### 5.6. SimUnit Vertical Stack
 
 *   **Workflow**: `examples/workflow/sim_unit/simunit_vstack.wf.json`
-*   **Purpose**: Demonstrates vertical stacking (concatenation) of simulation unit outputs over time.
-*   **Status**: Planned for future implementation to enable execution of the same simulation unit with different input segments and concatenating the results.
+*   **Purpose**: Demonstrates vertical stacking of signals in combination with simulation unit execution.
+*   **Simulation Unit**: **In/Out Handling** - Signal routing with multi-dimensional input arrays.
+*   **Key Concepts**:
+    *   Reading MF4 data files with signals matching vstack patterns.
+    *   Automatic stacking of related signals before simulation unit execution.
+    *   Passing multi-dimensional arrays (2D/3D) to simulation units.
+    *   Processing stacked signals through simulation unit.
+    *   Writing processed results to output.
+
+```mermaid
+flowchart LR
+    data_in_1(data_in_1) --> simunit_1(simunit_1)
+    parameterset_in_1(parameterset_in_1) --> simunit_1
+    simunit_1 --> data_out_1(data_out_1)
+
+    classDef Parameters color:#a44300, stroke:#a44300;
+    classDef Data color:#1e9bec, stroke:#1e9bec;
+    classDef SW_Unit color:#d30000, stroke:#d30000;
+
+    class parameterset_in_1 Parameters;
+    class data_in_1,data_out_1 Data;
+    class simunit_1 SW_Unit;
+```
+
+**Run via CLI:**
+```bash
+# First compile the simulation unit
+make -C examples/sim_unit inout-handling
+
+# Then run the workflow
+python -m ares pipeline \
+    --workflow examples/workflow/sim_unit/simunit_vstack.wf.json \
+    --output examples/output/ \
+    --log-level 20
+```

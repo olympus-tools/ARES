@@ -175,6 +175,7 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name or pattern.         |
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
+| `vstack_pattern`   | No         | `str`       |                     | Regular expression to stack signals to arrays.      |
 
 #### Parameter Element (`type="parameter"`)
 
@@ -203,6 +204,7 @@ Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent an
 | `parameter`        | No         | `list[str]` |                     | List of parameter element names.                    |
 | `init`             | No         | `list[str]` |                     | List of elements for initialization.                |
 | `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
+| `vstack_pattern`   | No         | `str`       |                     | Regular expression to stack signals to arrays.      |
 
 #### Custom Plugin (`type="plugin"`)
 

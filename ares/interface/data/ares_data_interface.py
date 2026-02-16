@@ -33,9 +33,11 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
+import re
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from datetime import datetime
+from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
@@ -68,7 +70,7 @@ class AresDataInterface(ABC):
     @typechecked
     def __new__(
         cls,
-        file_path: str | None = None,
+        file_path: Path | None = None,
         data: list[AresSignal] | None = None,
         **kwargs,
     ):
@@ -78,7 +80,7 @@ class AresDataInterface(ABC):
         Otherwise returns the existing cached instance.
 
         Args:
-            file_path (str | None): Path to the data file to load
+            file_path (Path | None): Path to the data file to load
             data (list[AresSignal] | None): Optional list of AresSignal objects for initialization
             **kwargs (Any): Additional arguments for subclass initialization
 
@@ -112,17 +114,27 @@ class AresDataInterface(ABC):
         return instance
 
     @typechecked
-    def __init__(self, file_path: str | None, **kwargs):
+    def __init__(
+        self,
+        file_path: Path | None = None,
+        dependencies: list[str] | None = None,
+        vstack_pattern: list[str] | None = None,
+    ):
         """Initialize base attributes for all data handlers.
 
         This method should be called by all subclass __init__ methods using super().__init__().
 
         Args:
-            file_path (str | None): Path to the data file to load
+            file_path (Path | None): Path to the data file to load
+            dependencies (list[str] | None): List of dependencies for this data handler
+            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(self, "dependencies", kwargs.get("dependencies", []))
+        object.__setattr__(
+            self, "dependencies", dependencies if dependencies is not None else []
+        )
+        object.__setattr__(self, "_vstack_pattern", vstack_pattern)
 
     @classmethod
     @typechecked
@@ -152,7 +164,7 @@ class AresDataInterface(ABC):
         wf_element_name: str,
         wf_element_value: DataElement,
         input_hash_list: list[list[str]] | None = None,
-        output_dir: str | None = None,
+        output_dir: Path | None = None,
         **kwargs,
     ) -> None:
         """Central handler method for data operations.
@@ -163,14 +175,17 @@ class AresDataInterface(ABC):
             wf_element_name (str): Name of the element being processed
             wf_element_value (DataElement): DataElement containing mode, file_path, and output_format
             input_hash_list (list[list[str]] | None): Nested list of data hashes for writing operations
-            output_dir (str | None): Output directory path for writing operations
+            output_dir (Path | None): Output directory path for writing operations
             **kwargs (Any): Additional format-specific arguments
         """
 
         match wf_element_value.mode:
             case "read":
-                for fp in wf_element_value.file_path:
-                    cls.create(fp, **kwargs)
+                for file_path in wf_element_value.file_path:
+                    cls.create(
+                        file_path=file_path,
+                        vstack_pattern=wf_element_value.vstack_pattern,
+                    )
                 return None
 
             case "write":
@@ -190,6 +205,7 @@ class AresDataInterface(ABC):
                             data = source_instance.get(
                                 label_filter=wf_element_value.label_filter,
                                 stepsize=stepsize,
+                                vstack_pattern=wf_element_value.vstack_pattern,
                                 **kwargs,
                             )
 
@@ -216,14 +232,20 @@ class AresDataInterface(ABC):
 
     @classmethod
     @typechecked
-    def create(cls, file_path: str | None = None, **kwargs) -> "AresDataInterface":
+    def create(
+        cls,
+        file_path: Path | None = None,
+        vstack_pattern: list[str] | None = None,
+        **kwargs,
+    ) -> "AresDataInterface":
         """Create data handler with automatic format detection.
 
         Uses file extension to select appropriate handler.
         All handlers share the same flyweight cache.
 
         Args:
-            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
+            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
@@ -233,15 +255,13 @@ class AresDataInterface(ABC):
         if file_path is None:
             ext = ".mf4"
         else:
-            _, ext = os.path.splitext(file_path)
-            ext = ext.lower()
+            ext = file_path.suffix.lower()
 
         handler_class = cls._handlers[ext]
-        return handler_class(file_path=file_path, **kwargs)
+        return handler_class(
+            file_path=file_path, vstack_pattern=vstack_pattern, **kwargs
+        )
 
-    # XXX: Idea for later, should the hash function be abstact and calculated based on infromations provided by the intherited class after init?
-    # + uniqueness of hash is easier applicable since attributes of the obj itself can be used, avaialable signals, lenght, timestamps
-    # - for each new element type an implementation is necessary
     @staticmethod
     @error_msg(
         exception_msg="Hash of ares-data-interface could not be calculated.",
@@ -250,7 +270,7 @@ class AresDataInterface(ABC):
     )
     @typechecked
     def _calculate_hash(
-        file_path: str | None = None,
+        file_path: Path | None = None,
         input_string: str | None = None,
         **kwargs,
     ) -> str:
@@ -264,9 +284,9 @@ class AresDataInterface(ABC):
         identical signal content.
 
         Args:
-            file_path (str | None): Path to the data file to load. If None, defaults to MF4 handler.
+            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
             input_string (str | None): Input string to hash. Used if file_path is None.
-            **kwargs (Any): Additional format-specific arguments (unused)
+            **kwargs (Any): Additional arguments (ignored, but accepted for compatibility)
 
         Returns:
             str: SHA256 hash string of the content
@@ -316,14 +336,139 @@ class AresDataInterface(ABC):
         [signal.resample(timestamps_resample) for signal in data]
         return data
 
+    @staticmethod
+    @typechecked
+    def _vstack(data: list[AresSignal], vstack_pattern: list[str]) -> list[AresSignal]:
+        """Vertical stack ares-signals matching given regex patterns.
+
+        Supports two stacking modes based on number of regex groups:
+        - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
+        - 3 groups: Stack 1D signals to 3D matrix using row/column indices
+            - group1 = signal name
+            - group2 = columns (axis-1)
+            - group3 = rows (axis-2)
+
+        Args:
+            data (list[AresSignal]): List of AresSignal objects
+            vstack_pattern (list[str]): Regex patterns for signal matching and stacking
+
+        Returns:
+            list[AresSignal]: Original data list with newly stacked signals appended
+        """
+        for regex in vstack_pattern:
+            pattern = re.compile(regex)
+
+            # check pattern for groups - at least 1 group necessary for stacking
+            if pattern.groups == 0:
+                logger.debug(
+                    f"Vertical stacking for pattern '{regex}' is skipped."
+                    f"Pattern includes no group."
+                )
+                continue
+
+            # find all matching signals
+            pair_matches = [
+                (signal, pattern_result)
+                for signal in data
+                if (pattern_result := pattern.search(signal.label))
+            ]
+
+            # no matching signals found for pattern -> skipping this pattern
+            if not pair_matches:
+                continue
+
+            # iterate over groups, collect matching signals,pattern to stack in dict
+            signal_stack_dict = defaultdict(lambda: {"signals": [], "patterns": []})
+            for signal_match, pattern_match in pair_matches:
+                group_key = pattern_match.group(1)
+
+                signal_stack_dict[group_key]["signals"].append(signal_match)
+                signal_stack_dict[group_key]["patterns"].append(pattern_match)
+
+            # iterate over collected groups and stack them to combined signal
+            for signal_name, data_stack in signal_stack_dict.items():
+                signal_matches = data_stack["signals"]
+                pattern_matches = data_stack["patterns"]
+
+                # validate that all matching signals have same dimensions
+                reference_signal = signal_matches[0]
+                if not all(
+                    [
+                        signal.shape == reference_signal.shape
+                        for signal in signal_matches
+                    ]
+                ):
+                    logger.debug(
+                        f"Vertical stacking could not be applied. Dimension missmatch in stack: {[signal.label for signal in signal_matches]}"
+                    )
+                    continue
+
+                # 1D
+                if pattern.groups <= 2:
+                    logger.debug(
+                        f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}"
+                    )
+                    data.append(
+                        AresSignal(
+                            label=signal_name,
+                            timestamps=reference_signal.timestamps,
+                            value=np.vstack(
+                                [signal.value for signal in signal_matches]
+                            ).T,
+                        )
+                    )
+
+                # 2D
+                elif pattern.groups == 3:
+                    number_columns = 0
+                    number_rows = 0
+                    for pattern_result in pattern_matches:
+                        number_columns = max(
+                            number_columns, int(pattern_result.group(2))
+                        )
+                        number_rows = max(number_rows, int(pattern_result.group(3)))
+
+                    stacked_matrix = np.full(
+                        (
+                            number_rows + 1,
+                            number_columns + 1,
+                            len(reference_signal.timestamps),
+                        ),
+                        np.nan,
+                    )
+
+                    for signal, pattern_result in zip(signal_matches, pattern_matches):
+                        column_idx = int(pattern_result.group(2))
+                        row_idx = int(pattern_result.group(3))
+                        stacked_matrix[row_idx, column_idx, :] = signal.value
+
+                    logger.debug(
+                        f"Vertical stacking applied,stacking 2D signals to 3D:{signal_name} <-- {[signal.label for signal in signal_matches]}"
+                    )
+                    data.append(
+                        AresSignal(
+                            label=signal_name,
+                            timestamps=reference_signal.timestamps,
+                            value=stacked_matrix.transpose(2, 1, 0),
+                        )
+                    )
+
+        return data
+
     @abstractmethod
     def get(
-        self, label_filter: list[str] | None = None, **kwargs
+        self,
+        label_filter: list[str] | None = None,
+        stepsize: int | None = None,
+        vstack_pattern: list[str] | None = None,
+        **kwargs,
     ) -> list[AresSignal] | None:
         """Get data from the interface.
 
         Args:
-            label_filter (list[str] | None): List of signal names or pattern to retrieve from the interface.
+            label_filter (list[str] | None): List of signal names to retrieve from the interface.
+            stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
+            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
@@ -342,11 +487,11 @@ class AresDataInterface(ABC):
         pass
 
     @abstractmethod
-    def _save(self, output_path: str, **kwargs) -> None:
+    def _save(self, output_path: Path, **kwargs) -> None:
         """Write signals to file.
 
         Args:
-            output_path (str): Absolute path where the data file should be written
+            output_path (Path): Absolute path where the data file should be written
             **kwargs (Any): Additional format-specific arguments
         """
         pass
