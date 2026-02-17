@@ -68,14 +68,16 @@ class JSONParamHandler(AresParamInterface):
     def __init__(
         self,
         file_path: Path | None = None,
+        parameters: list[AresParameter] | None = None,
         **kwargs,
     ):
         """Initialize JSONParamHandler from file or parameter list.
 
         Args:
             file_path (Path | None): Optional absolute path to the JSON file to load
+            parameters (list[AresParameter] | None): Optional list of AresParameter objects to initialize with
             **kwargs (Any): Additional arguments.
-                - parameters (list[AresParameter]): Optional list of AresParameter objects to initialize with
+                - dependencies (list[str]): Optional list of parameter labels that this instance depends on
         """
         super().__init__(
             file_path=file_path, dependencies=kwargs.pop("dependencies", None)
@@ -85,8 +87,8 @@ class JSONParamHandler(AresParamInterface):
         if file_path:
             with open(file_path, "r", encoding="utf-8") as f:
                 self.parameter = json.load(f)
-        elif "parameters" in kwargs:
-            self.add(kwargs["parameters"])
+        elif parameters:
+            self.add(parameters)
 
     @override
     @safely_run(
@@ -118,32 +120,6 @@ class JSONParamHandler(AresParamInterface):
             )
 
         logger.info(f"Successfully saved json parameter file: {output_path}")
-
-    @override
-    @error_msg(
-        exception_msg="Error in jsonparam-handler add function.",
-        log=logger,
-        include_args=["parameters"],
-    )
-    @typechecked
-    def add(self, parameters: list[AresParameter], **kwargs) -> None:
-        """Add parameters to the JSON interface.
-
-        Converts AresParameter objects to JSON dictionary format and updates
-        the internal parameter dictionary. Updates the instance hash after addition.
-
-        Args:
-            parameters (list[AresParameter]): List of AresParameter objects to add to the interface
-            **kwargs (Any): Additional format-specific arguments (unused)
-        """
-        for param in parameters:
-            self.parameter[param.label] = {
-                "description": param.description,
-                "name_breakpoints_1": param.name_breakpoints_1,
-                "name_breakpoints_2": param.name_breakpoints_2,
-                "unit": param.unit,
-                "value": param.value.tolist(),
-            }
 
     @override
     @error_msg(
@@ -194,3 +170,29 @@ class JSONParamHandler(AresParamInterface):
         ]
 
         return result if result else None
+
+    @override
+    @error_msg(
+        exception_msg="Error in jsonparam-handler add function.",
+        log=logger,
+        include_args=["parameters"],
+    )
+    @typechecked
+    def add(self, parameters: list[AresParameter], **kwargs) -> None:
+        """Add parameters to the JSON interface.
+
+        Converts AresParameter objects to JSON dictionary format and updates
+        the internal parameter dictionary. Updates the instance hash after addition.
+
+        Args:
+            parameters (list[AresParameter]): List of AresParameter objects to add to the interface
+            **kwargs (Any): Additional format-specific arguments (unused)
+        """
+        for param in parameters:
+            self.parameter[param.label] = {
+                "description": param.description,
+                "name_breakpoints_1": param.name_breakpoints_1,
+                "name_breakpoints_2": param.name_breakpoints_2,
+                "unit": param.unit,
+                "value": param.value.tolist(),
+            }

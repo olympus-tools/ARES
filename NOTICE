@@ -10,12 +10,6 @@ This product contains dependencies with the following licenses:
 
 Apache Software License License:
 ------------------------------------------------------------------------------
-  * ares 0.1.dev120+gbddb8c39d
-    URL: https://github.com/olympus-tools/ARES
-
-  * ares 0.1.dev120+gbddb8c39d.d20260117
-    URL: https://github.com/olympus-tools/ARES
-
   * id 1.5.0
     URL: https://pypi.org/project/id/
 
@@ -43,7 +37,7 @@ Apache Software License; BSD License License:
 
 Apache Software License; GNU General Public License v2 (GPLv2) License:
 ------------------------------------------------------------------------------
-  * pyinstaller-hooks-contrib 2025.11
+  * pyinstaller-hooks-contrib 2026.0
     URL: https://github.com/pyinstaller/pyinstaller-hooks-contrib
 
 
@@ -54,9 +48,6 @@ Apache-2.0 License:
 
   * twine 6.2.0
     URL: https://twine.readthedocs.io/
-
-  * tzdata 2025.3
-    URL: https://github.com/python/tzdata
 
 
 Apache-2.0 OR BSD-3-Clause License:
@@ -82,11 +73,8 @@ BSD License License:
   * numpy 2.2.4
     URL: https://numpy.org
 
-  * pandas 2.3.3
+  * pandas 3.0.0
     URL: https://pandas.pydata.org
-
-  * pycparser 2.23
-    URL: https://github.com/eliben/pycparser
 
   * smmap 5.0.2
     URL: https://github.com/gitpython-developers/smmap
@@ -114,6 +102,9 @@ BSD-3-Clause License:
 
   * lxml 6.0.2
     URL: https://lxml.de/
+
+  * pycparser 3.0
+    URL: https://github.com/eliben/pycparser
 
 
 GNU General Public License v2 (GPLv2) License:
@@ -228,9 +219,6 @@ MIT License License:
 
   * pytest-cov 6.0.0
     URL: https://github.com/pytest-dev/pytest-cov
-
-  * pytz 2025.2
-    URL: http://pythonhosted.org/pytz
 
   * rich 14.2.0
     URL: https://github.com/Textualize/rich

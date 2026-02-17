@@ -74,7 +74,8 @@ class MF4Handler(MDF, AresDataInterface):
     @typechecked
     def __init__(
         self,
-        file_path: Path | None,
+        file_path: Path | None = None,
+        data: list[AresSignal] | None = None,
         vstack_pattern: list[str] | None = None,
         **kwargs,
     ):
@@ -86,6 +87,7 @@ class MF4Handler(MDF, AresDataInterface):
 
         Args:
             file_path (Path | None): Path to the mf4 file to load or write.
+            data (list[AresSignal] | None): Optional list of AresSignal objects to initialize with
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
@@ -97,16 +99,12 @@ class MF4Handler(MDF, AresDataInterface):
             vstack_pattern=vstack_pattern,
         )
 
-        data = kwargs.pop("data", [])
         if file_path is None:
             super().__init__(**kwargs)
             self._available_signals: list[str] = []
 
-            if data is None:
-                return
-            else:
+            if data:
                 self.add(data=data, **kwargs)
-                return
 
         else:
             super().__init__(file_path, **kwargs)

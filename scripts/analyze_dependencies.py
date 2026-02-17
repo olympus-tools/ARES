@@ -287,6 +287,9 @@ def generate_notice_file() -> str:
     if not packages:
         return ""
 
+    # Filter out the ARES package itself
+    packages = [pkg for pkg in packages if pkg.get("Name", "").lower() != "ares"]
+
     notice_content = [
         "ARES (Automated Rapid Embedded Simulation)",
         "Copyright 2025 olympus-tools contributors.",

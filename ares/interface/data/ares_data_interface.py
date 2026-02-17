@@ -166,7 +166,7 @@ class AresDataInterface(ABC):
         input_hash_list: list[list[str]] | None = None,
         output_dir: Path | None = None,
         **kwargs,
-    ) -> None:
+    ):
         """Central handler method for data operations.
 
         Decides between _load() and save() based on mode from DataElement.
@@ -186,11 +186,10 @@ class AresDataInterface(ABC):
                         file_path=file_path,
                         vstack_pattern=wf_element_value.vstack_pattern,
                     )
-                return None
 
             case "write":
                 if not input_hash_list or not output_dir:
-                    return None
+                    return
 
                 target_extension = f".{wf_element_value.output_format}"
                 target_handler_class = cls._handlers.get(target_extension)
@@ -227,8 +226,6 @@ class AresDataInterface(ABC):
                             )
 
                             target_instance._save(output_path=output_path, **kwargs)
-
-                return None
 
     @classmethod
     @typechecked

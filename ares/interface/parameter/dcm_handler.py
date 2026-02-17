@@ -92,32 +92,6 @@ class DCMHandler(ParamDCM, AresParamInterface):
 
     @override
     @error_msg(
-        exception_msg="Error in dcm-handler add function.",
-        log=logger,
-        include_args=["parameters"],
-    )
-    @typechecked
-    def add(self, parameters: list[AresParameter], **kwargs) -> None:
-        """Add parameters to the dcm interface.
-
-        Converts AresParameter objects to dcm dictionary format and updates
-        the internal parameter dictionary. Updates the instance hash after addition.
-
-        Args:
-            parameters (list[AresParameter]): List of AresParameter objects to add to the interface
-            **kwargs: Additional format-specific arguments (unused)
-        """
-        for param in parameters:
-            self.parameter[param.label] = {
-                "description": param.description,
-                "name_breakpoints_1": param.name_breakpoints_1,
-                "name_breakpoints_2": param.name_breakpoints_2,
-                "unit": param.unit,
-                "value": param.value.tolist(),
-            }
-
-    @override
-    @error_msg(
         exception_msg="Error in dcm-handler get function.",
         log=logger,
         include_args=["label_filter"],
@@ -167,3 +141,29 @@ class DCMHandler(ParamDCM, AresParamInterface):
         ]
 
         return result if result else None
+
+    @override
+    @error_msg(
+        exception_msg="Error in dcm-handler add function.",
+        log=logger,
+        include_args=["parameters"],
+    )
+    @typechecked
+    def add(self, parameters: list[AresParameter], **kwargs) -> None:
+        """Add parameters to the dcm interface.
+
+        Converts AresParameter objects to dcm dictionary format and updates
+        the internal parameter dictionary. Updates the instance hash after addition.
+
+        Args:
+            parameters (list[AresParameter]): List of AresParameter objects to add to the interface
+            **kwargs: Additional format-specific arguments (unused)
+        """
+        for param in parameters:
+            self.parameter[param.label] = {
+                "description": param.description,
+                "name_breakpoints_1": param.name_breakpoints_1,
+                "name_breakpoints_2": param.name_breakpoints_2,
+                "unit": param.unit,
+                "value": param.value.tolist(),
+            }

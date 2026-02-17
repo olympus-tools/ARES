@@ -161,7 +161,7 @@ class AresParamInterface(ABC):
         input_hash_list: list[list[str]] | None = None,
         output_dir: Path | None = None,
         **kwargs,
-    ) -> None:
+    ):
         """Central handler method for parameter operations.
 
         Decides between _load() and save() based on mode from ParameterElement.
@@ -178,11 +178,10 @@ class AresParamInterface(ABC):
             case "read":
                 for file_path in wf_element_value.file_path:
                     cls.create(file_path=file_path, **kwargs)
-                return None
 
             case "write":
                 if not input_hash_list or not output_dir:
-                    return None
+                    return
 
                 target_extension = f".{wf_element_value.output_format}"
                 target_handler_class = cls._handlers.get(target_extension)
@@ -213,8 +212,6 @@ class AresParamInterface(ABC):
                             )
 
                             target_instance._save(output_path=output_path, **kwargs)
-
-                return None
 
     @classmethod
     @typechecked
