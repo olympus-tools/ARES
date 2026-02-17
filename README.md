@@ -20,7 +20,6 @@ The **A**utomated **R**apid **E**mbedded **S**imulation project is a tool for pe
 * [8. Future Developments](#8-future-developments)
 * [9. License](#9-license)
 
-
 ## 1. Installation
 
 ARES is currently under active development and is distributed as a source package. The recommended way to use ARES is within a Python virtual environment.
