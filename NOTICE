@@ -10,7 +10,7 @@ This product contains dependencies with the following licenses:
 
 Apache Software License License:
 ------------------------------------------------------------------------------
-  * id 1.5.0
+  * id 1.6.1
     URL: https://pypi.org/project/id/
 
   * readme_renderer 44.0
@@ -28,9 +28,6 @@ Apache Software License License:
 
 Apache Software License; BSD License License:
 ------------------------------------------------------------------------------
-  * packaging 25.0
-    URL: https://github.com/pypa/packaging
-
   * python-dateutil 2.9.0.post0
     URL: https://github.com/dateutil/dateutil
 
@@ -43,16 +40,22 @@ Apache Software License; GNU General Public License v2 (GPLv2) License:
 
 Apache-2.0 License:
 ------------------------------------------------------------------------------
-  * coverage 7.13.1
+  * coverage 7.13.4
     URL: https://github.com/coveragepy/coveragepy
 
   * twine 6.2.0
     URL: https://twine.readthedocs.io/
 
 
+Apache-2.0 OR BSD-2-Clause License:
+------------------------------------------------------------------------------
+  * packaging 26.0
+    URL: https://github.com/pypa/packaging
+
+
 Apache-2.0 OR BSD-3-Clause License:
 ------------------------------------------------------------------------------
-  * cryptography 46.0.3
+  * cryptography 46.0.5
     URL: https://github.com/pyca/cryptography
 
 
@@ -157,7 +160,7 @@ MIT License:
   * more-itertools 10.8.0
     URL: https://github.com/more-itertools/more-itertools
 
-  * nh3 0.3.2
+  * nh3 0.3.3
     URL: UNKNOWN
 
   * numexpr 2.14.1
@@ -220,7 +223,7 @@ MIT License License:
   * pytest-cov 6.0.0
     URL: https://github.com/pytest-dev/pytest-cov
 
-  * rich 14.2.0
+  * rich 14.3.2
     URL: https://github.com/Textualize/rich
 
   * ruff 0.12.11
