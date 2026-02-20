@@ -34,7 +34,7 @@ Apache Software License; BSD License License:
 
 Apache Software License; GNU General Public License v2 (GPLv2) License:
 ------------------------------------------------------------------------------
-  * pyinstaller-hooks-contrib 2026.0
+  * pyinstaller-hooks-contrib 2026.1
     URL: https://github.com/pyinstaller/pyinstaller-hooks-contrib
 
 
@@ -76,7 +76,7 @@ BSD License License:
   * numpy 2.2.4
     URL: https://numpy.org
 
-  * pandas 3.0.0
+  * pandas 3.0.1
     URL: https://pandas.pydata.org
 
   * smmap 5.0.2
@@ -223,7 +223,7 @@ MIT License License:
   * pytest-cov 6.0.0
     URL: https://github.com/pytest-dev/pytest-cov
 
-  * rich 14.3.2
+  * rich 14.3.3
     URL: https://github.com/Textualize/rich
 
   * ruff 0.12.11
