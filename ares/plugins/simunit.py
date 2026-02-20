@@ -93,14 +93,13 @@ class SimUnit:
 
         self.file_path: Path = file_path
         self.dd_path: Path = dd_path
-        self.function_name: str
+        self._sim_functions_init: list[Any] = []
+        self._sim_functions_cyclical: list[Any] = []
 
-        self._dd: DataDictionaryModel | None = self._load_and_validate_dd(
-            dd_path=dd_path
-        )
-        self._library: ctypes.CDLL | None = self._load_library()
+        self._dd: DataDictionaryModel = self._load_and_validate_dd(dd_path=dd_path)
+        self._library: ctypes.CDLL = self._load_library()
         self._dll_interface: dict[str, Any] | None = self._setup_c_interface()
-        self._sim_function: Any = self._setup_sim_function()
+        self._setup_sim_function()
 
     @error_msg(
         exception_msg="Unexpected error loading data dictionary json-file.",
@@ -113,7 +112,7 @@ class SimUnit:
         instance_el=["dd_path"],
     )
     @typechecked
-    def _load_and_validate_dd(self, dd_path: Path) -> DataDictionaryModel | None:
+    def _load_and_validate_dd(self, dd_path: Path) -> DataDictionaryModel:
         """Loads the Data Dictionary from a JSON file and validates its structure using Pydantic.
 
         If the file cannot be found or parsed, or if validation fails, an error is
@@ -123,8 +122,8 @@ class SimUnit:
             dd_path (Path): The path to the Data Dictionary JSON file.
 
         Returns:
-            DataDictionaryModel | None: The loaded and validated Data Dictionary as a Pydantic
-                object, or `None` if an error occurs.
+            DataDictionaryModel: The loaded and validated Data Dictionary as a Pydantic
+                object.
         """
         with open(dd_path, "r", encoding="utf-8") as file:
             dd_data = json.load(file)
@@ -142,13 +141,13 @@ class SimUnit:
         instance_el=["file_path"],
     )
     @typechecked
-    def _load_library(self) -> ctypes.CDLL | None:
+    def _load_library(self) -> ctypes.CDLL:
         """Loads a shared library file using `ctypes`.
 
         This makes the symbols (variables and functions) from the C library accessible in Python.
 
         Returns:
-            ctypes.CDLL | None: The loaded `ctypes.CDLL` object, or `None` if the library cannot be loaded.
+            ctypes.CDLL: The loaded `ctypes.CDLL` object.
         """
         library = ctypes.CDLL(self.file_path)
 
@@ -235,29 +234,45 @@ class SimUnit:
         instance_el=["file_path", "dd_path"],
     )
     @typechecked
-    def _setup_sim_function(self) -> Any:
-        """Configures the main simulation function (`ares_simunit`) from the shared library.
+    def _setup_sim_function(self):
+        """Configures initialization and cyclical simulation functions from the shared library.
 
-        It sets the argument types (`argtypes`) and return type (`restype`) to ensure
-        correct function calls via `ctypes`.
+        Reads the execution_order from the Data Dictionary and sets up function lists for
+        initialization and cyclical execution phases. If no execution_order is defined,
+        defaults to using 'ares_simunit' as the cyclical function.
 
-        Returns:
-            Any: The `ctypes` function object for `ares_simunit`, or `None` if the
-                function cannot be found in the library.
+        For each function, it sets the argument types (`argtypes`) and return type (`restype`)
+        to ensure correct function calls via `ctypes`.
         """
-        # TODO: Should function name be defined in dd or in workflow file (same as for plugin entry point name)?
-        if self._dd.meta_data and self._dd.meta_data.function_name:
-            self.function_name = self._dd.meta_data.function_name
-        else:
-            self.function_name = "ares_simunit"
 
-        sim_function = getattr(self._library, self.function_name)
-        sim_function.argtypes = []
-        sim_function.restype = None
-        logger.debug(
-            f"Ares simulation unit '{self.function_name}' successfully set up.",
-        )
-        return sim_function
+        if self._dd.execution_order:
+            function_names_init = self._dd.execution_order.initialization
+            function_names_cyclical = self._dd.execution_order.cyclical or [
+                "ares_simunit"
+            ]
+        else:
+            function_names_init = []
+            function_names_cyclical = ["ares_simunit"]
+
+        if function_names_init:
+            for function_name in function_names_init:
+                sim_function = getattr(self._library, function_name)
+                sim_function.argtypes = []
+                sim_function.restype = None
+                self._sim_functions_init.append(sim_function)
+                logger.debug(
+                    f"Ares simulation unit initialization function '{function_name}' successfully set up.",
+                )
+
+        if function_names_cyclical:
+            for function_name in function_names_cyclical:
+                sim_function = getattr(self._library, function_name)
+                sim_function.argtypes = []
+                sim_function.restype = None
+                self._sim_functions_cyclical.append(sim_function)
+                logger.debug(
+                    f"Ares simulation unit cyclical function '{function_name}' successfully set up.",
+                )
 
     @error_msg(
         exception_msg="An unexpected error occurred during execution of ares simulation.",
@@ -331,9 +346,15 @@ class SimUnit:
                 )
         sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float32)
 
+        # running initialization function
+        for sim_function in self._sim_functions_init:
+            sim_function()
+
+        # running cyclical functions
         for time_step_idx in range(time_steps):
             self._write_signals_to_dll(data=mapped_input, time_step_idx=time_step_idx)
-            self._sim_function()
+            for sim_function in self._sim_functions_cyclical:
+                sim_function()
             step_result = self._read_dll_interface()
             for signal in output_signals:
                 sim_result[signal][time_step_idx] = step_result[signal]
@@ -591,7 +612,7 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"Warning writing signal '{dd_element_name}' to '{self.function_name}' function: {e}",
+                    f"Warning writing signal '{dd_element_name}' to '{self.file_path}' library: {e}",
                 )
 
     @typechecked
@@ -612,7 +633,7 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"Warning writing parameter '{dd_element_name}' to '{self.function_name}' function not possible: {e}",
+                    f"Warning writing parameter '{dd_element_name}' to '{self.file_path}' library not possible: {e}",
                 )
 
     @typechecked
@@ -686,7 +707,7 @@ class SimUnit:
 
             except Exception as e:
                 logger.warning(
-                    f"Reading output value '{dd_element_name}' from '{self.function_name}' function has not been successful: {e}",
+                    f"Reading output value '{dd_element_name}' from '{self.file_path}' library has not been successful: {e}",
                 )
 
         return step_result
