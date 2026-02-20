@@ -396,14 +396,14 @@ class AresDataInterface(ABC):
                     ]
                 ):
                     logger.debug(
-                        f"Vertical stacking could not be applied. Dimension missmatch in stack: {[signal.label for signal in signal_matches]}"
+                        f"Vertical stacking could not be applied. Dimension missmatch in stack: {[signal.label for signal in signal_matches]}."
                     )
                     continue
 
                 # 1D
                 if pattern.groups <= 2:
                     logger.debug(
-                        f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}"
+                        f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}."
                     )
                     data.append(
                         AresSignal(
@@ -440,7 +440,7 @@ class AresDataInterface(ABC):
                         stacked_matrix[row_idx, column_idx, :] = signal.value
 
                     logger.debug(
-                        f"Vertical stacking applied,stacking 2D signals to 3D:{signal_name} <-- {[signal.label for signal in signal_matches]}"
+                        f"Vertical stacking applied,stacking 2D signals to 3D:{signal_name} <-- {[signal.label for signal in signal_matches]}."
                     )
                     data.append(
                         AresSignal(

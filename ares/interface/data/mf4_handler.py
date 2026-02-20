@@ -183,12 +183,12 @@ class MF4Handler(MDF, AresDataInterface):
 
         if vstack_pattern:
             logger.debug(
-                f"Vertical stacking will be applied considering regex: {vstack_pattern}"
+                f"Vertical stacking will be applied considering regex: {vstack_pattern}."
             )
             tmp_data = self._vstack(data=tmp_data, vstack_pattern=vstack_pattern)
 
         if stepsize:
-            logger.debug(f"Resampling all signals to: {stepsize}")
+            logger.debug(f"Resampling all signals to: {stepsize} ms.")
             return self._resample(data=tmp_data, stepsize=stepsize)
         else:
             return tmp_data
@@ -355,7 +355,7 @@ class MF4Handler(MDF, AresDataInterface):
 
             else:
                 logger.warning(
-                    f"Unsupported signal dimension: {sig.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)"
+                    f"Unsupported signal dimension: {sig.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
                 )
 
         self.append(signals_to_write)
