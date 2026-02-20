@@ -11,7 +11,7 @@ This directory contains example workflows and data to demonstrate the capabiliti
     * [2.2. Data Label Filter](#22-data-label-filter)
     * [2.3. Data Resampling](#23-data-resampling)
     * [2.4. Data Conversion (TODO)](#24-data-conversion-todo)
-    * [2.5. Data Vertical Stack (TODO)](#25-data-vertical-stack-todo)
+    * [2.5. Data Vertical Stack](#25-data-vertical-stack)
 * [3. Parameter Interface Examples](#3-parameter-interface-examples)
     * [3.1. Parameter Caching](#31-parameter-caching)
     * [3.2. Parameter Conversion](#32-parameter-conversion)
@@ -24,7 +24,7 @@ This directory contains example workflows and data to demonstrate the capabiliti
     * [5.3. SimUnit Interface Alternative](#53-simunit-interface-alternative)
     * [5.4. SimUnit Interface Alternative Default](#54-simunit-interface-alternative-default)
     * [5.5. SimUnit Interface Alternative Value](#55-simunit-interface-alternative-value)
-    * [5.6. SimUnit Vertical Stack (TODO)](#56-simunit-vertical-stack-todo)
+    * [5.6. SimUnit Vertical Stack](#56-simunit-vertical-stack)
 
 ## 1. General Execution Instructions
 
@@ -71,10 +71,10 @@ make -C examples simunit_dependencies
 ```
 
 Available targets:
-- **Data Interface**: `data_caching`, `data_labelfilter`, `data_resampling`
+- **Data Interface**: `data_caching`, `data_labelfilter`, `data_resampling`, `data_vstack`
 - **Parameter Interface**: `param_caching`, `param_convertion`, `param_labelfilter`
 - **Plugin**: `plugin_manipulation`
-- **Simulation Units**: `simunit_dependencies`, `simunit_interface_alt`, `simunit_interface_alt_default`, `simunit_interface_alt_value`, `simunit_interface_std`
+- **Simulation Units**: `simunit_dependencies`, `simunit_interface_alt`, `simunit_interface_alt_default`, `simunit_interface_alt_value`, `simunit_interface_std`, `simunit_vstack`
 
 ## 2. Data Interface Examples
 
@@ -256,17 +256,19 @@ python -m ares pipeline \
 *   **Workflow**: `examples/workflow/parameter_interface/param_labelfilter.wf.json`
 *   **Purpose**: Filter specific parameters by their label names.
 *   **Key Concepts**:
-    *   Reading JSON parameter files.
+    *   Reading multiple parameter files (JSON and DCM formats).
+    *   Merging parameters from different sources.
     *   Applying label filters to select specific parameters.
     *   Writing filtered parameters to output.
 
 ```mermaid
 flowchart LR
     parameterset_in_1(parameterset_in_1) --> parameterset_out_1(parameterset_out_1)
+    parameterset_in_2(parameterset_in_2) --> parameterset_out_1
 
     classDef Parameters color:#a44300, stroke:#a44300;
 
-    class parameterset_in_1,parameterset_out_1 Parameters;
+    class parameterset_in_1,parameterset_in_2,parameterset_out_1 Parameters;
 ```
 
 **Run via CLI:**
@@ -479,10 +481,12 @@ python -m ares pipeline \
 *   **Purpose**: Demonstrates mapping constant values from the `input_alternatives` field instead of workflow signals.
 *   **Simulation Unit**: **In/Out Handling**
 *   **Key Concepts**:
+    *   Alternative data dictionary with constant values (`_alt_value.dd.json`).
     *   Constant values specified in the `input_alternatives` field of the data dictionary.
     *   The first entry in `input_alternatives` is mapped as constant value for each signal.
     *   Allows defining fixed calibration values or test constants directly in the data dictionary.
     *   Simulation unit receives constant values instead of time-varying signals from workflow.
+    *   No parameter passing (demonstrates constant value handling only).
 
 ```mermaid
 flowchart LR
