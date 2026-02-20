@@ -36,6 +36,8 @@ limitations under the License:
 #include "inout_handling.h"
 #include <stdint.h>
 
+float signal_scalar_init = 0.f;
+
 int32_t parameter_scalar_output = 1000;
 uint32_t parameter_array1d_output[3] = {1000u};
 float parameter_array2d_output[2][3] = {{1000.f}};
@@ -44,7 +46,13 @@ int32_t signal_scalar = 1000;
 uint32_t signal_array1d[4] = {1000u};
 float signal_array2d[2][3] = {{1000.f}};
 
-void ares_simunit_2()
+void ares_simunit_init_1() {
+
+    init_func(&signal_scalar_init);
+
+}
+
+void ares_simunit_cyclical_1()
 {
     inout_handling(
         &signal_scalar,

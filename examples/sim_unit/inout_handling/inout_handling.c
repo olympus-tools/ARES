@@ -88,3 +88,9 @@ void inout_handling(
 	signal_array2d[1][2] += 7.0f;
 
 }
+
+void init_func(float signal_scalar_init[1]){
+
+	signal_scalar_init[0] = 3.1415f;
+
+}
