@@ -46,7 +46,9 @@ import pytest
     [
         "workflow/data_interface/data_caching.wf.json",
         "workflow/data_interface/data_labelfilter.wf.json",
+        # "workflow/data_interface/data_convertion.wf.json", TODO: implement data convertion example
         "workflow/data_interface/data_resampling.wf.json",
+        "workflow/data_interface/data_vstack.wf.json",
         "workflow/parameter_interface/param_caching.wf.json",
         "workflow/parameter_interface/param_convertion.wf.json",
         "workflow/parameter_interface/param_labelfilter.wf.json",
@@ -56,6 +58,7 @@ import pytest
         "workflow/sim_unit/simunit_interface_alt_default.wf.json",
         "workflow/sim_unit/simunit_interface_alt_value.wf.json",
         "workflow/sim_unit/simunit_interface_std.wf.json",
+        "workflow/sim_unit/simunit_vstack.wf.json",
     ],
 )
 def test_workflow_example(workflow_file: str, tmp_path):
