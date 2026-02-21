@@ -34,10 +34,11 @@ limitations under the License:
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel, model_validator
 from typing_extensions import Literal
 
 
@@ -49,13 +50,52 @@ class BaseElement(BaseModel):
     hash_list: dict[str, list[str]] = {}
 
 
+class VStackPatternElement(BaseModel):
+    pattern: str
+    name: str | int | None = None
+    x_axis: int | None = None
+    y_axis: int | None = None
+
+    class Config:
+        extra = "forbid"
+
+    @model_validator(mode="after")
+    def validate_vpattern(self):
+        """Validates that required fields are present based on the given pattern (number of groups)."""
+        pattern = re.compile(self.pattern)
+
+        if pattern.groups >= 3:
+            # case name is from type string
+            if (
+                type(self.name) is str
+                and any([self.x_axis, self.y_axis])
+                and not all([self.x_axis, self.y_axis])
+            ):
+                raise ValueError(
+                    "Field 'name' was provided with integer but either 'x_axis' or 'y_axis' were provided but only both or none is possible."
+                )
+            # case name is integer
+            elif any([self.name, self.x_axis, self.y_axis]) and not all(
+                [self.name, self.x_axis, self.y_axis]
+            ):
+                raise ValueError(
+                    "At least one field of 'name','x_axis','y_axis' was provided. Then for deterministic behaviour all others must be provided."
+                )
+        if pattern.groups < 3:
+            if self.x_axis or self.y_axis:
+                raise ValueError(
+                    "Field 'x_axis' or 'y_axis' provided but number of groups in pattern is to low."
+                )
+        return self
+
+
 class DataElement(BaseElement):
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
     file_path: list[Path] | None = []
     input: list[str] | None = []
     label_filter: list[str] | None = None
-    vstack_pattern: list[str] | None = None
+    vstack_pattern: VStackPatternElement | list[str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
@@ -121,7 +161,7 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
-    vstack_pattern: list[str] | None = None
+    vstack_pattern: VStackPatternElement | list[str] | None = None
 
     class Config:
         extra = "forbid"
