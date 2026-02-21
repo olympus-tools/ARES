@@ -34,11 +34,15 @@ limitations under the License:
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Annotated, Any
 
+-from pydantic import BaseModel, Field, RootModel
 from pydantic import BaseModel, Field, RootModel, model_validator
 from typing_extensions import Literal
+from typing_extensions import Annotated, Literal
+regex_str = Annotated[str, Field(pattern=r"[\s\S]*")]
 
 
 class BaseElement(BaseModel):
@@ -48,13 +52,49 @@ class BaseElement(BaseModel):
     hash_list: dict[str, list[str]] = {}
 
 
+class VStackPatternElement(BaseModel):
+    pattern: regex_str
+    name: str | int | None = None
+    x_axis: int | None = None
+    y_axis: int | None = None
+
+    class Config:
+        extra = "forbid"
+
+    @model_validator(mode="after")
+    def _validate_model(self):
+        """Validates that required fields are present based on the given pattern (number of groups)."""
+        pattern = re.compile(self.pattern)
+
+        if pattern.groups >= 3:
+            if (
+                type(self.name) is str
+                and any([self.x_axis, self.y_axis])
+                and not all([self.x_axis, self.y_axis])
+            ):
+                raise ValueError(
+                    "Field 'name' was provided with integer but either 'x_axis' or 'y_axis' were provided but only both or none is possible."
+                )
+            # case name is integer
+            elif any([self.name, self.x_axis, self.y_axis]) and not all(
+                [self.name, self.x_axis, self.y_axis]
+            ):
+                raise ValueError(
+                    "At least one field of 'name','x_axis','y_axis' was provided. Then for deterministic behaviour all others must be provided."
+                )
+
+        return self
+
+
 class DataElement(BaseElement):
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
     file_path: list[Path] | None = []
     data: list[str] | None = []
     label_filter: list[str] | None = None
-    vstack_pattern: list[str] | None = None
+    vstack_pattern: (
+        VStackPatternElement | list[VStackPatternElement] | list[regex_str] | None
+    ) = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
@@ -62,8 +102,9 @@ class DataElement(BaseElement):
         extra = "forbid"
 
     @model_validator(mode="after")
-    def validate_mode_requirements(self):
+    def _validate_model(self):
         """Validates that required fields are present based on the mode."""
+        """Validates that required fields are present based on the mode and the given vstack pattern."""
         if self.mode == "read":
             if not self.file_path:
                 raise ValueError("Field 'file_path' is required for mode='read'.")
@@ -72,6 +113,18 @@ class DataElement(BaseElement):
                 raise ValueError("Field 'data' is required for mode='write'.")
             if not self.output_format:
                 raise ValueError("Field 'output_format' is required for mode='write'.")
+        return self
+
+        if isinstance(self.vstack_pattern, list) and isinstance(
+            self.vstack_pattern[0], str
+        ):
+            self.vstack_pattern = [
+                VStackPatternElement(pattern=pattern, name=1, x_axis=2, y_axis=3)
+                for pattern in self.vstack_pattern
+            ]
+        elif isinstance(self.vstack_pattern, VStackPatternElement):
+            self.vstack_pattern = [self.vstack_pattern]
+
         return self
 
 
@@ -87,7 +140,7 @@ class ParameterElement(BaseElement):
         extra = "forbid"
 
     @model_validator(mode="after")
-    def validate_mode_requirements(self):
+    def _validate_model(self):
         """Validates that required fields are present based on the mode."""
         if self.mode == "read":
             if not self.file_path:
@@ -98,7 +151,6 @@ class ParameterElement(BaseElement):
             if not self.output_format:
                 raise ValueError("Field 'output_format' is required for mode='write'.")
         return self
-
 
 class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
@@ -126,10 +178,26 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
-    vstack_pattern: list[str] | None = None
+    vstack_pattern: (
+        VStackPatternElement | list[VStackPatternElement] | list[regex_str] | None
+    ) = Field(None, exclude=True)
 
     class Config:
         extra = "forbid"
+
+    @model_validator(mode="after")
+    def _validate_model(self):
+        if isinstance(self.vstack_pattern, list) and isinstance(
+            self.vstack_pattern[0], str
+        ):
+            self.vstack_pattern = [
+                VStackPatternElement(pattern=pattern, name=1, x_axis=2, y_axis=3)
+                for pattern in self.vstack_pattern
+            ]
+        elif isinstance(self.vstack_pattern, VStackPatternElement):
+            self.vstack_pattern = [self.vstack_pattern]
+
+        return self
 
 
 WorkflowElement = Annotated[
