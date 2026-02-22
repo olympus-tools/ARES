@@ -39,7 +39,10 @@ from pathlib import Path
 from typing import Annotated, Any
 
 from pydantic import BaseModel, Field, RootModel, model_validator
-from typing_extensions import Literal
+from typing_extensions import Annotated, Literal
+
+# annotation for vstack-pattern (ensure compability between OS)
+regex_str = Annotated[str, Field(pattern=r"[\s\S]*")]
 
 
 class BaseElement(BaseModel):
@@ -51,7 +54,7 @@ class BaseElement(BaseModel):
 
 
 class VStackPatternElement(BaseModel):
-    pattern: str
+    pattern: regex_str
     name: str | int | None = None
     x_axis: int | None = None
     y_axis: int | None = None
@@ -95,7 +98,7 @@ class DataElement(BaseElement):
     file_path: list[Path] | None = []
     input: list[str] | None = []
     label_filter: list[str] | None = None
-    vstack_pattern: VStackPatternElement | list[str] | None = None
+    vstack_pattern: VStackPatternElement | list[regex_str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
@@ -161,7 +164,7 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
-    vstack_pattern: VStackPatternElement | list[str] | None = None
+    vstack_pattern: VStackPatternElement | list[regex_str] | None = None
 
     class Config:
         extra = "forbid"
