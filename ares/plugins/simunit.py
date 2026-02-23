@@ -204,7 +204,7 @@ class SimUnit:
                 dll_interface[dd_element_name] = ctypes_type.in_dll(
                     self._library, dd_element_name
                 )
-                logger.info(
+                logger.debug(
                     f"Data dictionary variable '{dd_element_name}' defined with datatype '{datatype}' and size '{size}' found successfully in simulation unit.",
                 )
             except AttributeError as e:
@@ -347,23 +347,35 @@ class SimUnit:
         sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float32)
 
         # running initialization function
-        for sim_function in self._sim_functions_init:
-            sim_function()
+        if self._sim_functions_init:
+            logger.info("Running initialization functions...")
+            for sim_function in self._sim_functions_init:
+                sim_function()
 
         # running cyclical functions
-        for time_step_idx in range(time_steps):
-            self._write_signals_to_dll(data=mapped_input, time_step_idx=time_step_idx)
-            for sim_function in self._sim_functions_cyclical:
-                sim_function()
-            step_result = self._read_dll_interface()
-            for signal in output_signals:
-                sim_result[signal][time_step_idx] = step_result[signal]
-            if data:
-                sim_result["timestamps"][time_step_idx] = data[0].timestamps[
-                    time_step_idx
-                ]
-            else:
-                sim_result["timestamps"][time_step_idx] = 0.0
+        if self._sim_functions_cyclical:
+            logger.info(f"Running cyclical functions for {time_steps} time steps...")
+            progress_indices = [round(i * (time_steps - 1) / 10) for i in range(11)]
+            progress_step = 0
+            for time_step_idx in range(time_steps):
+                self._write_signals_to_dll(
+                    data=mapped_input, time_step_idx=time_step_idx
+                )
+                for sim_function in self._sim_functions_cyclical:
+                    sim_function()
+                step_result = self._read_dll_interface()
+                for signal in output_signals:
+                    sim_result[signal][time_step_idx] = step_result[signal]
+                if data:
+                    sim_result["timestamps"][time_step_idx] = data[0].timestamps[
+                        time_step_idx
+                    ]
+                else:
+                    sim_result["timestamps"][time_step_idx] = 0.0
+
+                if time_step_idx >= progress_indices[progress_step]:
+                    logger.info(f"Simulation progress: {progress_step * 10}%")
+                    progress_step += 1
 
         logger.info("ares simulation successfully finished.")
         return [
@@ -434,7 +446,7 @@ class SimUnit:
 
                 if dd_element_name in data_dict:
                     mapped_input[dd_element_name] = data_dict[dd_element_name]
-                    logger.info(
+                    logger.debug(
                         f"Data dictionary variable '{dd_element_name}' could be mapped to the original signal in data source.",
                     )
                     continue
@@ -499,7 +511,7 @@ class SimUnit:
                         timestamps=timestamps,
                         description="Default value: 0",
                     )
-                    logger.info(
+                    logger.warning(
                         f"Data dictionary variable '{dd_element_name}' has been mapped to default constant value 0.",
                     )
 
@@ -712,7 +724,7 @@ class SimUnit:
 
         return step_result
 
-    def input_signal_keys(self) -> list[str]:
+    def data_keys(self) -> list[str]:
         """Returns a list of unique signal keys defined in the Data Dictionary.
 
         Includes both signal names from the DD and string entries from input_alternatives.
@@ -785,7 +797,7 @@ def ares_plugin(plugin_input):
         dd_path=plugin_input["data_dictionary"],
     )
 
-    label_filter_signal = sim_unit.input_signal_keys()
+    label_filter_signal = sim_unit.data_keys()
     label_filter_parameter = sim_unit.parameter_keys()
 
     for element_parameter_list in element_parameter_lists:

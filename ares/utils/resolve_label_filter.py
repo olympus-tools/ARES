@@ -36,6 +36,9 @@ limitations under the License:
 import re
 
 from ares.utils.decorators import typechecked_dev as typechecked
+from ares.utils.logger import create_logger
+
+logger = create_logger(__name__)
 
 
 @typechecked
@@ -55,8 +58,13 @@ def resolve_label_filter(
     result_list: list[str] = []
     for regex in label_filter:
         pattern = re.compile(regex)
-        result_list.extend(
-            [element for element in available_elements if pattern.search(element)]
-        )
+        found_labels = [
+            element for element in available_elements if pattern.search(element)
+        ]
+        if not found_labels:
+            logger.warning(
+                f"Label filter '{regex}' did not match any entry in available elements."
+            )
+        result_list.extend(found_labels)
 
     return list(set(result_list))

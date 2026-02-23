@@ -192,5 +192,5 @@ class AresSignal:
             curr_datatype = self.dtype
             self.value = self.value.astype(target_dtype)
             logger.debug(
-                f"Signal '{self.label}' cast from {curr_datatype} to {target_dtype}"
+                f"Signal '{self.label}' cast from {curr_datatype} to {target_dtype}."
             )

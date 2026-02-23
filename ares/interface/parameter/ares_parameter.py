@@ -38,6 +38,12 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
+from ares.utils.decorators import safely_run
+from ares.utils.decorators import typechecked_dev as typechecked
+from ares.utils.logger import create_logger
+
+logger = create_logger(__name__)
+
 
 @dataclass
 class AresParameter:
@@ -100,3 +106,32 @@ class AresParameter:
                  0 for scalar, 1 for 1D array, 2 for 2D array.
         """
         return self.value.ndim
+
+    @safely_run(
+        default_return=None,
+        exception_msg="Typecast for this parameter could not be executed.",
+        log=logger,
+        instance_el=["label"],
+    )
+    @typechecked
+    def dtype_cast(self, dtype: np.dtype | type[np.generic]) -> None:
+        """Cast the parameter value to a specified numpy dtype.
+
+        Converts the value array to the target dtype only if the current dtype
+        differs from the target dtype. Does nothing if dtypes already match.
+
+        Args:
+            dtype (np.dtype | type[np.generic]): Target numpy data type
+                (e.g., np.float32, np.int64, np.dtype('float64')).
+
+        Returns:
+            None: Modifies the parameter value in-place.
+        """
+        target_dtype = np.dtype(dtype)
+
+        if self.dtype != target_dtype:
+            curr_datatype = self.dtype
+            self.value = self.value.astype(target_dtype)
+            logger.debug(
+                f"Parameter '{self.label}' cast from {curr_datatype} to {target_dtype}."
+            )
