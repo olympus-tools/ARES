@@ -42,6 +42,7 @@ from asammdf import MDF, Signal, Source
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
+from ares.pydantic_models.workflow_model import VStackPatternElement
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -76,7 +77,7 @@ class MF4Handler(MDF, AresDataInterface):
         self,
         file_path: Path | None = None,
         data: list[AresSignal] | None = None,
-        vstack_pattern: list[str] | None = None,
+        vstack_pattern: list[VStackPatternElement] | None = None,
         **kwargs,
     ):
         """Initialize MF4Handler and load available channels.
@@ -88,7 +89,7 @@ class MF4Handler(MDF, AresDataInterface):
         Args:
             file_path (Path | None): Path to the mf4 file to load or write.
             data (list[AresSignal] | None): Optional list of AresSignal objects to initialize with
-            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
+            vstack_pattern ( list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
 
@@ -147,7 +148,7 @@ class MF4Handler(MDF, AresDataInterface):
         self,
         label_filter: list[str] | None = None,
         stepsize: int | None = None,
-        vstack_pattern: list[str] | None = None,
+        vstack_pattern: list[VStackPatternElement] | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
         """Get signals from mf4 file with optional resampling.
@@ -156,7 +157,7 @@ class MF4Handler(MDF, AresDataInterface):
             label_filter (list[str] | None): List of signal names or pattern to read from mf4 file.
                 If None, all available signals are read. Defaults to None.
             stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
-            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
+            vstack_pattern (list[VStackPatternElement] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments. 'stepsize' (int) triggers resampling.
 
         Returns:
