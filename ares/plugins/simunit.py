@@ -287,8 +287,16 @@ class SimUnit:
 
         sim_result: dict[str, np.ndarray] = {}
         time_steps = len(data[0].timestamps) if data else 1
+
         data_dict = self._list_to_dict(data if data else [])
+        data_dict = self._input_typecast(
+            sim_input=data_dict, dd_element_dict=self._dd.signals
+        )
+
         parameter_dict = self._list_to_dict(parameters if parameters else [])
+        parameter_dict = self._input_typecast(
+            sim_input=parameter_dict, dd_element_dict=self._dd.parameters
+        )
 
         if data:
             logger.info(
@@ -577,9 +585,6 @@ class SimUnit:
                     continue
 
                 if dd_element_name in data:
-                    data[dd_element_name].dtype_cast(
-                        self.DATATYPES[dd_element_value.datatype][1]
-                    )
                     input_value = data[dd_element_name].value[time_step_idx]
                     size = dd_element_value.size
                     self._write_value_to_dll(dd_element_name, input_value, size)
@@ -610,34 +615,32 @@ class SimUnit:
                     f"Warning writing parameter '{dd_element_name}' to '{self.function_name}' function not possible: {e}",
                 )
 
-    @safely_run(
-        default_return=None,
-        exception_msg="Writing value to library interface could not be executed.",
-        log=logger,
-        instance_el=["file_path", "dd_path"],
-    )
     @typechecked
-    def _write_dll_interface(
-        self, input: dict[str, AresBaseType], time_step_idx: int = 0
-    ):
-        """Writes the input data for a single time step from a Python dictionary to the
-        global C variables in the shared library.
-
-        It writes both signals (marked as 'in' or 'inout') and parameters to the DLL interface.
+    def _input_typecast(
+        self, sim_input: dict[str, AresBaseType], dd_element_dict
+    ) -> dict[str, AresBaseType]:
+        """
+        Typecasts the values of a dictionary of AresParameter or AresSignal objects to the numpy dtypes
+        defined in the Data Dictionary. This ensures all values are in the correct format for simulation.
 
         Args:
-            input (dict[str, AresBaseType]): A dictionary with variable names as keys and AresSignal
-                or AresParameter objects as values for the current time step.
-            time_step_idx (int): The index of the current time step.
-        """
-        # Separate signals and parameters
-        data = {k: v for k, v in input.items() if isinstance(v, AresSignal)}
-        parameters = {k: v for k, v in input.items() if isinstance(v, AresParameter)}
+            input: Dictionary of AresParameter or AresSignal objects keyed by label.
+            dd_element_dict: Data Dictionary section (parameters or signals) providing expected dtypes.
 
-        if data:
-            self._write_signals_to_dll(data, time_step_idx)
-        if parameters:
-            self._write_parameters_to_dll(parameters)
+        Returns:
+            The input dictionary with dtype_cast applied to each matching entry.
+        """
+        for dd_element_name, dd_element_value in dd_element_dict.items():
+            try:
+                if dd_element_name in sim_input:
+                    sim_input[dd_element_name].dtype_cast(
+                        self.DATATYPES[dd_element_value.datatype][1]
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Typecast of dd element '{dd_element_name}' to '{dd_element_value.datatype}' failed: {e}",
+                )
+        return sim_input
 
     @typechecked
     def _read_dll_interface(self) -> dict[str, Any] | None:
