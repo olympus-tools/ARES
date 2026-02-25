@@ -198,8 +198,8 @@ class ParamDCM:
                             parameter[parameter_name]["value"] = value
                         else:
                             parameter[parameter_name]["value"] = [
-                                value[i : i + dim[0]]
-                                for i in range(0, len(value), dim[0])
+                                [value[i + j * dim[0]] for j in range(dim[1])]
+                                for i in range(dim[0])
                             ]
                     elif parameter_keyword in ["FESTKENNLINIE", "KENNLINIE"]:
                         parameter[parameter_name]["unit"] = unit_value
@@ -228,8 +228,11 @@ class ParamDCM:
                             name_breakpoints_2
                         )
                         parameter[parameter_name]["value"] = [
-                            value[i : i + len(breakpoints_1)]
-                            for i in range(0, len(value), len(breakpoints_1))
+                            [
+                                value[i + j * len(breakpoints_1)]
+                                for j in range(len(breakpoints_2))
+                            ]
+                            for i in range(len(breakpoints_1))
                         ]
                         parameter[name_breakpoints_1] = {}
                         parameter[name_breakpoints_1]["value"] = breakpoints_1
@@ -264,8 +267,11 @@ class ParamDCM:
                             name_breakpoints_2
                         )
                         parameter[parameter_name]["value"] = [
-                            value[i : i + len(breakpoints_1)]
-                            for i in range(0, len(value), len(breakpoints_1))
+                            [
+                                value[i + j * len(breakpoints_1)]
+                                for j in range(len(breakpoints_2))
+                            ]
+                            for i in range(len(breakpoints_1))
                         ]
                     elif parameter_keyword in ["STUETZSTELLENVERTEILUNG"]:
                         parameter[parameter_name]["unit"] = unit_breakpoints_1
