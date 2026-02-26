@@ -6,7 +6,6 @@
 #   - make data_resampling
 #   - make data_merge
 #   - make data_vstack
-#   - make data_vstack_advanced
 # Parameter interface examples
 #   - make param_caching
 #   - make param_convertion
@@ -97,14 +96,6 @@ data_vstack:
 	@echo "Running data_vstack example..."
 	@$(ARES) pipeline \
 		-wf workflow/data_interface/data_vstack.wf.json \
-		--output output/ \
-		--log-level=10
-
-.PHONY: data_vstack_advanced
-data_vstack_advanced:
-	@echo "Running data_vstack_advanced example..."
-	@$(ARES) pipeline \
-		-wf workflow/data_interface/data_vstack_advanced.wf.json \
 		--output output/ \
 		--log-level=10
 
@@ -200,14 +191,5 @@ simunit_vstack:
 	$(MAKE) -C sim_unit inout-handling
 	@$(ARES) pipeline \
 		-wf workflow/sim_unit/simunit_vstack.wf.json \
-		--output output/ \
-		--log-level=10
-
-.PHONY: simunit_vstack_advanced
-simunit_vstack_advanced:
-	@echo "Running simunit_vstack_advanced example..."
-	$(MAKE) -C sim_unit inout-handling
-	@$(ARES) pipeline \
-		-wf workflow/sim_unit/simunit_vstack_advanced.wf.json \
 		--output output/ \
 		--log-level=10
