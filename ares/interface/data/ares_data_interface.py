@@ -338,18 +338,20 @@ class AresDataInterface(ABC):
     def _vstack(
         data: list[AresSignal], vstack_pattern: list[VStackPatternElement]
     ) -> list[AresSignal]:
-        """Vertical stack ares-signals matching given regex patterns.
-
+        """Vertical stack ares-signals matching given VStackPatternElements.
         Supports two stacking modes based on number of regex groups:
         - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
         - 3 groups: Stack 1D signals to 3D matrix using row/column indices
-            - group1 = signal name
-            - group2 = columns (axis-1)
-            - group3 = rows (axis-2)
+                    provided by VStackPatternElement
+
+        The VStackPatternnElement consists of the following fields:
+            - signalname: regex pattern used to determine signals for stacking (default: group1)
+            - x_axis: pattern to catch x-axis index (default: group2)
+            - y_axis: pattern to catch y-axis index (default: group3)
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
-            vstack_pattern (list[VStackPatternElement]): Regex patterns for signal matching and stacking
+            vstack_pattern (list[VStackPatternElement]): list of VstackPatternElements used for stacking
 
         Returns:
             list[AresSignal]: Original data list with newly stacked signals appended

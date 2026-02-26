@@ -97,25 +97,6 @@
             "postDebugTask": "clean-light"
         },
         {
-            "name": "ARES example data_vstack_advanced",
-            "type": "debugpy",
-            "request": "launch",
-            "python": "${workspaceFolder}/.venv/bin/python",
-            "module": "ares",
-            "args": [
-                "pipeline",
-                "--workflow",
-                "${workspaceFolder}/examples/workflow/data_interface/data_vstack_advanced.wf.json",
-                "--output",
-                "${workspaceFolder}/examples/output/",
-                "--log-level",
-                "10"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "postDebugTask": "clean-light"
-        },
-        {
             "name": "ARES example param_caching",
             "type": "debugpy",
             "request": "launch",
