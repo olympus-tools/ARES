@@ -33,15 +33,15 @@
         "data_dictionary": "../../sim_unit/inout_handling/inout_handling_vstack.dd.json",
         "stepsize": 1000,
         "parameter": ["parameterset_in_1"],
-        "input": [
+        "data": [
             "data_in_1"
         ],
-       "vstack_pattern": {
+       "vstack_pattern": [{
             "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
-            "name": 1,
+            "signalname": 1,
             "x_axis": 2,
             "y_axis": 3
-        }
+        }]
     },
     "data_out_1": {
         "type": "data",

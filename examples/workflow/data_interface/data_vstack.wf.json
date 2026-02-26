@@ -23,12 +23,12 @@
         "file_path": [
             "../../data/data_example_5.mf4"
         ],
-        "vstack_pattern": {
+        "vstack_pattern": [{
             "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
-            "name": "test_signal",
+            "signalname": "test_signal",
             "x_axis": 3,
             "y_axis": 2
-        }
+        }]
     },
     "data_out_1": {
         "type": "data",
