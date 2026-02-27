@@ -381,10 +381,10 @@ class AresDataInterface(ABC):
             # iterate over groups, collect matching signals,pattern to stack in dict
             signal_stack_dict = defaultdict(lambda: {"signals": [], "patterns": []})
             for signal_match, pattern_match in pair_matches:
-                if isinstance(vstack_element.name, str):
-                    group_key = vstack_element.name
-                elif isinstance(vstack_element.name, int):
-                    group_key = pattern_match.group(vstack_element.name)
+                if isinstance(vstack_element.signalname, str):
+                    group_key = vstack_element.signalname
+                elif isinstance(vstack_element.signalname, int):
+                    group_key = pattern_match.group(vstack_element.signalname)
                 else:
                     group_key = pattern_match.group(1)
 
