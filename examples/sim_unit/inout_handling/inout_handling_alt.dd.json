@@ -5,13 +5,13 @@
 	"signals":{
 		"signal_scalar": {
 			"type": "inout",
-			"datatype": "int32",
+			"datatype": "float",
 			"size": [],
 			"input_alternatives": ["signal_scalar_alt"]
 		},
 		"signal_array1d": {
 			"type": "inout",
-			"datatype": "uint32",
+			"datatype": "float",
 			"size": [4],
 			"input_alternatives": ["signal_array1d_alt"]
 		},
