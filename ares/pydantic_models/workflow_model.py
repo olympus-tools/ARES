@@ -132,8 +132,24 @@ class SimUnitElement(PluginElement):
         extra = "forbid"
 
 
+class MergeElement(PluginElement):
+    type: Literal["merge"] = "merge"
+    plugin_path: Path = Field(
+        default_factory=lambda: Path(
+            os.path.relpath(
+                Path(__file__).parent.parent / "plugins" / "merge.py",
+                Path(__file__).parent,
+            )
+        )
+    )
+    input: list[str] | None = []
+
+    class Config:
+        extra = "forbid"
+
+
 WorkflowElement = Annotated[
-    DataElement | ParameterElement | SimUnitElement | PluginElement,
+    DataElement | ParameterElement | PluginElement | SimUnitElement | MergeElement,
     Field(discriminator="type"),
 ]
 
