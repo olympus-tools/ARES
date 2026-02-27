@@ -20,12 +20,12 @@
         "file_path": "../../plugin/plugin_example_1.py",
         "plugin_name": "plugin_example_1",
         "parameter": ["parameterset_in_1"],
-        "input": ["data_in_1"]
+        "data": ["data_in_1"]
     },
     "data_out_1": {
         "type": "data",
         "mode": "write",
-        "input": ["plugin_1"],
+        "data": ["plugin_1"],
         "output_format": "mf4"
     },
     "parameterset_out_1": {

@@ -20,13 +20,13 @@
     "data_out_1": {
         "type": "data",
         "mode": "write",
-        "input": ["data_in_1"],
+        "data": ["data_in_1"],
         "output_format": "mf4"
     },
     "data_out_2": {
         "type": "data",
         "mode": "write",
-        "input": ["data_in_2"],
+        "data": ["data_in_2"],
         "output_format": "mf4",
         "vstack_pattern": [
             "([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",

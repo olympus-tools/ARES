@@ -10,7 +10,7 @@
     "data_out_1": {
         "type": "data",
         "mode": "write",
-        "input": [
+        "data": [
             "simunit_1",
             "simunit_2"
         ],
@@ -36,7 +36,7 @@
         "data_dictionary": "../../sim_unit/derivation/derivation.dd.json",
         "stepsize": 2000,
         "parameter": ["parameterset_in_2"],
-        "input": ["simunit_1"]
+        "data": ["simunit_1"]
     },
         "simunit_1": {
         "type": "sim_unit",
@@ -44,6 +44,6 @@
         "data_dictionary": "../../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.dd.json",
         "stepsize": 1000,
         "parameter": ["parameterset_in_1"],
-        "input": ["data_in_1"]
+        "data": ["data_in_1"]
     }
 }
