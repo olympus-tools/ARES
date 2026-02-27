@@ -13,7 +13,7 @@ ________________________________________________________________________
 |              Automated Rapid Embedded Simulation (c)                 |
 |______________________________________________________________________|
 
-Copyright 2025 olympus-tools contributors. Contributors to this project
+Copyright 2025 olympus-tools contributors. Dependencies and licenses
 are listed in the NOTICE file:
 
     https://github.com/olympus-tools/ARES/blob/master/NOTICE
