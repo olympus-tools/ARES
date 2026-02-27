@@ -217,6 +217,15 @@ Allows users to execute custom Python scripts within the workflow. Plugins can d
 | `plugin_name`      | No         | `str`       |                     | Name of the plugin function to execute. If not specified, defaults to `"ares_plugin"`. |
 | *Custom*           | No         | `Any`       |                     | Additional fields as required by the plugin.        |
 
+#### Merge Element (`type="merge"`)
+
+Merges data and parameters from multiple workflow elements into a single unified output. This is useful for combining results from different simulation units or data sources before writing to file or passing to downstream elements.
+
+| Field              | Required   | Type        | Supported Values    | Description                                         |
+| :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
+| `type`             | Yes        | `str`       | `"merge"`           | Unique identifier for the element type.             |
+| `input`            | No         | `list[str]` |                     | List of element names to merge. Elements must be uniform (all data or all parameter). |
+
 ## 7. Examples
 
 ### 7.1. Open-Loop Simulation
