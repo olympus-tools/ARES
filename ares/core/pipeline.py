@@ -88,7 +88,7 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                 list(ares_wf.workflow[parameter].hash_list.keys())
             )
         tmp_data_hash_list: list[list[str]] = []
-        for data in getattr(wf_element_value, "input", []):
+        for data in getattr(wf_element_value, "data", []):
             tmp_data_hash_list.append(list(ares_wf.workflow[data].hash_list.keys()))
 
         # handle workflow elements based on their type
@@ -126,7 +126,7 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     for hash_list in tmp_param_hash_list
                 ]
                 # filtering relevant data for plugin element
-                plugin_input["input"] = [
+                plugin_input["data"] = [
                     [data_storage[key] for key in hash_list if key in data_storage]
                     for hash_list in tmp_data_hash_list
                 ]

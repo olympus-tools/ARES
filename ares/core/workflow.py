@@ -170,7 +170,7 @@ class Workflow:
     def _find_sinks(self) -> list[str]:
         """Identifies the endpoints (sinks) of the workflow.
 
-        These are elements that are not referenced as `input`, `dataset`, or `init`
+        These are elements that are not referenced as `data`, `dataset`, or `init`
         in any other element. They serve as the starting points for the backward
         analysis of the execution order.
 
@@ -191,8 +191,8 @@ class Workflow:
                 if hasattr(wf_element_value, "init") and wf_element_value.init:
                     ref_input_list.extend(wf_element_value.init)
             else:
-                if hasattr(wf_element_value, "input") and wf_element_value.input:
-                    ref_input_list.extend(wf_element_value.input)
+                if hasattr(wf_element_value, "data") and wf_element_value.data:
+                    ref_input_list.extend(wf_element_value.data)
 
         # referenced elements MUST NOT be sinks
         possible_sinks = [
@@ -208,7 +208,7 @@ class Workflow:
             if (
                 hasattr(wf_element_value, "parameter")
                 and not wf_element_value.parameter
-            ) and (hasattr(wf_element_value, "input") and not wf_element_value.input):
+            ) and (hasattr(wf_element_value, "data") and not wf_element_value.data):
                 logger.debug(
                     f"""Workflow element "{sink}" is a unused workflow source."""
                 )
@@ -267,7 +267,7 @@ class Workflow:
     ) -> list[str] | None:
         """Recursively traces the execution path backward from a given element.
 
-        The function follows connections (`input`, `parameter`, `init`, `parameter`) and detects and
+        The function follows connections (`data`, `parameter`, `init`, `parameter`) and detects and
         handles cyclic dependencies (`cancel_condition`).
 
         Args:
@@ -299,16 +299,16 @@ class Workflow:
             inputs.extend(elem_obj.parameter)
 
         if hasattr(elem_obj, "cancel_condition") and elem_obj.cancel_condition:
-            if hasattr(elem_obj, "input") and elem_obj.input:
-                if sink in elem_obj.input or loop:
+            if hasattr(elem_obj, "data") and elem_obj.data:
+                if sink in elem_obj.data or loop:
                     if hasattr(elem_obj, "init") and elem_obj.init:
                         inputs.extend(elem_obj.init)
                 else:
                     loop = True
-                    inputs.extend(elem_obj.input)
+                    inputs.extend(elem_obj.data)
         else:
-            if hasattr(elem_obj, "input") and elem_obj.input:
-                inputs.extend(elem_obj.input)
+            if hasattr(elem_obj, "data") and elem_obj.data:
+                inputs.extend(elem_obj.data)
 
         for input_name in inputs:
             sub_path = self._recursive_search(sink=sink, loop=loop, element=input_name)
@@ -361,8 +361,8 @@ class Workflow:
                         element_workflow.extend(init_elem.element_workflow)
                         element_workflow.append(init_name)
 
-            elif hasattr(wf_element, "input") and wf_element.input:
-                for input_name in wf_element.input:
+            elif hasattr(wf_element, "data") and wf_element.data:
+                for input_name in wf_element.data:
                     input_elem = self.workflow.get(input_name)
                     if input_elem:
                         element_workflow.extend(input_elem.element_workflow)
