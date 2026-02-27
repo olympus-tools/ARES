@@ -38,7 +38,7 @@ limitations under the License:
 float derivation_input = 0.f;
 float derivation_output = 0.f;
 
-void ares_simunit_1()
+void ares_simunit()
 {
     derivation_output =  derivation(derivation_input);
 }

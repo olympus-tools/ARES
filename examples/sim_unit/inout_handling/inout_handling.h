@@ -66,4 +66,6 @@ void inout_handling(
 	float parameter_array2d_output[2][3]
 );
 
+void init_func(float signal_scalar_init[1]);
+
 #endif // INOUT_HANDLING_H

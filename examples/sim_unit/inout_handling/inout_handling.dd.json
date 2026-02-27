@@ -1,8 +1,14 @@
 {
-    "meta_data": {
-        "function_name": "ares_simunit_2"
+    "execution_order": {
+        "initialization": ["ares_simunit_init_1"],
+        "cyclical": ["ares_simunit_cyclical_1"]
     },
 	"signals":{
+		"signal_scalar_init":{
+			"type": "out",
+			"datatype": "float",
+			"size": []
+		},
 		"signal_scalar": {
 			"type": "inout",
 			"datatype": "int32",

@@ -1,6 +1,6 @@
 {
-    "meta_data": {
-        "function_name": "ares_simunit_2"
+    "execution_order": {
+        "cyclical": ["ares_simunit_cyclical_1"]
     },
 	"signals":{
 		"signal_scalar": {

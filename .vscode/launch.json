@@ -193,6 +193,26 @@
             "postDebugTask": "clean-light"
         },
         {
+            "name": "ARES example simunit_interface_std",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "module": "ares",
+            "args": [
+                "pipeline",
+                "--workflow",
+                "${workspaceFolder}/examples/workflow/sim_unit/simunit_interface_std.wf.json",
+                "--output",
+                "${workspaceFolder}/examples/output/",
+                "--log-level",
+                "10"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-simunit-all",
+            "postDebugTask": "clean-light"
+        },
+        {
             "name": "ARES example simunit_interface_alt",
             "type": "debugpy",
             "request": "launch",
@@ -242,26 +262,6 @@
                 "pipeline",
                 "--workflow",
                 "${workspaceFolder}/examples/workflow/sim_unit/simunit_interface_alt_value.wf.json",
-                "--output",
-                "${workspaceFolder}/examples/output/",
-                "--log-level",
-                "10"
-            ],
-            "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "preLaunchTask": "prepare-simunit-all",
-            "postDebugTask": "clean-light"
-        },
-        {
-            "name": "ARES example simunit_interface_std",
-            "type": "debugpy",
-            "request": "launch",
-            "python": "${workspaceFolder}/.venv/bin/python",
-            "module": "ares",
-            "args": [
-                "pipeline",
-                "--workflow",
-                "${workspaceFolder}/examples/workflow/sim_unit/simunit_interface_std.wf.json",
                 "--output",
                 "${workspaceFolder}/examples/output/",
                 "--log-level",

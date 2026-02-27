@@ -88,20 +88,19 @@ class ParameterModel(BaseDDModel):
 SignalElement = InModel | InoutModel | OutModel
 
 
-class MetaDataModel(BaseModel):
-    """Meta data model with optional fields.
+class ExecutionOrder(BaseModel):
+    """Execution order model with optional initialization and cyclical function lists.
 
     Args:
-        function_name (str | None): Optional function name
+        initialization (list[str] | None): Optional list of initialization function names
+        cyclical (list[str] | None): Optional list of cyclical function names
 
     Returns:
-        MetaDataModel: Validated meta data instance
+        ExecutionOrder: Validated execution order instance
     """
 
-    function_name: str | None = None
-
-    class Config:
-        extra = "allow"
+    initialization: list[str] | None = []
+    cyclical: list[str] | None = []
 
 
 class DataDictionaryModel(BaseModel):
@@ -110,7 +109,7 @@ class DataDictionaryModel(BaseModel):
     Args:
         signals (dict[str, SignalElement]): Dictionary of signal definitions (in, inout, out)
         parameters (dict[str, ParameterModel]): Dictionary of parameter definitions
-        meta_data (MetaDataModel | None): Optional meta data containing function name and other fields
+        execution_order (ExecutionOrder | None): Optional execution order containing initialization and cyclical function lists
 
     Returns:
         DataDictionaryModel: Validated data dictionary instance
@@ -118,7 +117,7 @@ class DataDictionaryModel(BaseModel):
 
     signals: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], SignalElement]
     parameters: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], ParameterModel]
-    meta_data: MetaDataModel | None = None
+    execution_order: ExecutionOrder | None = None
 
     class Config:
         extra = "forbid"

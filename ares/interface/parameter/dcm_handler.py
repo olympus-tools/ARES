@@ -116,14 +116,15 @@ class DCMHandler(ParamDCM, AresParamInterface):
         """
 
         if label_filter:
+            label_filter = resolve_label_filter(
+                label_filter=label_filter,
+                available_elements=list(self.parameter.keys()),
+            )
+
             parameter_tmp = {
                 parameter_name: parameter_value
                 for parameter_name, parameter_value in self.parameter.items()
-                if parameter_name
-                in resolve_label_filter(
-                    label_filter=label_filter,
-                    available_elements=list(self.parameter.keys()),
-                )
+                if parameter_name in label_filter
             }
         else:
             parameter_tmp = self.parameter

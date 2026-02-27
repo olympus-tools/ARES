@@ -183,12 +183,12 @@ class MF4Handler(MDF, AresDataInterface):
 
         if vstack_pattern:
             logger.debug(
-                f"Vertical stacking will be applied considering regex: {vstack_pattern}"
+                f"Vertical stacking will be applied considering regex: {vstack_pattern}."
             )
             tmp_data = self._vstack(data=tmp_data, vstack_pattern=vstack_pattern)
 
         if stepsize:
-            logger.debug(f"Resampling all signals to: {stepsize}")
+            logger.debug(f"Resampling all signals to: {stepsize} ms.")
             return self._resample(data=tmp_data, stepsize=stepsize)
         else:
             return tmp_data
@@ -209,7 +209,13 @@ class MF4Handler(MDF, AresDataInterface):
         """
         signal_list: list[str] = []
         for regex in label_filter:
-            signal_list.extend(self.search(regex, mode="regex"))
+            found_labels = self.search(regex, mode="regex")
+            if not found_labels:
+                logger.warning(
+                    f"Label filter '{regex}' did not match any signal in mf4 file."
+                )
+            else:
+                signal_list.extend(found_labels)
 
         return list(set(signal_list))
 
@@ -235,12 +241,6 @@ class MF4Handler(MDF, AresDataInterface):
         for channel_name in label_filter:
             occurence = self.whereis(channel_name)
 
-            if len(occurence) == 0:
-                logger.warning(
-                    f"Signal '{channel_name}' not found in mf4 file. Skipping."
-                )
-                continue
-
             if len(occurence) == 1:
                 logger.debug(
                     f"Signal '{channel_name}' has single occurrence in mf4 data file."
@@ -250,7 +250,7 @@ class MF4Handler(MDF, AresDataInterface):
                     found_signals.extend(selected_signal)
 
             else:
-                logger.debug(
+                logger.warning(
                     f"Signal '{channel_name}' has {len(occurence)} occurrences in mf4 data file."
                 )
                 sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurence]
@@ -355,7 +355,7 @@ class MF4Handler(MDF, AresDataInterface):
 
             else:
                 logger.warning(
-                    f"Unsupported signal dimension: {sig.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)"
+                    f"Unsupported signal dimension: {sig.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
                 )
 
         self.append(signals_to_write)
