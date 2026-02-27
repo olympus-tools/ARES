@@ -37,14 +37,13 @@ import os
 from pathlib import Path
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, RootModel
+from pydantic import BaseModel, Field, RootModel, model_validator
 from typing_extensions import Literal
 
 
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
-    type: str
     element_workflow: list[str] = []
     hash_list: dict[str, list[str]] = {}
 
@@ -62,6 +61,7 @@ class DataElement(BaseElement):
     class Config:
         extra = "forbid"
 
+    @model_validator(mode="after")
     def validate_mode_requirements(self):
         """Validates that required fields are present based on the mode."""
         if self.mode == "read":
@@ -72,6 +72,7 @@ class DataElement(BaseElement):
                 raise ValueError("Field 'input' is required for mode='write'.")
             if not self.output_format:
                 raise ValueError("Field 'output_format' is required for mode='write'.")
+        return self
 
 
 class ParameterElement(BaseElement):
@@ -85,6 +86,7 @@ class ParameterElement(BaseElement):
     class Config:
         extra = "forbid"
 
+    @model_validator(mode="after")
     def validate_mode_requirements(self):
         """Validates that required fields are present based on the mode."""
         if self.mode == "read":
@@ -95,6 +97,7 @@ class ParameterElement(BaseElement):
                 raise ValueError("Field 'parameter' is required for mode='write'.")
             if not self.output_format:
                 raise ValueError("Field 'output_format' is required for mode='write'.")
+        return self
 
 
 class PluginElement(BaseElement):
@@ -109,9 +112,11 @@ class PluginElement(BaseElement):
 class SimUnitElement(PluginElement):
     type: Literal["sim_unit"] = "sim_unit"
     plugin_path: Path = Field(
-        default_factory=lambda: os.path.relpath(
-            Path(__file__).parent.parent / "plugins" / "simunit.py",
-            Path(__file__).parent,
+        default_factory=lambda: Path(
+            os.path.relpath(
+                Path(__file__).parent.parent / "plugins" / "simunit.py",
+                Path(__file__).parent,
+            )
         )
     )
     file_path: Path
