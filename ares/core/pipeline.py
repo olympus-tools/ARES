@@ -109,13 +109,17 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     output_dir=output_dir,
                 )
 
-            case "sim_unit" | "plugin":
+            case "plugin" | "sim_unit" | "merge":
                 plugin_input: dict[str, Any] = wf_element_value.model_dump()
                 plugin_input["wf_element_name"] = wf_element_name
 
                 if wf_element_value.type == "sim_unit":
                     plugin_input["plugin_path"] = (
                         Path(__file__).parent.parent / "plugins" / "simunit.py"
+                    )
+                elif wf_element_value.type == "merge":
+                    plugin_input["plugin_path"] = (
+                        Path(__file__).parent.parent / "plugins" / "merge.py"
                     )
                 else:
                     plugin_input["plugin_path"] = plugin_input["file_path"]
