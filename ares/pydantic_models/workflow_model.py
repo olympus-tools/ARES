@@ -143,6 +143,7 @@ class MergeElement(PluginElement):
         )
     )
     input: list[str] | None = []
+    parameter: list[str] | None = []
 
     class Config:
         extra = "forbid"
