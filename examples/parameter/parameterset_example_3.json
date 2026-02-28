@@ -238,7 +238,7 @@
     "sample_time": {
         "description": "Schrittweite der Software Komponente",
         "unit": "ms",
-        "value": 1000
+        "value": 3000
     },
     "cutoff_freq": {
         "description": "Eckfrequenz des PT1 Glieds",
