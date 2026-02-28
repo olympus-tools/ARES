@@ -35,6 +35,9 @@ limitations under the License:
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.utils.logger import create_logger
+
+logger = create_logger(__name__)
 
 
 def ares_plugin(plugin_input):
@@ -49,6 +52,27 @@ def ares_plugin(plugin_input):
         None
     """
 
-    element_lists: list[list[AresParamInterface]] | list[list[AresDataInterface]] = (
-        plugin_input.get("input", None)
-    )
+    if plugin_input["input"]:
+        element_lists: (
+            list[list[AresParamInterface]] | list[list[AresDataInterface]]
+        ) = plugin_input.get("input", None)
+    elif plugin_input["parameter"]:
+        element_lists: (
+            list[list[AresParamInterface]] | list[list[AresDataInterface]]
+        ) = plugin_input.get("parameter", None)
+
+    # determine type of merge based on first element in first element-list
+    if isinstance(element_lists[0][0], AresDataInterface):
+        logger.info("Merging ares data-elements...")
+        master_element = AresDataInterface.create()
+    elif isinstance(element_lists[0][0], AresParamInterface):
+        logger.info("Merging ares parameter-elements...")
+        master_element = AresParamInterface.create()
+    else:
+        raise ValueError(
+            f"Type {type(element_lists[0][0])} of merge-element is currently not supported."
+        )
+
+    for element_list in element_lists:
+        for element in element_list:
+            master_element.add(element.get())
