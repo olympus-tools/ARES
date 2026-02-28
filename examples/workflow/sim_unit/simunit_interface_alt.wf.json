@@ -9,7 +9,7 @@
     "data_out_1": {
         "type": "data",
         "mode": "write",
-        "input": ["simunit_1"],
+        "data": ["simunit_1"],
         "output_format": "mf4"
     },
     "parameterset_in_1": {
@@ -24,7 +24,7 @@
         "file_path": "../../sim_unit/inout_handling/inout_handling.so",
         "data_dictionary": "../../sim_unit/inout_handling/inout_handling_alt.dd.json",
         "stepsize": 1000,
-        "input": [
+        "data": [
             "data_in_1"
         ]
     }

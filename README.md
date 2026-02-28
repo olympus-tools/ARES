@@ -171,7 +171,7 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `type`             | Yes        | `str`       | `"data"`            | Unique identifier for the element type.             |
 | `mode`             | Yes        | `str`       | `"read"`, `"write"` | Operation mode.                                     |
 | `file_path`        | If `read`  | `list[str]` |                     | Path(s) to input data files (e.g., `.mf4`).         |
-| `input`            | If `write` | `list[str]` |                     | List of element names to write to file.             |
+| `data`            | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name or pattern.         |
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
@@ -200,7 +200,7 @@ Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent an
 | `file_path`        | Yes        | `str`       |                     | Path to the compiled library (`.dll`, `.so`).       |
 | `data_dictionary`  | Yes        | `str`       |                     | Path to the data dictionary definition.             |
 | `stepsize`         | Yes        | `int`       |                     | Simulation step size in ms.                         |
-| `input`            | Yes        | `list[str]` |                     | List of data element names providing inputs.        |
+| `data`            | Yes        | `list[str]` |                     | List of data element names providing inputs.        |
 | `parameter`        | No         | `list[str]` |                     | List of parameter element names.                    |
 | `init`             | No         | `list[str]` |                     | List of elements for initialization.                |
 | `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
