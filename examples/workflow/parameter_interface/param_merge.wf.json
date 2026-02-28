@@ -1,0 +1,40 @@
+{
+    "parameter_in_1": {
+        "type": "parameter",
+        "mode": "read",
+        "file_path": [
+            "../../parameter/parameterset_example_1.dcm"
+        ]
+    },
+    "parameter_in_2": {
+        "type": "parameter",
+        "mode": "read",
+        "file_path": [
+            "../../parameter/parameterset_example_2.dcm",
+            "../../parameter/parameterset_example_3.json"
+        ]
+    },
+    "parameter_merge_1": {
+        "type": "merge",
+        "parameter": [
+            "parameter_in_1",
+            "parameter_in_2"
+        ]
+    },
+    "parameter_merge_2": {
+        "type": "merge",
+        "parameter": [
+            "parameter_in_2",
+            "parameter_in_1"
+        ]
+    },
+    "parameter_out_1": {
+        "type": "parameter",
+        "mode": "write",
+        "parameter": [
+            "parameter_merge_1",
+            "parameter_merge_2"
+        ],
+        "output_format": "json"
+    }
+}
