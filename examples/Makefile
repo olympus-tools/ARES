@@ -4,11 +4,13 @@
 #   - make data_convertion => TODO: currently just one data type supported
 #   - make data_labelfilter
 #   - make data_resampling
+#   - make data_merge
 #   - make data_vstack
 # Parameter interface examples
 #   - make param_caching
 #   - make param_convertion
 #   - make param_labelfilter
+#   - make param_merge
 # Plugin examples
 #   - make plugin_manipulation
 # Sim unit examples
@@ -33,10 +35,12 @@ ARES ?= "$(VENV_BIN)/ares"
 all: data_caching \
      data_labelfilter \
      data_resampling \
+	 data_merge \
      data_vstack \
      param_caching \
-     param_convertion \
      param_labelfilter \
+     param_convertion \
+	 param_merge \
      plugin_manipulation \
      simunit_dependencies \
      simunit_interface_alt \
@@ -60,6 +64,14 @@ data_caching:
 # 		-wf workflow/data_interface/data_convertion.wf.json \
 # 		--output output/ \
 # 		--log-level=10
+
+.PHONY: data_merge
+data_merge:
+	@echo "Running data_merge example..."
+	@$(ARES) pipeline \
+		-wf workflow/data_interface/data_merge.wf.json \
+		--output output/ \
+		--log-level=10
 
 .PHONY: data_labelfilter
 data_labelfilter:
@@ -98,6 +110,14 @@ param_convertion:
 	@echo "Running param_convertion example..."
 	@$(ARES) pipeline \
 		-wf workflow/parameter_interface/param_convertion.wf.json \
+		--output output/ \
+		--log-level=10
+
+.PHONY: param_merge
+param_merge:
+	@echo "Running param_merge example..."
+	@$(ARES) pipeline \
+		-wf workflow/param_interface/param_merge.wf.json \
 		--output output/ \
 		--log-level=10
 

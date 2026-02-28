@@ -48,9 +48,11 @@ import pytest
         "workflow/data_interface/data_labelfilter.wf.json",
         # "workflow/data_interface/data_convertion.wf.json", TODO: implement data convertion example
         "workflow/data_interface/data_resampling.wf.json",
+        "workflow/data_interface/data_merge.wf.json",
         "workflow/data_interface/data_vstack.wf.json",
         "workflow/parameter_interface/param_caching.wf.json",
         "workflow/parameter_interface/param_convertion.wf.json",
+        "workflow/parameter_interface/param_merge.wf.json",
         "workflow/parameter_interface/param_labelfilter.wf.json",
         "workflow/plugin/plugin_manipulation.wf.json",
         "workflow/sim_unit/simunit_dependencies.wf.json",
