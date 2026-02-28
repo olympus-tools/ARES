@@ -24,14 +24,11 @@ VENV_DIR ?= ../.venv
 # Platform detection for virtual environment binary path
 ifeq ($(OS),Windows_NT)
 	VENV_BIN := $(VENV_DIR)/Scripts
-	EXE := .exe
 else
 	VENV_BIN := $(VENV_DIR)/bin
-	EXE :=
 endif
 
-ARES ?= "$(VENV_BIN)/ares$(EXE)"
-
+ARES ?= "$(VENV_BIN)/ares"
 .PHONY: all
 all: data_caching \
      data_labelfilter \

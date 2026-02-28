@@ -22,12 +22,10 @@ VENV_RECREATE := false
 # Platform detection for virtual environment binary path
 ifeq ($(OS),Windows_NT)
 	VENV_BIN := $(VENV_DIR)/Scripts
-	EXE := .exe
 	PLATFORM := windows
 	PATHSEP := ;
 else
 	VENV_BIN := $(VENV_DIR)/bin
-	EXE :=
 	PLATFORM := unix
 	PATHSEP := :
 endif
@@ -51,10 +49,10 @@ setup-venv:
 	# Check if .git exists to decide on versioning strategy for editable install \
 	if [ ! -d ".git" ]; then \
 		echo "NOTE: .git directory not found. Setting pretend version for installation."; \
-		SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_BIN)/pip$(EXE)" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+		SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
 	else \
 		echo "NOTE: .git directory found. Using setuptools_scm for versioning."; \
-		"$(VENV_BIN)/pip$(EXE)" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
+		"$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
 	fi
 
 .PHONY: examples
@@ -64,28 +62,28 @@ examples: setup-venv
 .PHONY: test-examples
 test-examples: setup-venv
 	$(MAKE) -C examples/sim_unit all
-	@"$(VENV_BIN)/pytest$(EXE)" test/examples
+	@"$(VENV_BIN)/pytest" test/examples
 
 .PHONY: test-requirements
 test-requirements: setup-venv
-	@"$(VENV_BIN)/pytest$(EXE)"
+	@"$(VENV_BIN)/pytest"
 
 .PHONY: test-coverage
 test-coverage: setup-venv
-	@"$(VENV_BIN)/pytest$(EXE)" --cov --cov-report=html --cov-report=term-missing
+	@"$(VENV_BIN)/pytest" --cov --cov-report=html --cov-report=term-missing
 
 .PHONY: format
 format: setup-venv
-	@"$(VENV_BIN)/ruff$(EXE)" format . --exclude ares/core/version.py --exclude .venv
+	@"$(VENV_BIN)/ruff" format . --exclude ares/core/version.py --exclude .venv
 
 .PHONY: format-check
 format-check: setup-venv
-	@"$(VENV_BIN)/ruff$(EXE)" format --check . --exclude ares/core/version.py --exclude .venv
+	@"$(VENV_BIN)/ruff" format --check . --exclude ares/core/version.py --exclude .venv
 
 .PHONY: build-executable
 build-executable: setup-venv
 	@echo "Building executable with PyInstaller..."
-	@"$(VENV_BIN)/pyinstaller$(EXE)" --onefile --name ares --paths . --paths packages/param_dcm --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "param_dcm" --hidden-import "param_dcm.param_dcm" ares/__main__.py
+	@"$(VENV_BIN)/pyinstaller" --onefile --name ares --paths . --paths packages/param_dcm --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "param_dcm" --hidden-import "param_dcm.param_dcm" ares/__main__.py
 	@echo ""
 	@echo "Executable created in dist/ares"
 
@@ -127,9 +125,9 @@ release-upload:
 	@printf "Upload to TestPyPI, PyPI, or skip? [test/pypi/skip] "; \
 	read -r REPO; \
 	if [ "$$REPO" = "test" ]; then \
-		"$(VENV_BIN)/twine$(EXE)" upload --repository testpypi dist/*; \
+		"$(VENV_BIN)/twine" upload --repository testpypi dist/*; \
 	elif [ "$$REPO" = "pypi" ]; then \
-		"$(VENV_BIN)/twine$(EXE)" upload dist/*; \
+		"$(VENV_BIN)/twine" upload dist/*; \
 	elif [ "$$REPO" = "skip" ]; then \
 		echo "Upload skipped."; \
 	else \
