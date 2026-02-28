@@ -102,7 +102,7 @@ class ParameterElement(BaseElement):
 
 class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
-    file_path: Path
+    file_path: Path | None = None
     plugin_name: str | None = None
 
     class Config:
