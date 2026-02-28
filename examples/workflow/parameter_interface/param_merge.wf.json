@@ -16,14 +16,14 @@
     },
     "parameter_merge_1": {
         "type": "merge",
-        "input": [
+        "parameter": [
             "parameter_in_1",
             "parameter_in_2"
         ]
     },
     "parameter_merge_2": {
         "type": "merge",
-        "input": [
+        "parameter": [
             "parameter_in_2",
             "parameter_in_1"
         ]
@@ -31,7 +31,7 @@
     "parameter_out_1": {
         "type": "parameter",
         "mode": "write",
-        "input": [
+        "parameter": [
             "parameter_merge_1",
             "parameter_merge_2"
         ],
