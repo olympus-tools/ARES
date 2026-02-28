@@ -20,8 +20,15 @@
 #   - make simunit_vstack
 
 VENV_DIR ?= ../.venv
-ARES ?= "$(VENV_DIR)/bin/ares"
 
+# Platform detection for virtual environment binary path
+ifeq ($(OS),Windows_NT)
+	VENV_BIN := $(VENV_DIR)/Scripts
+else
+	VENV_BIN := $(VENV_DIR)/bin
+endif
+
+ARES ?= "$(VENV_BIN)/ares"
 .PHONY: all
 all: data_caching \
      data_labelfilter \
@@ -49,7 +56,7 @@ data_caching:
 # .PHONY: data_convertion
 # data_convertion:
 # 	@echo "Running data_convertion example..."
-# 	@"$(VENV_DIR)/bin/python" -m ares pipeline \
+# 	@$(ARES) pipeline \
 # 		-wf workflow/data_interface/data_convertion.wf.json \
 # 		--output output/ \
 # 		--log-level=10

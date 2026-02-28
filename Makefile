@@ -19,6 +19,18 @@
 VENV_DIR := .venv
 VENV_RECREATE := false
 
+# Platform detection for virtual environment binary path
+ifeq ($(OS),Windows_NT)
+	VENV_BIN := $(VENV_DIR)/Scripts
+	PLATFORM := windows
+	PATHSEP := ;
+else
+	VENV_BIN := $(VENV_DIR)/bin
+	PLATFORM := unix
+	PATHSEP := :
+endif
+
+# Main setup-venv target - uses POSIX shell commands (works with Git Bash on Windows)
 .PHONY: setup-venv
 setup-venv:
 	@if [ -d "$(VENV_DIR)" ]; then \
@@ -37,10 +49,10 @@ setup-venv:
 	# Check if .git exists to decide on versioning strategy for editable install \
 	if [ ! -d ".git" ]; then \
 		echo "NOTE: .git directory not found. Setting pretend version for installation."; \
-		SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+		SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
 	else \
 		echo "NOTE: .git directory found. Using setuptools_scm for versioning."; \
-		"$(VENV_DIR)/bin/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
+		"$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
 	fi
 
 .PHONY: examples
@@ -50,28 +62,28 @@ examples: setup-venv
 .PHONY: test-examples
 test-examples: setup-venv
 	$(MAKE) -C examples/sim_unit all
-	@"$(VENV_DIR)/bin/python" -m pytest test/examples
+	@"$(VENV_BIN)/pytest" test/examples
 
 .PHONY: test-requirements
 test-requirements: setup-venv
-	@"$(VENV_DIR)/bin/python" -m pytest
+	@"$(VENV_BIN)/pytest"
 
 .PHONY: test-coverage
 test-coverage: setup-venv
-	@"$(VENV_DIR)/bin/python" -m pytest --cov --cov-report=html --cov-report=term-missing
+	@"$(VENV_BIN)/pytest" --cov --cov-report=html --cov-report=term-missing
 
 .PHONY: format
 format: setup-venv
-	@"$(VENV_DIR)/bin/python" -m ruff format . --exclude ares/core/version.py --exclude .venv
+	@"$(VENV_BIN)/ruff" format . --exclude ares/core/version.py --exclude .venv
 
 .PHONY: format-check
 format-check: setup-venv
-	@"$(VENV_DIR)/bin/python" -m ruff format --check . --exclude ares/core/version.py --exclude .venv
+	@"$(VENV_BIN)/ruff" format --check . --exclude ares/core/version.py --exclude .venv
 
 .PHONY: build-executable
 build-executable: setup-venv
 	@echo "Building executable with PyInstaller..."
-	@"$(VENV_DIR)/bin/pyinstaller" --onefile --name ares --paths . --paths packages/param_dcm --add-data "ares/plugins/simunit.py:ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "param_dcm" --hidden-import "param_dcm.param_dcm" ares/__main__.py
+	@"$(VENV_BIN)/pyinstaller" --onefile --name ares --paths . --paths packages/param_dcm --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "param_dcm" --hidden-import "param_dcm.param_dcm" ares/__main__.py
 	@echo ""
 	@echo "Executable created in dist/ares"
 
@@ -97,14 +109,14 @@ release-checklist:
 release-changelog:
 	@echo ""
 	@echo "Generating CHANGELOG.md from git history..."
-	@"$(VENV_DIR)/bin/python" scripts/generate_changelog.py
+	@"$(VENV_BIN)/python" scripts/generate_changelog.py
 	@echo "CHANGELOG.md generated."
 
 .PHONY: thirdpartycheck
 thirdpartycheck: setup-venv
 	@echo ""
 	@echo "Running third-party dependency analysis..."
-	@"$(VENV_DIR)/bin/python" scripts/analyze_dependencies.py --format json --generate-notice --check-compatibility
+	@"$(VENV_BIN)/python" scripts/analyze_dependencies.py --format json --generate-notice --check-compatibility
 	@echo "Third-party dependency check complete."
 
 .PHONY: release-upload
@@ -113,9 +125,9 @@ release-upload:
 	@printf "Upload to TestPyPI, PyPI, or skip? [test/pypi/skip] "; \
 	read -r REPO; \
 	if [ "$$REPO" = "test" ]; then \
-		"$(VENV_DIR)/bin/twine" upload --repository testpypi dist/*; \
+		"$(VENV_BIN)/twine" upload --repository testpypi dist/*; \
 	elif [ "$$REPO" = "pypi" ]; then \
-		"$(VENV_DIR)/bin/twine" upload dist/*; \
+		"$(VENV_BIN)/twine" upload dist/*; \
 	elif [ "$$REPO" = "skip" ]; then \
 		echo "Upload skipped."; \
 	else \
