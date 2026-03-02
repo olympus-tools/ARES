@@ -14,7 +14,6 @@ build/*
 **/ARES.egg-info/*
 *.pyc
 *.pyo
-**/.zed/*
 .python-version
 
 # coverage
@@ -33,9 +32,6 @@ htmlcov/
 # others
 *.log
 *.spec
-
-# vim dev
-.session.vim
 
 # exceptions
 !examples/data/*.mf4

@@ -17,6 +17,19 @@
             "../../data/data_example_6.mf4"
         ]
     },
+    "data_in_3": {
+        "type": "data",
+        "mode": "read",
+        "file_path": [
+            "../../data/data_example_5.mf4"
+        ],
+        "vstack_pattern": [{
+            "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
+            "signalname": "test_signal",
+            "x_axis": 3,
+            "y_axis": 2
+        }]
+    },
     "data_out_1": {
         "type": "data",
         "mode": "write",
@@ -32,5 +45,11 @@
             "([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",
             "([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$"
         ]
+    },
+    "data_out_3": {
+        "type": "data",
+        "mode": "write",
+        "data": ["data_in_3"],
+        "output_format": "mf4"
     }
 }

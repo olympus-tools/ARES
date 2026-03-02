@@ -43,7 +43,7 @@ from typing import ClassVar
 import numpy as np
 
 from ares.interface.data.ares_signal import AresSignal
-from ares.pydantic_models.workflow_model import DataElement
+from ares.pydantic_models.workflow_model import DataElement, VStackPatternElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
@@ -118,7 +118,7 @@ class AresDataInterface(ABC):
         self,
         file_path: Path | None = None,
         dependencies: list[str] | None = None,
-        vstack_pattern: list[str] | None = None,
+        vstack_pattern: list[VStackPatternElement] | None = None,
     ):
         """Initialize base attributes for all data handlers.
 
@@ -127,7 +127,7 @@ class AresDataInterface(ABC):
         Args:
             file_path (Path | None): Path to the data file to load
             dependencies (list[str] | None): List of dependencies for this data handler
-            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
+            vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
@@ -232,7 +232,7 @@ class AresDataInterface(ABC):
     def create(
         cls,
         file_path: Path | None = None,
-        vstack_pattern: list[str] | None = None,
+        vstack_pattern: list[VStackPatternElement] | None = None,
         **kwargs,
     ) -> "AresDataInterface":
         """Create data handler with automatic format detection.
@@ -242,7 +242,7 @@ class AresDataInterface(ABC):
 
         Args:
             file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
-            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
+            vstack_pattern (list[VStackPatternElement] | None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
@@ -335,30 +335,34 @@ class AresDataInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _vstack(data: list[AresSignal], vstack_pattern: list[str]) -> list[AresSignal]:
-        """Vertical stack ares-signals matching given regex patterns.
-
+    def _vstack(
+        data: list[AresSignal], vstack_pattern: list[VStackPatternElement]
+    ) -> list[AresSignal]:
+        """Vertical stack ares-signals matching given VStackPatternElements.
         Supports two stacking modes based on number of regex groups:
         - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
         - 3 groups: Stack 1D signals to 3D matrix using row/column indices
-            - group1 = signal name
-            - group2 = columns (axis-1)
-            - group3 = rows (axis-2)
+                    provided by VStackPatternElement
+
+        The VStackPatternElement consists of the following fields:
+            - signalname: regex pattern used to determine signals for stacking (default: group1)
+            - x_axis: pattern to catch x-axis index (default: group2)
+            - y_axis: pattern to catch y-axis index (default: group3)
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
-            vstack_pattern (list[str]): Regex patterns for signal matching and stacking
+            vstack_pattern (list[VStackPatternElement]): list of VstackPatternElements used for stacking
 
         Returns:
             list[AresSignal]: Original data list with newly stacked signals appended
         """
-        for regex in vstack_pattern:
-            pattern = re.compile(regex)
+        for vstack_element in vstack_pattern:
+            pattern = re.compile(vstack_element.pattern)
 
             # check pattern for groups - at least 1 group necessary for stacking
             if pattern.groups == 0:
                 logger.debug(
-                    f"Vertical stacking for pattern '{regex}' is skipped."
+                    f"Vertical stacking for pattern '{vstack_element.pattern}' is skipped."
                     f"Pattern includes no group."
                 )
                 continue
@@ -377,7 +381,12 @@ class AresDataInterface(ABC):
             # iterate over groups, collect matching signals,pattern to stack in dict
             signal_stack_dict = defaultdict(lambda: {"signals": [], "patterns": []})
             for signal_match, pattern_match in pair_matches:
-                group_key = pattern_match.group(1)
+                if isinstance(vstack_element.signalname, str):
+                    group_key = vstack_element.signalname
+                elif isinstance(vstack_element.signalname, int):
+                    group_key = pattern_match.group(vstack_element.signalname)
+                else:
+                    group_key = pattern_match.group(1)
 
                 signal_stack_dict[group_key]["signals"].append(signal_match)
                 signal_stack_dict[group_key]["patterns"].append(pattern_match)
@@ -417,13 +426,26 @@ class AresDataInterface(ABC):
 
                 # 2D
                 elif pattern.groups == 3:
+                    x_axis_idx = (
+                        vstack_element.x_axis
+                        if isinstance(vstack_element.x_axis, int)
+                        else 2
+                    )
+                    y_axis_idx = (
+                        vstack_element.y_axis
+                        if isinstance(vstack_element.y_axis, int)
+                        else 3
+                    )
+
                     number_columns = 0
                     number_rows = 0
                     for pattern_result in pattern_matches:
                         number_columns = max(
-                            number_columns, int(pattern_result.group(2))
+                            number_columns, int(pattern_result.group(x_axis_idx))
                         )
-                        number_rows = max(number_rows, int(pattern_result.group(3)))
+                        number_rows = max(
+                            number_rows, int(pattern_result.group(y_axis_idx))
+                        )
 
                     stacked_matrix = np.full(
                         (
@@ -435,8 +457,8 @@ class AresDataInterface(ABC):
                     )
 
                     for signal, pattern_result in zip(signal_matches, pattern_matches):
-                        column_idx = int(pattern_result.group(2))
-                        row_idx = int(pattern_result.group(3))
+                        column_idx = int(pattern_result.group(x_axis_idx))
+                        row_idx = int(pattern_result.group(y_axis_idx))
                         stacked_matrix[row_idx, column_idx, :] = signal.value
 
                     logger.debug(
@@ -457,7 +479,7 @@ class AresDataInterface(ABC):
         self,
         label_filter: list[str] | None = None,
         stepsize: int | None = None,
-        vstack_pattern: list[str] | None = None,
+        vstack_pattern: list[VStackPatternElement] | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
         """Get data from the interface.
@@ -465,7 +487,7 @@ class AresDataInterface(ABC):
         Args:
             label_filter (list[str] | None): List of signal names to retrieve from the interface.
             stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
-            vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
+            vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
