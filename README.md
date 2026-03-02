@@ -175,7 +175,7 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name or pattern.         |
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
-| `vstack_pattern` | No | `list[str]` <br> `list[dict]` | | List of regular expressions to stack signals into arrays. <br><br> Using the **dict** version enables additional fields: `signalname`, `x-axis`, and `y-axis`. |
+| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. <br><br> Using the **dict** version enables additional fields: `signalname`, `x-axis`, and `y-axis`. |
 
 #### Parameter Element (`type="parameter"`)
 
