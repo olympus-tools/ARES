@@ -344,7 +344,7 @@ class AresDataInterface(ABC):
         - 3 groups: Stack 1D signals to 3D matrix using row/column indices
                     provided by VStackPatternElement
 
-        The VStackPatternnElement consists of the following fields:
+        The VStackPatternElement consists of the following fields:
             - signalname: regex pattern used to determine signals for stacking (default: group1)
             - x_axis: pattern to catch x-axis index (default: group2)
             - y_axis: pattern to catch y-axis index (default: group3)
@@ -362,7 +362,7 @@ class AresDataInterface(ABC):
             # check pattern for groups - at least 1 group necessary for stacking
             if pattern.groups == 0:
                 logger.debug(
-                    f"Vertical stacking for pattern '{regex}' is skipped."
+                    f"Vertical stacking for pattern '{vstack_element.pattern}' is skipped."
                     f"Pattern includes no group."
                 )
                 continue
@@ -468,9 +468,7 @@ class AresDataInterface(ABC):
                         AresSignal(
                             label=signal_name,
                             timestamps=reference_signal.timestamps,
-                            value=stacked_matrix.transpose(
-                                2, 1, 0
-                            ),  # transpose to, timestamps, y, x
+                            value=stacked_matrix.transpose(2, 1, 0),
                         )
                     )
 
