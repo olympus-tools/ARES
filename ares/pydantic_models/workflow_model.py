@@ -142,7 +142,7 @@ class MergeElement(PluginElement):
             )
         )
     )
-    input: list[str] | None = []
+    data: list[str] | None = []
     parameter: list[str] | None = []
 
     class Config:

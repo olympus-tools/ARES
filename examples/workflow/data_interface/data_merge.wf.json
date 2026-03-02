@@ -31,7 +31,7 @@
     },
     "data_merge_1": {
         "type": "merge",
-        "input": [
+        "data": [
             "data_in_1",
             "data_in_2",
             "data_in_3",
@@ -40,7 +40,7 @@
     },
     "data_merge_2": {
         "type": "merge",
-        "input": [
+        "data": [
             "data_in_2",
             "data_in_1",
             "data_in_3",
@@ -50,7 +50,7 @@
     "data_out_1": {
         "type": "data",
         "mode": "write",
-        "input": [
+        "data": [
             "data_merge_1",
             "data_merge_2"
         ],

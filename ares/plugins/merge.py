@@ -52,10 +52,10 @@ def ares_plugin(plugin_input):
         None
     """
 
-    if plugin_input["input"]:
+    if plugin_input["data"]:
         element_lists: (
             list[list[AresParamInterface]] | list[list[AresDataInterface]]
-        ) = plugin_input.get("input", None)
+        ) = plugin_input.get("data", None)
     elif plugin_input["parameter"]:
         element_lists: (
             list[list[AresParamInterface]] | list[list[AresDataInterface]]

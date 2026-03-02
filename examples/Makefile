@@ -117,7 +117,7 @@ param_convertion:
 param_merge:
 	@echo "Running param_merge example..."
 	@$(ARES) pipeline \
-		-wf workflow/param_interface/param_merge.wf.json \
+		-wf workflow/parameter_interface/param_merge.wf.json \
 		--output output/ \
 		--log-level=10
 
