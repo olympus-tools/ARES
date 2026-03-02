@@ -204,7 +204,7 @@ Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent an
 | `parameter`        | No         | `list[str]` |                     | List of parameter element names.                    |
 | `init`             | No         | `list[str]` |                     | List of elements for initialization.                |
 | `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
-| `vstack_pattern` | No | `list[str]` <br> `list[dict]` | | List of regular expressions to stack signals into arrays. <br><br> Using the **dict** version enables additional fields: `signalname`, `x-axis`, and `y-axis`. |
+| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. <br><br> Using the **dict** version enables additional fields: `signalname`, `x-axis`, and `y-axis`. |
 
 #### Custom Plugin (`type="plugin"`)
 
