@@ -105,7 +105,7 @@ class DataElement(BaseElement):
     data: list[str] | None = []
     label_filter: list[str] | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
-    output_format: Literal["mf4"] | None = None
+    output_format: Literal["mf4", "mat"] | None = None
     stepsize: int | None = None
 
     @model_validator(mode="after")
