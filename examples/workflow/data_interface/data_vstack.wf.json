@@ -3,7 +3,8 @@
         "type": "data",
         "mode": "read",
         "file_path": [
-            "../../data/data_example_5.mf4"
+            "../../data/data_example_5.mf4",
+            "../../data/data_example_7.mat"
         ],
         "vstack_pattern": [
             "([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",

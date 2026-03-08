@@ -5,7 +5,11 @@
         "file_path": [
             "../../data/data_example_1.mf4",
             "../../data/data_example_2.mf4",
-            "../../data/data_example_3.mf4"
+            "../../data/data_example_7.mat",
+            "../../data/mat_v73_flat_timeseries.mat",
+            "../../data/mat_v73_flat_signals.mat",
+            "../../data/mat_v7_flat_timeseries.mat",
+            "../../data/mat_v7_flat_signals.mat"
         ]
     },
     "data_out_1": {

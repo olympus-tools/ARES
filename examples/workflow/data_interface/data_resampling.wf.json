@@ -3,7 +3,8 @@
         "type": "data",
         "mode": "read",
         "file_path": [
-            "../../data/data_example_1.mf4"
+            "../../data/data_example_1.mf4",
+            "../../data/data_example_7.mat"
         ]
     },
     "data_out_1": {
