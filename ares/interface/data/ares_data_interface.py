@@ -354,7 +354,7 @@ class AresDataInterface(ABC):
 
         timestamps_resample = np.arange(
             0,
-            (earliest_end_time - latest_start_time) + (stepsize / 1000.0),
+            (earliest_end_time - latest_start_time),
             stepsize / 1000.0,
             dtype=np.float32,
         )
