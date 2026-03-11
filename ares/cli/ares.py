@@ -54,10 +54,8 @@ meta_data = {"username": getpass.getuser(), "version": __version__}
     is_eager=True,
     expose_value=False,
     callback=lambda ctx, param, value: (
-        click.echo(f"ARES version {__version__}") or ctx.exit()
-    )
-    if value
-    else None,
+        (click.echo(f"ARES version {__version__}") or ctx.exit()) if value else None
+    ),
     help="Show the installed ARES version.",
 )
 def cli():
