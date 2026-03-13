@@ -80,14 +80,14 @@ Available targets:
 
 ## 2. Data Interface Examples
 
-These examples demonstrate various data operations such as reading, writing, filtering, and resampling of measurement data files (MF4 format).
+These examples demonstrate various data operations such as reading, writing, filtering, and resampling of measurement data files (MF4, MAT format).
 
 ### 2.1. Data Caching
 
 *   **Workflow**: `examples/workflow/data_interface/data_caching.wf.json`
 *   **Purpose**: Demonstrates the flyweight caching mechanism where identical data files are loaded only once and reused.
 *   **Key Concepts**:
-    *   Reading multiple MF4 data files.
+    *   Reading multiple MF4/MAT data files.
     *   Automatic caching based on content hash.
     *   Writing cached data to a new output file.
 
@@ -113,7 +113,7 @@ python -m ares pipeline \
 *   **Workflow**: `examples/workflow/data_interface/data_labelfilter.wf.json`
 *   **Purpose**: Filters specific signals from input data files by their label names.
 *   **Key Concepts**:
-    *   Reading MF4 data files.
+    *   Reading MF4 and MAT data files.
     *   Applying label filters to select specific signals.
     *   Writing filtered signals to output.
 
@@ -139,7 +139,7 @@ python -m ares pipeline \
 *   **Workflow**: `examples/workflow/data_interface/data_resampling.wf.json`
 *   **Purpose**: Resamples all signals to a common time vector with specified step size.
 *   **Key Concepts**:
-    *   Reading MF4 data files with different sampling rates.
+    *   Reading MF4/MAT data files with different sampling rates.
     *   Resampling to a uniform time vector (stepsize: 2000ms).
     *   Linear interpolation for signal values.
 
@@ -171,7 +171,7 @@ python -m ares pipeline \
 *   **Workflow**: `examples/workflow/data_interface/data_vstack.wf.json`
 *   **Purpose**: Demonstrates vertical stacking (concatenation) of signals using regex pattern matching to create multi-dimensional arrays.
 *   **Key Concepts**:
-    *   Reading MF4 data files with signals matching specific naming patterns.
+    *   Reading MF4/MAT data files with signals matching specific naming patterns.
     *   Using regex patterns with capturing groups to identify related signals.
     *   Automatic stacking based on number of groups:
         *   1-2 groups: Stack 1D signals into 2D arrays (columns).

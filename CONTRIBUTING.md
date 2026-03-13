@@ -142,7 +142,7 @@ ARES is organized in four main layers:
 
 1. **Orchestration Layer** (`ares/core/`) - Pipeline and workflow execution
 2. **Plugin Layer** (`ares/plugins/`) - Extensible processing units (SimUnit, custom plugins)
-3. **Interface Layer** (`ares/interface/`) - File I/O handlers with caching (MF4, DCM, JSON)
+3. **Interface Layer** (`ares/interface/`) - File I/O handlers with caching (MF4, MAT, DCM, JSON)
 4. **Base Types** (`ares/interface/`) - Core data structures (Signal, Parameter)
 
 ### 3.2 Where to Make Changes?

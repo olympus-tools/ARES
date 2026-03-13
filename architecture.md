@@ -200,10 +200,12 @@ classDiagram
     class dcm_handler
     class json_handler
     class mf4_handler
+    class mat_handler
 
     ares_parameter_interface <|.. dcm_handler : implements
     ares_parameter_interface <|.. json_handler : implements
     ares_data_interface <|.. mf4_handler : implements
+    ares_data_interface <|.. mat_handler : implements
     ares_parameter_interface o-- ares_parameter : manages
     ares_data_interface o-- ares_signal : manages
 ```
