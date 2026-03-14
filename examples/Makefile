@@ -1,7 +1,7 @@
 # examples/Makefile
 # Data interface examples
 #   - make data_caching
-#   - make data_convertion => TODO: currently just one data type supported
+#   - make data_convertion
 #   - make data_labelfilter
 #   - make data_resampling
 #   - make data_merge
@@ -33,6 +33,7 @@ endif
 ARES ?= "$(VENV_BIN)/ares"
 .PHONY: all
 all: data_caching \
+	 data_convertion \
      data_labelfilter \
      data_resampling \
 	 data_merge \
@@ -57,13 +58,13 @@ data_caching:
 		--output output/ \
 		--log-level=10
 
-# .PHONY: data_convertion
-# data_convertion:
-# 	@echo "Running data_convertion example..."
-# 	@$(ARES) pipeline \
-# 		-wf workflow/data_interface/data_convertion.wf.json \
-# 		--output output/ \
-# 		--log-level=10
+.PHONY: data_convertion
+data_convertion:
+	@echo "Running data_convertion example..."
+	@$(ARES) pipeline \
+		-wf workflow/data_interface/data_convertion.wf.json \
+		--output output/ \
+		--log-level=10
 
 .PHONY: data_merge
 data_merge:

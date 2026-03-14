@@ -1,3 +1,30 @@
 {
-
+    "data_in_1": {
+        "type": "data",
+        "mode": "read",
+        "file_path": [
+            "../../data/data_example_7.mat",
+            "../../data/mat_v73_flat_timeseries.mat"
+        ]
+    },
+    "data_in_2": {
+        "type": "data",
+        "mode": "read",
+        "file_path": [
+            "../../data/data_example_1.mf4",
+            "../../data/data_example_2.mf4"
+        ]
+    },
+    "data_out_1": {
+        "type": "data",
+        "mode": "write",
+        "data": ["data_in_1"],
+        "output_format": "mf4"
+    },
+    "data_out_2": {
+        "type": "data",
+        "mode": "write",
+        "data": ["data_in_2"],
+        "output_format": "mat"
+    }
 }
