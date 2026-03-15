@@ -50,13 +50,12 @@ class BaseElement(BaseModel):
 
 
 class VStackPatternElement(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     pattern: regex_str
     signal_name: str | int | None = None
     x_axis: int | None = None
     y_axis: int | None = None
-
-    class Config:
-        extra = "forbid"
 
     @model_validator(mode="after")
     def _validate_model(self):
