@@ -772,9 +772,10 @@ def ares_plugin(plugin_input):
     Args:
         plugin_input (dict): Dictionary containing all plugin configuration and data.
             wf_element_name (str): Name of the workflow element.
+            file_path (Path): Path to the shared library file (.so, .dll, .dylib).
+            data_dictionary (Path): Path to the Data Dictionary JSON file.
             parameter (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
-            plugin_path (Path): Path to this plugin file.
-            type (str): Element type ("plugin" or "sim_unit").
+            data (dict[str, AresDataInterface]): AresData storage with hashes as keys.
             element_workflow (list[str]): Workflow elements.
             ...: Other fields from WorkflowElement as needed.
 
@@ -782,15 +783,15 @@ def ares_plugin(plugin_input):
         None
     """
 
-    element_parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
+    parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
         "parameter", None
     )
-    element_data_lists: list[list[AresDataInterface]] = plugin_input.get("input", None)
+    data_lists: list[list[AresDataInterface]] = plugin_input.get("data", None)
 
-    if not element_parameter_lists:
-        element_parameter_lists = [[AresParamInterface.create()]]
-    if not element_data_lists:
-        element_data_lists = [[AresDataInterface.create()]]
+    if not parameter_lists:
+        parameter_lists = [[AresParamInterface.create()]]
+    if not data_lists:
+        data_lists = [[AresDataInterface.create()]]
 
     sim_unit = SimUnit(
         file_path=plugin_input["file_path"],
@@ -800,19 +801,19 @@ def ares_plugin(plugin_input):
     label_filter_signal = sim_unit.data_keys()
     label_filter_parameter = sim_unit.parameter_keys()
 
-    for element_parameter_list in element_parameter_lists:
-        for element_parameter_obj in element_parameter_list:
-            for element_data_list in element_data_lists:
-                for element_data_obj in element_data_list:
-                    dependencies = [element_parameter_obj.hash, element_data_obj.hash]
+    for parameter_list in parameter_lists:
+        for parameter_obj in parameter_list:
+            for data_list in data_lists:
+                for data_obj in data_list:
+                    dependencies = [parameter_obj.hash, data_obj.hash]
 
                     sim_result = sim_unit.run(
-                        data=element_data_obj.get(
+                        data=data_obj.get(
                             stepsize=plugin_input["stepsize"],
                             label_filter=label_filter_signal,
                             vstack_pattern=plugin_input.get("vstack_pattern"),
                         ),
-                        parameters=element_parameter_obj.get(
+                        parameters=parameter_obj.get(
                             label_filter=label_filter_parameter
                         ),
                     )
