@@ -64,7 +64,7 @@ class VStackPatternElement(BaseModel):
 
         if pattern.groups >= 3:
             if (
-                type(self.signal_name) is str
+                isinstance(self.signal_name, str)
                 and any([self.x_axis, self.y_axis])
                 and not all([self.x_axis, self.y_axis])
             ):
