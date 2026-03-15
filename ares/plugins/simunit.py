@@ -776,7 +776,6 @@ def ares_plugin(plugin_input):
             data_dictionary (Path): Path to the Data Dictionary JSON file.
             parameter (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
             data (dict[str, AresDataInterface]): AresData storage with hashes as keys.
-            element_workflow (list[str]): Workflow elements.
             ...: Other fields from WorkflowElement as needed.
 
     Returns:
