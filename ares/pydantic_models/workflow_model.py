@@ -69,7 +69,7 @@ class VStackPatternElement(BaseModel):
                 and not all([self.x_axis, self.y_axis])
             ):
                 raise ValueError(
-                    "Field 'signal_name' was provided with integer but either 'x_axis' or 'y_axis' were provided but only both or none is possible."
+                    "When 'signal_name' is a string, either both 'x_axis' or 'y_axis' must be provided or neither should be provided."
                 )
             # case name is integer
             elif any([self.signal_name, self.x_axis, self.y_axis]) and not all(
@@ -111,6 +111,7 @@ class DataElement(BaseElement):
             self.vstack_pattern = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
                 for pattern in self.vstack_pattern
+                if isinstance(pattern, str)
             ]
 
         return self
@@ -191,6 +192,7 @@ class MergeElement(PluginElement):
             self.vstack_pattern = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
                 for pattern in self.vstack_pattern
+                if isinstance(pattern, str)
             ]
 
         return self
