@@ -65,6 +65,7 @@ class AresDataInterface(ABC):
     """
 
     cache: ClassVar[dict[str, "AresDataInterface"]] = {}
+    tmp_hash_list: ClassVar[list[str]] = []
     _handlers: ClassVar[dict[str, type["AresDataInterface"]]] = {}
 
     @typechecked
@@ -102,6 +103,8 @@ class AresDataInterface(ABC):
         else:
             timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")[:-3]
             content_hash = cls._calculate_hash(input_string=timestamp_str, **kwargs)
+
+        cls.tmp_hash_list.append(content_hash)
 
         # return cached instance if hash already exists
         if content_hash in cls.cache:

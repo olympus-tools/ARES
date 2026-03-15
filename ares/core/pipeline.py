@@ -79,9 +79,6 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
     for wf_element_name, wf_element_value in ares_wf.workflow.items():
         logger.info(f"Processing workflow element: {wf_element_name}")
 
-        prev_param_hash_list: list[str] = list(param_storage.keys())
-        prev_data_hash_list: list[str] = list(data_storage.keys())
-
         tmp_param_hash_list: list[list[str]] = []
         for parameter in getattr(wf_element_value, "parameter", []):
             tmp_param_hash_list.append(
@@ -139,22 +136,14 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     plugin_input=plugin_input,
                 )
 
-        # update workflow element hash list with new hashes only
-        new_param_hash_list = [
-            hash_key
-            for hash_key in param_storage.keys()
-            if hash_key not in prev_param_hash_list
-        ]
-        new_data_hash_list = [
-            hash_key
-            for hash_key in data_storage.keys()
-            if hash_key not in prev_data_hash_list
-        ]
-
-        for hash_key in new_param_hash_list:
+        # update workflow element hash list and clear temporary hash list for next iteration
+        for hash_key in AresParamInterface.tmp_hash_list:
             wf_element_value.hash_list[hash_key] = param_storage[hash_key].dependencies
-        for hash_key in new_data_hash_list:
+        for hash_key in AresDataInterface.tmp_hash_list:
             wf_element_value.hash_list[hash_key] = data_storage[hash_key].dependencies
+
+        AresParamInterface.tmp_hash_list = []
+        AresDataInterface.tmp_hash_list = []
 
     # TODO: if parameter/measurement not needed anymore => drop it
     ares_wf.save(output_dir=output_dir)
