@@ -37,7 +37,7 @@ import os
 from pathlib import Path
 from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, RootModel, model_validator
+from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
 from typing_extensions import Literal
 
 
@@ -49,6 +49,7 @@ class BaseElement(BaseModel):
 
 
 class DataElement(BaseElement):
+    model_config = ConfigDict(extra="forbid")
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
     file_path: list[Path] | None = []
@@ -57,9 +58,6 @@ class DataElement(BaseElement):
     vstack_pattern: list[str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
-
-    class Config:
-        extra = "forbid"
 
     @model_validator(mode="after")
     def validate_mode_requirements(self):
@@ -76,15 +74,13 @@ class DataElement(BaseElement):
 
 
 class ParameterElement(BaseElement):
+    model_config = ConfigDict(extra="forbid")
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
     file_path: list[Path] | None = []
     parameter: list[str] | None = []
     label_filter: list[str] | None = None
     output_format: Literal["json", "dcm"] | None = None
-
-    class Config:
-        extra = "forbid"
 
     @model_validator(mode="after")
     def validate_mode_requirements(self):
@@ -101,15 +97,14 @@ class ParameterElement(BaseElement):
 
 
 class PluginElement(BaseElement):
+    model_config = ConfigDict(extra="allow")
     type: Literal["plugin"] = "plugin"
     file_path: Path | None = None
     plugin_name: str | None = None
 
-    class Config:
-        extra = "allow"
-
 
 class SimUnitElement(PluginElement):
+    model_config = ConfigDict(extra="forbid")
     type: Literal["sim_unit"] = "sim_unit"
     plugin_path: Path = Field(
         default_factory=lambda: Path(
@@ -128,11 +123,9 @@ class SimUnitElement(PluginElement):
     cancel_condition: str | None = None
     vstack_pattern: list[str] | None = None
 
-    class Config:
-        extra = "forbid"
-
 
 class MergeElement(PluginElement):
+    model_config = ConfigDict(extra="forbid")
     type: Literal["merge"] = "merge"
     plugin_path: Path = Field(
         default_factory=lambda: Path(
@@ -144,9 +137,6 @@ class MergeElement(PluginElement):
     )
     data: list[str] | None = []
     parameter: list[str] | None = []
-
-    class Config:
-        extra = "forbid"
 
 
 WorkflowElement = Annotated[
