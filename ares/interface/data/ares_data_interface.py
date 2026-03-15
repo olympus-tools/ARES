@@ -438,7 +438,7 @@ class AresDataInterface(ABC):
 
                 # 1D
                 if pattern.groups <= 2:
-                    logger.debug(
+                    logger.warning(
                         f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}."
                     )
                     data.append(
