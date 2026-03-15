@@ -150,6 +150,13 @@ class SimUnit:
             ctypes.CDLL: The loaded `ctypes.CDLL` object.
         """
         library = ctypes.CDLL(self.file_path)
+        # XXX: according to:
+        # https://numpy.org/doc/stable/reference/routines.ctypeslib.html
+        # https://numpy.org/devdocs/user/c-info.python-as-glue.html#index-2
+        # https://chan-y-park.github.io/blog/numpy_ctypeslib.html
+        # using ctypes via numpy holds the "advanctage" that we can transfer pointers to C
+        # library = np.ctypeslib.load_library(self.file_path)
+        # Test?
 
         # sumunit should be always a void void function
         # TODO: linter is throwing warning here - reportAttributeAccessIssue - i.O.?
@@ -301,7 +308,9 @@ class SimUnit:
         logger.info("Starting ares simulation...")
 
         sim_result: dict[str, np.ndarray] = {}
-        time_steps = len(data[0].timestamps) if data else 1
+        time_steps = (
+            len(data[0].timestamps) if data else 1
+        )  # XXX: 1 if no data? - execute functions also if no data provided for one step?
 
         data_dict = self._list_to_dict(data if data else [])
         data_dict = self._input_typecast(
@@ -333,17 +342,14 @@ class SimUnit:
         output_signals = [
             k for k, v in self._dd.signals.items() if v.type in ["out", "inout"]
         ]
+
         for signal in output_signals:
-            size = self._dd.signals[signal].size
-            np_dtype = self.DATATYPES[self._dd.signals[signal].datatype][1]
-            if len(size) == 0:
-                sim_result[signal] = np.empty((time_steps,), dtype=np_dtype)
-            elif len(size) == 1:
-                sim_result[signal] = np.empty((time_steps, size[0]), dtype=np_dtype)
-            elif len(size) == 2:
-                sim_result[signal] = np.empty(
-                    (time_steps, size[0], size[1]), dtype=np_dtype
-                )
+            signal_info = self._dd.signals[signal]
+            signal_dtype = self.DATATYPES[signal_info.datatype][1]
+            signal_shape = (time_steps, *signal_info.size)
+
+            sim_result[signal] = np.empty(signal_shape, dtype=signal_dtype)
+
         sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float32)
 
         # running initialization function
@@ -353,11 +359,42 @@ class SimUnit:
                 sim_function()
 
         # running cyclical functions
+        # TODO: i guess here we can do optimize - move more stuff into C
+        # instead of 'for time_step_idx in range(time_steps):' calling in python we should try to iterate in C
+        # in my head (and more or less some documentation reading):
+        # input_ptr = mapped_input.ctypes.data_as(POINTER(c_double))
+        # output_ptr = sim_result["my_signal"].ctypes.data_as(POINTER(c_double))
+        # self._dll.run_simulation(input_ptr, output_ptr, time_steps)
+        # or via numpy:
+        # c_func.argtypes = [
+        #     np.ctypeslib.ndpointer(dtype=input_data.dtype, ndim=input_data.ndim, flags='C_CONTIGUOUS'),
+        #     np.ctypeslib.ndpointer(dtype=output_buffer.dtype, ndim=output_buffer.ndim, flags='C_CONTIGUOUS'),
+        #     ctypes.c_int
+        # ]
+        # c_func.restype = None
+        # in C
+        # void run_simulation(double* input_data, double* output_buffer, int steps) {
+        #     for(int i = 0; i < steps; i++) {
+        #         // Do the work directly in C
+        #         output_buffer[i] = function_call(input_data[i]);
+        #     }
+        # }
+        # BUG: How to generalise the the function 'run_simulation'? | generate c-code with ares and then call?
+        # concept:
+        #   - use function pointer 'typedef void (*SimFunc)(void);'
+        #   - generic c-function: 'run_simulation(SimFunc simulation_function, int sim_steps, SimInput* input, SimOutput* output)
+        #                           { for (int i=0; i<sim_steps;i++) { simulation_function(); } }'  >> arbitrary function can be called
+        #   - handle inputs/outputs via structs | how to access the data?
+        #                   >> struct "order" for accessing?
+        #
+
         if self._sim_functions_cyclical:
             logger.info(f"Running cyclical functions for {time_steps} time steps...")
             progress_indices = [round(i * (time_steps - 1) / 10) for i in range(11)]
             progress_step = 0
-            for time_step_idx in range(time_steps):
+            for time_step_idx in range(
+                time_steps
+            ):  # XXX: i guess this makes us slow in combination with write-dll/read-dll
                 self._write_signals_to_dll(
                     data=mapped_input, time_step_idx=time_step_idx
                 )

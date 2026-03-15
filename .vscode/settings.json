@@ -20,5 +20,10 @@
       "source.organizeImports.ruff": "always"
     }
   },
-  "ruff.nativeServer": "on"
+  "ruff.nativeServer": "on",
+  "python.testing.pytestArgs": [
+    "test"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true
 }
