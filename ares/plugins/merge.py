@@ -88,6 +88,10 @@ def ares_plugin(plugin_input):
 
     # create merged parameters and data for each hash combination
     for parameter_dependency_list in parameter_dependency_lists:
+        logger.debug(
+            "Merging parameters for each hash combination."
+        )  # TODO: offering a better log message
+
         merge_parameters: list[AresParameter] = []
         for parameter_hash in parameter_dependency_list:
             params = AresParamInterface.cache[parameter_hash].get()
@@ -101,6 +105,10 @@ def ares_plugin(plugin_input):
 
     # create merged data for each hash combination
     for data_dependency_list in data_dependency_lists:
+        logger.debug(
+            "Merging data for each hash combination."
+        )  # TODO: offering a better log message
+
         merge_data: list[AresSignal] = []
         for data_hash in data_dependency_list:
             data = AresDataInterface.cache[data_hash].get()

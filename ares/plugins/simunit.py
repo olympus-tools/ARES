@@ -774,8 +774,8 @@ def ares_plugin(plugin_input):
             wf_element_name (str): Name of the workflow element.
             file_path (Path): Path to the shared library file (.so, .dll, .dylib).
             data_dictionary (Path): Path to the Data Dictionary JSON file.
-            parameter (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
-            data (dict[str, AresDataInterface]): AresData storage with hashes as keys.
+            parameter_obj (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
+            data_obj (dict[str, AresDataInterface]): AresData storage with hashes as keys.
             ...: Other fields from WorkflowElement as needed.
 
     Returns:
@@ -783,9 +783,9 @@ def ares_plugin(plugin_input):
     """
 
     parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
-        "parameter", None
+        "parameter_obj", None
     )
-    data_lists: list[list[AresDataInterface]] = plugin_input.get("data", None)
+    data_lists: list[list[AresDataInterface]] = plugin_input.get("data_obj", None)
 
     if not parameter_lists:
         parameter_lists = [[AresParamInterface.create()]]
