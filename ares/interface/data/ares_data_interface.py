@@ -301,6 +301,30 @@ class AresDataInterface(ABC):
         return return_hash
 
     @staticmethod
+    @typechecked
+    def _filter_deduplicates(data: list[AresSignal]) -> list[AresSignal]:
+        """Remove duplicate signals by label, keeping the last occurrence.
+
+        When multiple signals with the same label exist in the input list,
+        only the last occurrence is retained. This ensures that later signals
+        override earlier ones when merging data from multiple sources.
+
+        Args:
+            data (list[AresSignal]): List of AresSignal objects that may contain duplicates.
+
+        Returns:
+            list[AresSignal]: Deduplicated list with unique labels, preserving insertion order.
+        """
+        data_filtered: dict[str, AresSignal] = {}
+        for signal in data:
+            if signal.label in data_filtered:
+                logger.debug(
+                    f"Duplicate signal label '{signal.label}' found. Using later occurrence."
+                )
+            data_filtered[signal.label] = signal
+        return list(data_filtered.values())
+
+    @staticmethod
     @error_msg(
         exception_msg="Error in ares-data-interface resample function.",
         log=logger,

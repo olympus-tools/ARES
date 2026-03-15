@@ -280,6 +280,32 @@ class AresParamInterface(ABC):
         param_json = json.dumps(temp_param_dict, sort_keys=True)
         return str_based_hash(input_string=param_json)
 
+    @staticmethod
+    @typechecked
+    def _filter_deduplicates(
+        parameters: list[AresParameter],
+    ) -> list[AresParameter]:
+        """Remove duplicate parameters by label, keeping the last occurrence.
+
+        When multiple parameters with the same label exist in the input list,
+        only the last occurrence is retained. This ensures that later parameters
+        override earlier ones when merging parameters from multiple sources.
+
+        Args:
+            parameters (list[AresParameter]): List of AresParameter objects that may contain duplicates.
+
+        Returns:
+            list[AresParameter]: Deduplicated list with unique labels, preserving insertion order.
+        """
+        parameters_filtered: dict[str, AresParameter] = {}
+        for param in parameters:
+            if param.label in parameters_filtered:
+                logger.debug(
+                    f"Duplicate parameter label '{param.label}' found. Using later occurrence."
+                )
+            parameters_filtered[param.label] = param
+        return list(parameters_filtered.values())
+
     @abstractmethod
     def get(
         self, label_filter: list[str] | None = None, **kwargs

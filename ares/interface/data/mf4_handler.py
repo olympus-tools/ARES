@@ -294,6 +294,8 @@ class MF4Handler(MDF, AresDataInterface):
         Supports scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
         Optionally adds source information to data for traceability.
 
+        Duplicate signal labels are automatically removed, keeping the last occurrence.
+
         Args:
             data (list[AresSignal]): List of AresSignal objects to append to mf4 file.
                 - ndim == 1: Scalar value per time step
@@ -303,6 +305,7 @@ class MF4Handler(MDF, AresDataInterface):
                 - source_name (str): Name for the signal source. If not provided,
                   defaults to "ARES_DEFAULT_SOURCE".
         """
+        data = AresDataInterface._filter_deduplicates(data=data)
         source_name = kwargs.pop("source_name", "ARES_DEFAULT_SOURCE")
 
         source = Source(
