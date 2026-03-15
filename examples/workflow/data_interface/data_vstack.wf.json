@@ -25,7 +25,7 @@
         ],
         "vstack_pattern": [{
             "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
-            "signalname": "test_signal",
+            "signal_name": "test_signal",
             "x_axis": 3,
             "y_axis": 2
         }]

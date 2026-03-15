@@ -51,7 +51,7 @@ class BaseElement(BaseModel):
 
 class VStackPatternElement(BaseModel):
     pattern: regex_str
-    signalname: str | int | None = None
+    signal_name: str | int | None = None
     x_axis: int | None = None
     y_axis: int | None = None
 
@@ -65,19 +65,19 @@ class VStackPatternElement(BaseModel):
 
         if pattern.groups >= 3:
             if (
-                type(self.signalname) is str
+                type(self.signal_name) is str
                 and any([self.x_axis, self.y_axis])
                 and not all([self.x_axis, self.y_axis])
             ):
                 raise ValueError(
-                    "Field 'signalname' was provided with integer but either 'x_axis' or 'y_axis' were provided but only both or none is possible."
+                    "Field 'signal_name' was provided with integer but either 'x_axis' or 'y_axis' were provided but only both or none is possible."
                 )
             # case name is integer
-            elif any([self.signalname, self.x_axis, self.y_axis]) and not all(
-                [self.signalname, self.x_axis, self.y_axis]
+            elif any([self.signal_name, self.x_axis, self.y_axis]) and not all(
+                [self.signal_name, self.x_axis, self.y_axis]
             ):
                 raise ValueError(
-                    "At least one field of 'signalname','x_axis','y_axis' was provided. Then for deterministic behaviour all others must be provided."
+                    "At least one field of 'signal_name','x_axis','y_axis' was provided. Then for deterministic behaviour all others must be provided."
                 )
 
         return self
@@ -110,7 +110,7 @@ class DataElement(BaseElement):
             self.vstack_pattern[0], str
         ):
             self.vstack_pattern = [
-                VStackPatternElement(pattern=pattern, signalname=1, x_axis=2, y_axis=3)
+                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
                 for pattern in self.vstack_pattern
             ]
 
@@ -190,7 +190,7 @@ class MergeElement(PluginElement):
             self.vstack_pattern[0], str
         ):
             self.vstack_pattern = [
-                VStackPatternElement(pattern=pattern, signalname=1, x_axis=2, y_axis=3)
+                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
                 for pattern in self.vstack_pattern
             ]
 

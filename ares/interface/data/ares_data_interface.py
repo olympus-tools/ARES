@@ -372,7 +372,7 @@ class AresDataInterface(ABC):
                     provided by VStackPatternElement
 
         The VStackPatternElement consists of the following fields:
-            - signalname: regex pattern used to determine signals for stacking (default: group1)
+            - signal_name: regex pattern used to determine signals for stacking (default: group1)
             - x_axis: pattern to catch x-axis index (default: group2)
             - y_axis: pattern to catch y-axis index (default: group3)
 
@@ -408,10 +408,10 @@ class AresDataInterface(ABC):
             # iterate over groups, collect matching signals,pattern to stack in dict
             signal_stack_dict = defaultdict(lambda: {"signals": [], "patterns": []})
             for signal_match, pattern_match in pair_matches:
-                if isinstance(vstack_element.signalname, str):
-                    group_key = vstack_element.signalname
-                elif isinstance(vstack_element.signalname, int):
-                    group_key = pattern_match.group(vstack_element.signalname)
+                if isinstance(vstack_element.signal_name, str):
+                    group_key = vstack_element.signal_name
+                elif isinstance(vstack_element.signal_name, int):
+                    group_key = pattern_match.group(vstack_element.signal_name)
                 else:
                     group_key = pattern_match.group(1)
 
