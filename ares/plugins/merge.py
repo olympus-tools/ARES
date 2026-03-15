@@ -33,46 +33,82 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+from itertools import product
+
 from ares.interface.data.ares_data_interface import AresDataInterface
+from ares.interface.data.ares_signal import AresSignal
+from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
 
 
+def get_hash_combinations(
+    hash_lists: list[list[str]],
+) -> list[list[str]]:
+    """Generate all hash combinations from cartesian product of hash lists.
+
+    Args:
+        hash_lists (list[list[str]]): List of lists containing hash strings.
+
+    Returns:
+        list[list[str]]: List of hash combinations, where each combination is a list of hashes.
+    """
+    if not hash_lists:
+        return []
+
+    hash_combinations = []
+    for hash_combination in product(*hash_lists):
+        hash_combinations.append(list(hash_combination))
+
+    return hash_combinations
+
+
 def ares_plugin(plugin_input):
     """ARES plugin that merges multiple ARES outputs into a single output.
 
     Args:
-        plugin_input (dict): A dictionary containing the following keys:
-            - "inputs" (list): A list of input file paths to be merged.
-            - "output" (str): The output file path for the merged result.
+        plugin_input (dict): Dictionary containing all plugin configuration and data.
+            wf_element_name (str): Name of the workflow element.
+            parameter_hash_list (list[list[str]]): List of parameter hash combinations for plugin input.
+            data_hash_list (list[list[str]]): List of data hash combinations for plugin input.
+            ...: Other fields from WorkflowElement as needed.
 
     Returns:
         None
     """
 
-    if plugin_input["data"]:
-        element_lists: (
-            list[list[AresParamInterface]] | list[list[AresDataInterface]]
-        ) = plugin_input.get("data", None)
-    elif plugin_input["parameter"]:
-        element_lists: (
-            list[list[AresParamInterface]] | list[list[AresDataInterface]]
-        ) = plugin_input.get("parameter", None)
+    parameter_hash_lists: list[list[str]] = plugin_input.get("parameter_hash_lists", [])
+    data_hash_lists: list[list[str]] = plugin_input.get("data_hash_lists", [])
 
-    # determine type of merge based on first element in first element-list
-    if isinstance(element_lists[0][0], AresDataInterface):
-        logger.info("Merging ares data-elements...")
-        master_element = AresDataInterface.create()
-    elif isinstance(element_lists[0][0], AresParamInterface):
-        logger.info("Merging ares parameter-elements...")
-        master_element = AresParamInterface.create()
-    else:
-        raise ValueError(
-            f"Type {type(element_lists[0][0])} of merge-element is currently not supported."
+    # generate all hash combinations using cartesian product
+    parameter_dependency_lists = get_hash_combinations(parameter_hash_lists)
+    data_dependency_lists = get_hash_combinations(data_hash_lists)
+
+    # create merged parameters and data for each hash combination
+    for parameter_dependency_list in parameter_dependency_lists:
+        merge_parameters: list[AresParameter] = []
+        for parameter_hash in parameter_dependency_list:
+            params = AresParamInterface.cache[parameter_hash].get()
+            if params is not None:
+                merge_parameters.extend(params)
+
+        AresParamInterface.create(
+            parameters=merge_parameters,
+            dependencies=parameter_dependency_list,
         )
 
-    for element_list in element_lists:
-        for element in element_list:
-            master_element.add(element.get())
+    # create merged data for each hash combination
+    for data_dependency_list in data_dependency_lists:
+        merge_data: list[AresSignal] = []
+        for data_hash in data_dependency_list:
+            data = AresDataInterface.cache[data_hash].get()
+            if data is not None:
+                merge_data.extend(data)
+
+        AresDataInterface.create(
+            data=merge_data,
+            dependencies=data_dependency_list,
+            source_name=plugin_input.get("wf_element_name"),
+        )
