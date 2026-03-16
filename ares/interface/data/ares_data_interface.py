@@ -438,9 +438,46 @@ class AresDataInterface(ABC):
 
                 # 1D
                 if pattern.groups <= 2:
-                    logger.warning(
+                    logger.debug(
                         f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}."
                     )
+
+                    # check for x-axis index
+                    if pattern.groups == 2:
+                        x_axis_idx = (
+                            vstack_element.x_axis
+                            if isinstance(vstack_element.x_axis, int)
+                            else 2
+                        )
+                        number_columns = len(pattern_matches)
+                        stacked_array = np.full(
+                            (
+                                len(reference_signal.timestamps),
+                                number_columns,
+                            ),
+                            np.nan,
+                        )
+
+                        for signal, pattern_result in zip(
+                            signal_matches, pattern_matches
+                        ):
+                            column_idx = int(pattern_result.group(x_axis_idx))
+                            if not all(np.isnan(stacked_array[:, column_idx])):
+                                logger.warning(
+                                    f"Vertical stacking for {signal.label} could not be applied correctly. Given pattern-group for x-axis is not monotonic."
+                                )
+
+                            stacked_array[:, column_idx] = signal.value
+                        data.append(
+                            AresSignal(
+                                label=signal_name,
+                                timestamps=reference_signal.timestamps,
+                                value=stacked_array,
+                            )
+                        )
+                        continue
+
+                    # default: stacking
                     data.append(
                         AresSignal(
                             label=signal_name,
@@ -486,6 +523,11 @@ class AresDataInterface(ABC):
                     for signal, pattern_result in zip(signal_matches, pattern_matches):
                         column_idx = int(pattern_result.group(x_axis_idx))
                         row_idx = int(pattern_result.group(y_axis_idx))
+
+                        if not all(np.isnan(stacked_matrix[row_idx, column_idx, :])):
+                            logger.warning(
+                                f"Vertical stacking for {signal.label} could not be applied correctly. Given pattern-group for x-axis,y-axis is not monotonic/unique."
+                            )
                         stacked_matrix[row_idx, column_idx, :] = signal.value
 
                     logger.debug(

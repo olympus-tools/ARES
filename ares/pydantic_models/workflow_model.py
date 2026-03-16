@@ -78,6 +78,15 @@ class VStackPatternElement(BaseModel):
                 raise ValueError(
                     "At least one field of 'signal_name','x_axis','y_axis' was provided. Then for deterministic behaviour all others must be provided."
                 )
+        elif pattern.groups == 2:
+            if self.y_axis:
+                raise ValueError(
+                    "Only 2 groups are given, field 'y_axis' is onl valid with 3 groups."
+                )
+            elif self.x_axis and not self.signal_name:
+                raise ValueError(
+                    "The field of 'x_axis' was provided. Then for deterministic behaviour 'signal_name' must be provided."
+                )
 
         return self
 
