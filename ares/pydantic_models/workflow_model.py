@@ -52,7 +52,7 @@ class BaseElement(BaseModel):
 class VStackPatternElement(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    pattern: regex_str
+    pattern: str
     signal_name: str | int | None = None
     x_axis: int | None = None
     y_axis: int | None = None
@@ -89,7 +89,7 @@ class DataElement(BaseElement):
     file_path: list[Path] | None = []
     data: list[str] | None = []
     label_filter: list[str] | None = None
-    vstack_pattern: list[VStackPatternElement] | list[regex_str] | None = None
+    vstack_pattern: list[VStackPatternElement] | list[str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
@@ -165,7 +165,7 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
-    vstack_pattern: list[VStackPatternElement] | list[regex_str] | None = Field(
+    vstack_pattern: list[VStackPatternElement] | list[str] | None = Field(
         None, exclude=True
     )
 
