@@ -20,5 +20,6 @@
       "source.organizeImports.ruff": "always"
     }
   },
-  "ruff.nativeServer": "on"
+  "ruff.nativeServer": "on",
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
 }
