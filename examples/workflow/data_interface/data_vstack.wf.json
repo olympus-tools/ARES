@@ -50,7 +50,7 @@
             "../../data/data_example_5.mf4"
         ],
         "vstack_pattern": [{
-            "pattern":"([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",
+            "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]$",
             "signal_name": "test_signal_5",
             "x_axis": 2
         }]
@@ -62,7 +62,7 @@
             "../../data/data_example_5.mf4"
         ],
         "vstack_pattern": [{
-            "pattern":"([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",
+            "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]$",
             "signal_name": 1,
             "x_axis": 2
         }]
