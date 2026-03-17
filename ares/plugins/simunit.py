@@ -796,10 +796,8 @@ def ares_plugin(plugin_input):
         None
     """
 
-    parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
-        "parameter_obj", None
-    )
-    data_lists: list[list[AresDataInterface]] = plugin_input.get("data_obj", None)
+    parameter_lists: list[list[AresParamInterface]] = plugin_input.parameter_obj
+    data_lists: list[list[AresDataInterface]] = plugin_input.data_obj
 
     if not parameter_lists:
         parameter_lists = [[AresParamInterface.create()]]
@@ -807,8 +805,8 @@ def ares_plugin(plugin_input):
         data_lists = [[AresDataInterface.create()]]
 
     sim_unit = SimUnit(
-        file_path=plugin_input.get("file_path"),
-        dd_path=plugin_input.get("data_dictionary"),
+        file_path=plugin_input.file_path,
+        dd_path=plugin_input.data_dictionary,
     )
 
     label_filter_signal = sim_unit.data_keys()
@@ -822,9 +820,9 @@ def ares_plugin(plugin_input):
 
                     sim_result = sim_unit.run(
                         data=data_obj.get(
-                            stepsize=plugin_input.get("stepsize"),
+                            stepsize=plugin_input.stepsize,
                             label_filter=label_filter_signal,
-                            vstack_pattern=plugin_input.get("vstack_pattern"),
+                            vstack_pattern=plugin_input.vstack_pattern,
                         ),
                         parameters=parameter_obj.get(
                             label_filter=label_filter_parameter
@@ -835,5 +833,5 @@ def ares_plugin(plugin_input):
                         AresDataInterface.create(
                             data=sim_result,
                             dependencies=dependencies,
-                            source_name=plugin_input.get("wf_element_name"),
+                            source_name=plugin_input.wf_element_name,
                         )

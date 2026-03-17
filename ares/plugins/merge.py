@@ -79,8 +79,8 @@ def ares_plugin(plugin_input):
         None
     """
 
-    parameter_hash_lists: list[list[str]] = plugin_input.get("parameter_hash_lists", [])
-    data_hash_lists: list[list[str]] = plugin_input.get("data_hash_lists", [])
+    parameter_hash_lists: list[list[str]] = plugin_input.parameter_hash_lists
+    data_hash_lists: list[list[str]] = plugin_input.data_hash_lists
 
     # generate all hash combinations using cartesian product
     parameter_dependency_lists = get_hash_combinations(parameter_hash_lists)
@@ -95,7 +95,7 @@ def ares_plugin(plugin_input):
         merge_parameters: list[AresParameter] = []
         for parameter_hash in parameter_dependency_list:
             params = AresParamInterface.cache[parameter_hash].get(
-                label_filter=plugin_input.get("label_filter_parameter"),
+                label_filter=plugin_input.label_filter_parameter,
             )
             if params is not None:
                 merge_parameters.extend(params)
@@ -103,7 +103,7 @@ def ares_plugin(plugin_input):
         AresParamInterface.create(
             parameters=merge_parameters,
             dependencies=parameter_dependency_list,
-            label_filter=plugin_input.get("label_filter_parameter"),
+            label_filter=plugin_input.label_filter_parameter,
         )
 
     # create merged data for each hash combination
@@ -115,9 +115,9 @@ def ares_plugin(plugin_input):
         merge_data: list[AresSignal] = []
         for data_hash in data_dependency_list:
             data = AresDataInterface.cache[data_hash].get(
-                stepsize=plugin_input.get("stepsize"),
-                label_filter=plugin_input.get("label_filter_data"),
-                vstack_pattern=plugin_input.get("vstack_pattern_data"),
+                stepsize=plugin_input.stepsize,
+                label_filter=plugin_input.label_filter_data,
+                vstack_pattern=plugin_input.vstack_pattern_data,
             )
             if data is not None:
                 merge_data.extend(data)
@@ -125,8 +125,8 @@ def ares_plugin(plugin_input):
         AresDataInterface.create(
             data=merge_data,
             dependencies=data_dependency_list,
-            source_name=plugin_input.get("wf_element_name"),
-            stepsize=plugin_input.get("stepsize"),
-            label_filter=plugin_input.get("label_filter_data"),
-            vstack_pattern=plugin_input.get("vstack_pattern_data"),
+            source_name=plugin_input.wf_element_name,
+            stepsize=plugin_input.stepsize,
+            label_filter=plugin_input.label_filter_data,
+            vstack_pattern=plugin_input.vstack_pattern_data,
         )

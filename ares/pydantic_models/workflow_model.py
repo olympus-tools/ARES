@@ -38,7 +38,13 @@ import re
 from pathlib import Path
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    model_validator,
+)
 from typing_extensions import Literal
 
 
@@ -152,6 +158,10 @@ class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
     file_path: Path | None = None
     plugin_name: str | None = None
+    parameter_obj: list[Any] | None = None
+    data_obj: list[Any] | None = None
+    parameter_hash_lists: list[list[str]] = []
+    data_hash_lists: list[list[str]] = []
 
 
 class SimUnitElement(PluginElement):
@@ -173,6 +183,10 @@ class SimUnitElement(PluginElement):
     init: list[str] | None = []
     cancel_condition: str | None = None
     vstack_pattern: list[VStackPatternElement] | list[str] | None = None
+    parameter_obj: list[Any] | None = None
+    data_obj: list[Any] | None = None
+    parameter_hash_lists: list[list[str]] = []
+    data_hash_lists: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -204,6 +218,10 @@ class MergeElement(PluginElement):
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
     vstack_pattern_parameter: list[VStackPatternElement] | list[str] | None = None
     stepsize: int | None = None
+    parameter_obj: list[Any] | None = None
+    data_obj: list[Any] | None = None
+    parameter_hash_lists: list[list[str]] = []
+    data_hash_lists: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -213,14 +231,6 @@ class MergeElement(PluginElement):
             self.vstack_pattern_data = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
                 for pattern in self.vstack_pattern_data
-                if isinstance(pattern, str)
-            ]
-        if self.vstack_pattern_parameter is not None and isinstance(
-            self.vstack_pattern_parameter[0], str
-        ):
-            self.vstack_pattern_parameter = [
-                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
-                for pattern in self.vstack_pattern_parameter
                 if isinstance(pattern, str)
             ]
 
