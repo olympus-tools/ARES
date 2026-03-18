@@ -223,11 +223,16 @@ Merges data and parameters from multiple workflow elements by creating all possi
 
 When merging elements with overlapping parameter names or signal labels, later elements in the list take precedence and override values from earlier elements.
 
-| Field              | Required   | Type        | Supported Values    | Description                                         |
-| :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
-| `type`             | Yes        | `str`       | `"merge"`           | Unique identifier for the element type.             |
-| `parameter`        | No         | `list[str]` |                     | List of parameter element names to merge. All combinations are generated. Later elements override earlier ones. |
-| `data`             | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Later elements override earlier ones. |
+| Field                      | Required   | Type        | Supported Values    | Description                                         |
+| :------------------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
+| `type`                     | Yes        | `str`       | `"merge"`           | Unique identifier for the element type.             |
+| `parameter`                | No         | `list[str]` |                     | List of parameter element names to merge. All combinations are generated. Later elements override earlier ones. |
+| `data`                     | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Later elements override earlier ones. |
+| `label_filter_data`        | No         | `list[str]` |                     | Filter specific signals by name or pattern when merging data. |
+| `label_filter_parameter`   | No         | `list[str]` |                     | Filter specific parameters by name or pattern when merging parameters. |
+| `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
+| `vstack_pattern_parameter` | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for parameters. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
+| `stepsize`                 | No         | `int`       |                     | Resampling step size in ms applied to merged data.  |
 
 ## 7. Examples
 
