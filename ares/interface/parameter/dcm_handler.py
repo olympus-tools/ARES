@@ -60,15 +60,24 @@ class DCMHandler(ParamDCM, AresParamInterface):
     """
 
     @typechecked
-    def __init__(self, file_path: Path | None = None, **kwargs):
+    def __init__(
+        self,
+        file_path: Path | None = None,
+        label_filter: list[str] | None = None,
+        **kwargs,
+    ):
         """Initialize DCMHandler and optionally load a dcm file.
 
         Args:
             file_path (Path | None): Optional absolute path to the dcm file to load
+            label_filter (list[str] | None): Optional list of parameter names or patterns to filter
             **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
         """
         AresParamInterface.__init__(
-            self, file_path=file_path, dependencies=kwargs.pop("dependencies", None)
+            self,
+            file_path=file_path,
+            dependencies=kwargs.pop("dependencies", None),
+            label_filter=label_filter,
         )
         ParamDCM.__init__(self, file_path=file_path)
 

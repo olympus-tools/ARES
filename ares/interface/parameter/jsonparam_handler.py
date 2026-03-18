@@ -69,6 +69,7 @@ class JSONParamHandler(AresParamInterface):
         self,
         file_path: Path | None = None,
         parameters: list[AresParameter] | None = None,
+        label_filter: list[str] | None = None,
         **kwargs,
     ):
         """Initialize JSONParamHandler from file or parameter list.
@@ -76,11 +77,14 @@ class JSONParamHandler(AresParamInterface):
         Args:
             file_path (Path | None): Optional absolute path to the JSON file to load
             parameters (list[AresParameter] | None): Optional list of AresParameter objects to initialize with
+            label_filter (list[str] | None): Optional list of parameter names or patterns to filter
             **kwargs (Any): Additional arguments.
                 - dependencies (list[str]): Optional list of parameter labels that this instance depends on
         """
         super().__init__(
-            file_path=file_path, dependencies=kwargs.pop("dependencies", None)
+            file_path=file_path,
+            dependencies=kwargs.pop("dependencies", None),
+            label_filter=label_filter,
         )
         self.parameter: dict[str, dict[str, Any]] = {}
 

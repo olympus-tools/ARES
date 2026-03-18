@@ -78,6 +78,8 @@ class MF4Handler(MDF, AresDataInterface):
         file_path: Path | None = None,
         data: list[AresSignal] | None = None,
         vstack_pattern: list[VStackPatternElement] | None = None,
+        stepsize: int | None = None,
+        label_filter: list[str] | None = None,
         **kwargs,
     ):
         """Initialize MF4Handler and load available channels.
@@ -90,6 +92,8 @@ class MF4Handler(MDF, AresDataInterface):
             file_path (Path | None): Path to the mf4 file to load or write.
             data (list[AresSignal] | None): Optional list of AresSignal objects to initialize with
             vstack_pattern ( list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
+            stepsize (int | None): Optional step size for resampling signals when reading.
+            label_filter (list[str] | None): Optional list of signal names or patterns to filter
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
 
@@ -98,6 +102,8 @@ class MF4Handler(MDF, AresDataInterface):
             file_path=file_path,
             dependencies=kwargs.pop("dependencies", None),
             vstack_pattern=vstack_pattern,
+            stepsize=stepsize,
+            label_filter=label_filter,
         )
 
         if file_path is None:

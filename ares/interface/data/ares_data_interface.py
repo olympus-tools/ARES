@@ -122,6 +122,8 @@ class AresDataInterface(ABC):
         file_path: Path | None = None,
         dependencies: list[str] | None = None,
         vstack_pattern: list[VStackPatternElement] | None = None,
+        stepsize: int | None = None,
+        label_filter: list[str] | None = None,
     ):
         """Initialize base attributes for all data handlers.
 
@@ -131,12 +133,16 @@ class AresDataInterface(ABC):
             file_path (Path | None): Path to the data file to load
             dependencies (list[str] | None): List of dependencies for this data handler
             vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
+            stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
+            label_filter (list[str] | None): List of signal names to filter when retrieving data
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(
             self, "dependencies", dependencies if dependencies is not None else []
         )
+        object.__setattr__(self, "_stepsize", stepsize)
+        object.__setattr__(self, "_label_filter", label_filter)
         object.__setattr__(self, "_vstack_pattern", vstack_pattern)
 
     @classmethod
@@ -197,8 +203,6 @@ class AresDataInterface(ABC):
                 target_extension = f".{wf_element_value.output_format}"
                 target_handler_class = cls._handlers.get(target_extension)
 
-                stepsize = getattr(wf_element_value, "stepsize", None)
-
                 for wf_element_hash_list in input_hash_list:
                     for output_hash in wf_element_hash_list:
                         if output_hash in cls.cache:
@@ -206,7 +210,7 @@ class AresDataInterface(ABC):
 
                             data = source_instance.get(
                                 label_filter=wf_element_value.label_filter,
-                                stepsize=stepsize,
+                                stepsize=wf_element_value.stepsize,
                                 vstack_pattern=wf_element_value.vstack_pattern,
                                 **kwargs,
                             )
