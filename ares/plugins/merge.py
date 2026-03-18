@@ -96,7 +96,6 @@ def ares_plugin(plugin_input):
         for parameter_hash in parameter_dependency_list:
             params = AresParamInterface.cache[parameter_hash].get(
                 label_filter=plugin_input.get("label_filter_parameter"),
-                vstack_pattern=plugin_input.get("vstack_pattern_parameter"),
             )
             if params is not None:
                 merge_parameters.extend(params)
@@ -104,6 +103,7 @@ def ares_plugin(plugin_input):
         AresParamInterface.create(
             parameters=merge_parameters,
             dependencies=parameter_dependency_list,
+            label_filter=plugin_input.get("label_filter_parameter"),
         )
 
     # create merged data for each hash combination
@@ -126,4 +126,7 @@ def ares_plugin(plugin_input):
             data=merge_data,
             dependencies=data_dependency_list,
             source_name=plugin_input.get("wf_element_name"),
+            stepsize=plugin_input.get("stepsize"),
+            label_filter=plugin_input.get("label_filter_data"),
+            vstack_pattern=plugin_input.get("vstack_pattern_data"),
         )

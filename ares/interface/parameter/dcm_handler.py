@@ -124,6 +124,12 @@ class DCMHandler(ParamDCM, AresParamInterface):
                 parameters were found
         """
 
+        label_filter = (
+            self._label_filter
+            if label_filter is None
+            else (self._label_filter or []) + label_filter
+        )
+
         if label_filter:
             label_filter = resolve_label_filter(
                 label_filter=label_filter,
