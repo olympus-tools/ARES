@@ -807,8 +807,8 @@ def ares_plugin(plugin_input):
         data_lists = [[AresDataInterface.create()]]
 
     sim_unit = SimUnit(
-        file_path=plugin_input["file_path"],
-        dd_path=plugin_input["data_dictionary"],
+        file_path=plugin_input.get("file_path"),
+        dd_path=plugin_input.get("data_dictionary"),
     )
 
     label_filter_signal = sim_unit.data_keys()
@@ -822,7 +822,7 @@ def ares_plugin(plugin_input):
 
                     sim_result = sim_unit.run(
                         data=data_obj.get(
-                            stepsize=plugin_input["stepsize"],
+                            stepsize=plugin_input.get("stepsize"),
                             label_filter=label_filter_signal,
                             vstack_pattern=plugin_input.get("vstack_pattern"),
                         ),

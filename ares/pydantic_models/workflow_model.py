@@ -114,9 +114,7 @@ class DataElement(BaseElement):
             if not self.output_format:
                 raise ValueError("Field 'output_format' is required for mode='write'.")
 
-        if isinstance(self.vstack_pattern, list) and isinstance(
-            self.vstack_pattern[0], str
-        ):
+        if self.vstack_pattern is not None and isinstance(self.vstack_pattern[0], str):
             self.vstack_pattern = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
                 for pattern in self.vstack_pattern
@@ -174,9 +172,18 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
-    vstack_pattern: list[VStackPatternElement] | list[str] | None = Field(
-        None, exclude=True
-    )
+    vstack_pattern: list[VStackPatternElement] | list[str] | None = None
+
+    @model_validator(mode="after")
+    def _validate_model(self):
+        if self.vstack_pattern is not None and isinstance(self.vstack_pattern[0], str):
+            self.vstack_pattern = [
+                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                for pattern in self.vstack_pattern
+                if isinstance(pattern, str)
+            ]
+
+        return self
 
 
 class MergeElement(PluginElement):
@@ -192,15 +199,28 @@ class MergeElement(PluginElement):
     )
     data: list[str] | None = []
     parameter: list[str] | None = []
+    label_filter_data: list[str] | None = None
+    label_filter_parameter: list[str] | None = None
+    vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
+    vstack_pattern_parameter: list[VStackPatternElement] | list[str] | None = None
+    stepsize: int | None = None
 
     @model_validator(mode="after")
     def _validate_model(self):
-        if isinstance(self.vstack_pattern, list) and isinstance(
-            self.vstack_pattern[0], str
+        if self.vstack_pattern_data is not None and isinstance(
+            self.vstack_pattern_data[0], str
         ):
-            self.vstack_pattern = [
+            self.vstack_pattern_data = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
-                for pattern in self.vstack_pattern
+                for pattern in self.vstack_pattern_data
+                if isinstance(pattern, str)
+            ]
+        if self.vstack_pattern_parameter is not None and isinstance(
+            self.vstack_pattern_parameter[0], str
+        ):
+            self.vstack_pattern_parameter = [
+                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                for pattern in self.vstack_pattern_parameter
                 if isinstance(pattern, str)
             ]
 

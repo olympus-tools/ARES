@@ -94,7 +94,10 @@ def ares_plugin(plugin_input):
 
         merge_parameters: list[AresParameter] = []
         for parameter_hash in parameter_dependency_list:
-            params = AresParamInterface.cache[parameter_hash].get()
+            params = AresParamInterface.cache[parameter_hash].get(
+                label_filter=plugin_input.get("label_filter_parameter"),
+                vstack_pattern=plugin_input.get("vstack_pattern_parameter"),
+            )
             if params is not None:
                 merge_parameters.extend(params)
 
@@ -111,7 +114,11 @@ def ares_plugin(plugin_input):
 
         merge_data: list[AresSignal] = []
         for data_hash in data_dependency_list:
-            data = AresDataInterface.cache[data_hash].get()
+            data = AresDataInterface.cache[data_hash].get(
+                stepsize=plugin_input.get("stepsize"),
+                label_filter=plugin_input.get("label_filter_data"),
+                vstack_pattern=plugin_input.get("vstack_pattern_data"),
+            )
             if data is not None:
                 merge_data.extend(data)
 

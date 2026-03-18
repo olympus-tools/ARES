@@ -121,7 +121,6 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     plugin_input["plugin_path"] = plugin_input["file_path"]
 
                 # filtering relevant parameter for plugin element
-                plugin_input["parameter"] = wf_element_value.parameter
                 plugin_input["parameter_obj"] = [
                     [param_storage[hash] for hash in hash_list if hash in param_storage]
                     for hash_list in tmp_param_hash_list
@@ -129,7 +128,6 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                 plugin_input["parameter_hash_lists"] = tmp_param_hash_list
 
                 # filtering relevant data for plugin element
-                plugin_input["data"] = wf_element_value.data
                 plugin_input["data_obj"] = [
                     [data_storage[hash] for hash in hash_list if hash in data_storage]
                     for hash_list in tmp_data_hash_list
