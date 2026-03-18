@@ -294,6 +294,8 @@ class MF4Handler(MDF, AresDataInterface):
         Supports scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
         Optionally adds source information to data for traceability.
 
+        Duplicate signal labels are automatically removed, keeping the last occurrence.
+
         Args:
             data (list[AresSignal]): List of AresSignal objects to append to mf4 file.
                 - ndim == 1: Scalar value per time step
@@ -303,6 +305,7 @@ class MF4Handler(MDF, AresDataInterface):
                 - source_name (str): Name for the signal source. If not provided,
                   defaults to "ARES_DEFAULT_SOURCE".
         """
+        data = AresDataInterface._filter_deduplicates(data=data)
         source_name = kwargs.pop("source_name", "ARES_DEFAULT_SOURCE")
 
         source = Source(
@@ -314,40 +317,40 @@ class MF4Handler(MDF, AresDataInterface):
         )
 
         signals_to_write = []
-        for sig in data:
-            if sig.ndim == 1:
+        for signal in data:
+            if signal.ndim == 1:
                 signals_to_write.append(
                     Signal(
-                        samples=sig.value,
-                        timestamps=sig.timestamps,
-                        name=sig.label,
-                        unit=sig.unit if sig.unit else "",
-                        comment=sig.description if sig.description else "",
+                        samples=signal.value,
+                        timestamps=signal.timestamps,
+                        name=signal.label,
+                        unit=signal.unit if signal.unit else "",
+                        comment=signal.description if signal.description else "",
                         source=source,
                         encoding="utf-8",
                     )
                 )
 
-            elif sig.ndim in [2, 3]:
-                dtype_str = self.DTYPE_MAP[sig.dtype]
+            elif signal.ndim in [2, 3]:
+                dtype_str = self.DTYPE_MAP[signal.dtype]
 
-                if sig.ndim == 2:
-                    array_size = sig.shape[1]
+                if signal.ndim == 2:
+                    array_size = signal.shape[1]
                     dimension_str = f"({array_size},)"
                 else:
-                    rows, cols = sig.shape[1], sig.shape[2]
+                    rows, cols = signal.shape[1], signal.shape[2]
                     dimension_str = f"({rows}, {cols})"
 
-                types = [(sig.label, f"{dimension_str}{dtype_str}")]
-                samples = np.rec.fromarrays([sig.value], dtype=np.dtype(types))
+                types = [(signal.label, f"{dimension_str}{dtype_str}")]
+                samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
 
                 signals_to_write.append(
                     Signal(
                         samples=samples,
-                        timestamps=sig.timestamps,
-                        name=sig.label,
-                        unit=sig.unit if sig.unit else "",
-                        comment=sig.description if sig.description else "",
+                        timestamps=signal.timestamps,
+                        name=signal.label,
+                        unit=signal.unit if signal.unit else "",
+                        comment=signal.description if signal.description else "",
                         source=source,
                         encoding="utf-8",
                     )
@@ -355,7 +358,7 @@ class MF4Handler(MDF, AresDataInterface):
 
             else:
                 logger.warning(
-                    f"Unsupported signal dimension: {sig.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
+                    f"Unsupported signal dimension: {signal.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
                 )
 
         self.append(signals_to_write)

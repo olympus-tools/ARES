@@ -33,7 +33,6 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -79,9 +78,6 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
     for wf_element_name, wf_element_value in ares_wf.workflow.items():
         logger.info(f"Processing workflow element: {wf_element_name}")
 
-        prev_param_hash_list: list[str] = list(param_storage.keys())
-        prev_data_hash_list: list[str] = list(data_storage.keys())
-
         tmp_param_hash_list: list[list[str]] = []
         for parameter in getattr(wf_element_value, "parameter", []):
             tmp_param_hash_list.append(
@@ -109,7 +105,7 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     output_dir=output_dir,
                 )
 
-            case "sim_unit" | "plugin":
+            case "plugin" | "sim_unit" | "merge":
                 plugin_input: dict[str, Any] = wf_element_value.model_dump()
                 plugin_input["wf_element_name"] = wf_element_name
 
@@ -117,40 +113,41 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     plugin_input["plugin_path"] = (
                         Path(__file__).parent.parent / "plugins" / "simunit.py"
                     )
+                elif wf_element_value.type == "merge":
+                    plugin_input["plugin_path"] = (
+                        Path(__file__).parent.parent / "plugins" / "merge.py"
+                    )
                 else:
                     plugin_input["plugin_path"] = plugin_input["file_path"]
 
                 # filtering relevant parameter for plugin element
-                plugin_input["parameter"] = [
-                    [param_storage[key] for key in hash_list if key in param_storage]
+                plugin_input["parameter"] = wf_element_value.parameter
+                plugin_input["parameter_obj"] = [
+                    [param_storage[hash] for hash in hash_list if hash in param_storage]
                     for hash_list in tmp_param_hash_list
                 ]
+                plugin_input["parameter_hash_lists"] = tmp_param_hash_list
+
                 # filtering relevant data for plugin element
-                plugin_input["data"] = [
-                    [data_storage[key] for key in hash_list if key in data_storage]
+                plugin_input["data"] = wf_element_value.data
+                plugin_input["data_obj"] = [
+                    [data_storage[hash] for hash in hash_list if hash in data_storage]
                     for hash_list in tmp_data_hash_list
                 ]
+                plugin_input["data_hash_lists"] = tmp_data_hash_list
 
                 AresPluginInterface(
                     plugin_input=plugin_input,
                 )
 
-        # update workflow element hash list with new hashes only
-        new_param_hash_list = [
-            hash_key
-            for hash_key in param_storage.keys()
-            if hash_key not in prev_param_hash_list
-        ]
-        new_data_hash_list = [
-            hash_key
-            for hash_key in data_storage.keys()
-            if hash_key not in prev_data_hash_list
-        ]
-
-        for hash_key in new_param_hash_list:
+        # update workflow element hash list and clear temporary hash list for next iteration
+        for hash_key in AresParamInterface.tmp_hash_list:
             wf_element_value.hash_list[hash_key] = param_storage[hash_key].dependencies
-        for hash_key in new_data_hash_list:
+        for hash_key in AresDataInterface.tmp_hash_list:
             wf_element_value.hash_list[hash_key] = data_storage[hash_key].dependencies
+
+        AresParamInterface.tmp_hash_list = []
+        AresDataInterface.tmp_hash_list = []
 
     # TODO: if parameter/measurement not needed anymore => drop it
     ares_wf.save(output_dir=output_dir)

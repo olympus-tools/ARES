@@ -185,10 +185,13 @@ class JSONParamHandler(AresParamInterface):
         Converts AresParameter objects to JSON dictionary format and updates
         the internal parameter dictionary. Updates the instance hash after addition.
 
+        Duplicate parameter labels are automatically removed, keeping the last occurrence.
+
         Args:
             parameters (list[AresParameter]): List of AresParameter objects to add to the interface
             **kwargs (Any): Additional format-specific arguments (unused)
         """
+        parameters = AresParamInterface._filter_deduplicates(parameters=parameters)
         for param in parameters:
             self.parameter[param.label] = {
                 "description": param.description,

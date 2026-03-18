@@ -61,6 +61,7 @@ class AresParamInterface(ABC):
     """
 
     cache: ClassVar[dict[str, "AresParamInterface"]] = {}
+    tmp_hash_list: ClassVar[list[str]] = []
     _handlers: ClassVar[dict[str, type["AresParamInterface"]]] = {}
 
     @typechecked
@@ -98,6 +99,8 @@ class AresParamInterface(ABC):
 
         # calculate hash from parameters
         content_hash = cls._calculate_hash(parameters=parameters, **kwargs)
+
+        cls.tmp_hash_list.append(content_hash)
 
         # return cached instance if hash already exists
         if content_hash in cls.cache:
@@ -247,7 +250,7 @@ class AresParamInterface(ABC):
     def _calculate_hash(
         parameters: list[AresParameter],
         **kwargs,
-    ) -> str | None:
+    ) -> str:
         """Calculate hash from parameter list.
 
         This method is used for cache lookup. It always calculates hash
@@ -262,7 +265,7 @@ class AresParamInterface(ABC):
             **kwargs (Any): Additional format-specific arguments (unused)
 
         Returns:
-            str | None: SHA256 hash string of the content, or None on error
+            str: SHA256 hash string of the content
         """
         temp_param_dict = {}
         temp_param_dict["metadata"] = {"type": "AresParamInterface"}
@@ -276,6 +279,32 @@ class AresParamInterface(ABC):
             }
         param_json = json.dumps(temp_param_dict, sort_keys=True)
         return str_based_hash(input_string=param_json)
+
+    @staticmethod
+    @typechecked
+    def _filter_deduplicates(
+        parameters: list[AresParameter],
+    ) -> list[AresParameter]:
+        """Remove duplicate parameters by label, keeping the last occurrence.
+
+        When multiple parameters with the same label exist in the input list,
+        only the last occurrence is retained. This ensures that later parameters
+        override earlier ones when merging parameters from multiple sources.
+
+        Args:
+            parameters (list[AresParameter]): List of AresParameter objects that may contain duplicates.
+
+        Returns:
+            list[AresParameter]: Deduplicated list with unique labels, preserving insertion order.
+        """
+        parameters_filtered: dict[str, AresParameter] = {}
+        for param in parameters:
+            if param.label in parameters_filtered:
+                logger.debug(
+                    f"Duplicate parameter label '{param.label}' found. Using later occurrence."
+                )
+            parameters_filtered[param.label] = param
+        return list(parameters_filtered.values())
 
     @abstractmethod
     def get(

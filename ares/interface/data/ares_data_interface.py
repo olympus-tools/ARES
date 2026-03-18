@@ -65,6 +65,7 @@ class AresDataInterface(ABC):
     """
 
     cache: ClassVar[dict[str, "AresDataInterface"]] = {}
+    tmp_hash_list: ClassVar[list[str]] = []
     _handlers: ClassVar[dict[str, type["AresDataInterface"]]] = {}
 
     @typechecked
@@ -102,6 +103,8 @@ class AresDataInterface(ABC):
         else:
             timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")[:-3]
             content_hash = cls._calculate_hash(input_string=timestamp_str, **kwargs)
+
+        cls.tmp_hash_list.append(content_hash)
 
         # return cached instance if hash already exists
         if content_hash in cls.cache:
@@ -296,6 +299,30 @@ class AresDataInterface(ABC):
             raise
 
         return return_hash
+
+    @staticmethod
+    @typechecked
+    def _filter_deduplicates(data: list[AresSignal]) -> list[AresSignal]:
+        """Remove duplicate signals by label, keeping the last occurrence.
+
+        When multiple signals with the same label exist in the input list,
+        only the last occurrence is retained. This ensures that later signals
+        override earlier ones when merging data from multiple sources.
+
+        Args:
+            data (list[AresSignal]): List of AresSignal objects that may contain duplicates.
+
+        Returns:
+            list[AresSignal]: Deduplicated list with unique labels, preserving insertion order.
+        """
+        data_filtered: dict[str, AresSignal] = {}
+        for signal in data:
+            if signal.label in data_filtered:
+                logger.debug(
+                    f"Duplicate signal label '{signal.label}' found. Using later occurrence."
+                )
+            data_filtered[signal.label] = signal
+        return list(data_filtered.values())
 
     @staticmethod
     @error_msg(
