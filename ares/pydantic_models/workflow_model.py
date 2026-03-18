@@ -104,7 +104,7 @@ class DataElement(BaseElement):
     file_path: list[Path] | None = []
     data: list[str] | None = []
     label_filter: list[str] | None = None
-    vstack_pattern: list[VStackPatternElement] | list[str] | None = None
+    vstack_pattern: list[VStackPatternElement | str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
@@ -120,11 +120,12 @@ class DataElement(BaseElement):
             if not self.output_format:
                 raise ValueError("Field 'output_format' is required for mode='write'.")
 
-        if self.vstack_pattern is not None and isinstance(self.vstack_pattern[0], str):
+        if self.vstack_pattern is not None:
             self.vstack_pattern = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
-                for pattern in self.vstack_pattern
                 if isinstance(pattern, str)
+                else pattern
+                for pattern in self.vstack_pattern
             ]
 
         return self
@@ -182,7 +183,7 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
-    vstack_pattern: list[VStackPatternElement] | list[str] | None = None
+    vstack_pattern: list[VStackPatternElement | str] | None = None
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
     parameter_hash_lists: list[list[str]] = []
@@ -190,11 +191,12 @@ class SimUnitElement(PluginElement):
 
     @model_validator(mode="after")
     def _validate_model(self):
-        if self.vstack_pattern is not None and isinstance(self.vstack_pattern[0], str):
+        if self.vstack_pattern is not None:
             self.vstack_pattern = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
-                for pattern in self.vstack_pattern
                 if isinstance(pattern, str)
+                else pattern
+                for pattern in self.vstack_pattern
             ]
 
         return self
