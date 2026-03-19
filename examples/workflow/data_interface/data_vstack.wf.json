@@ -23,12 +23,15 @@
         "file_path": [
             "../../data/data_example_5.mf4"
         ],
-        "vstack_pattern": [{
-            "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
+        "vstack_pattern": [
+            {"pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]$",
+            "signal_name": "test_signal_5",
+            "x_axis": 2},
+            {"pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
             "signal_name": "test_signal_3",
             "x_axis": 3,
-            "y_axis": 2
-        }]
+            "y_axis": 2}
+        ]
     },
     "data_in_4": {
         "type": "data",
@@ -36,12 +39,15 @@
         "file_path": [
             "../../data/data_example_5.mf4"
         ],
-        "vstack_pattern": [{
-            "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
+        "vstack_pattern": [
+            {"pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]$",
+            "signal_name": 1,
+            "x_axis": 2},
+            {"pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
             "signal_name": 1,
             "x_axis": 3,
-            "y_axis": 2
-        }]
+            "y_axis": 2}
+        ]
     },
     "data_in_5": {
         "type": "data",
@@ -49,23 +55,13 @@
         "file_path": [
             "../../data/data_example_5.mf4"
         ],
-        "vstack_pattern": [{
-            "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]$",
-            "signal_name": "test_signal_5",
-            "x_axis": 2
-        }]
-    },
-    "data_in_6": {
-        "type": "data",
-        "mode": "read",
-        "file_path": [
-            "../../data/data_example_5.mf4"
-        ],
-        "vstack_pattern": [{
-            "pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]$",
+        "vstack_pattern": [
+            "([a-zA-Z0-9_]+)_\\[[0-9]+\\]$",
+            {"pattern":"([a-zA-Z0-9_]+)_\\[([0-9]+)\\]\\[([0-9]+)\\]$",
             "signal_name": 1,
-            "x_axis": 2
-        }]
+            "x_axis": 3,
+            "y_axis": 2}
+        ]
     },
     "data_out_1": {
         "type": "data",
@@ -99,12 +95,6 @@
         "type": "data",
         "mode": "write",
         "data": ["data_in_5"],
-        "output_format": "mf4"
-    },
-    "data_out_6": {
-        "type": "data",
-        "mode": "write",
-        "data": ["data_in_6"],
         "output_format": "mf4"
     }
 }
