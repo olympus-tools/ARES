@@ -56,13 +56,15 @@ def plugin_example_1(plugin_input: PluginElement):
         plugin_input (PluginElement): Dictionary/pydantic-model containing all plugin configuration and data:
             - wf_element_name: str - Name of the workflow element
             - parameter: list[list[AresParamInterface]] - Nested list of parameter interfaces
-            - input: list[list[AresDataInterface]] - Nested list of data interfaces
+            - data: list[list[AresDataInterface]] - Nested list of data interfaces
             - plugin_path: str - Path to this plugin file
             - type: str - Element type ("plugin" or "sim_unit")
             - element_workflow: list[str] - Workflow element sequence
     """
     element_parameter_lists: list[list[AresParamInterface]] = plugin_input.parameter
-    element_data_lists: list[list[AresDataInterface]] = plugin_input.data
+    # element_data_lists: list[list[AresDataInterface]] = plugin_input.data
+    # BUG: reading data doesn't work
+    element_data_lists: list[list[AresDataInterface]] = []
 
     new_params = [
         AresParameter(
