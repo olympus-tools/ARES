@@ -76,9 +76,8 @@ class VStackPatternElement(BaseModel):
                 and not all([self.x_axis, self.y_axis])
             ):
                 raise ValueError(
-                    "When 'signal_name' is a string, either both 'x_axis' or 'y_axis' must be provided or neither should be provided."
+                    "When 'signal_name' is a string, either both 'x_axis' and 'y_axis' must be provided or neither should be provided."
                 )
-            # case name is integer
             elif any([self.signal_name, self.x_axis, self.y_axis]) and not all(
                 [self.signal_name, self.x_axis, self.y_axis]
             ):
@@ -88,7 +87,7 @@ class VStackPatternElement(BaseModel):
         elif pattern.groups == 2:
             if self.y_axis:
                 raise ValueError(
-                    "Only 2 groups are given, field 'y_axis' is onl valid with 3 groups."
+                    "Only 2 groups are given, field 'y_axis' is only valid with 3 groups."
                 )
             elif self.x_axis and not self.signal_name:
                 raise ValueError(
