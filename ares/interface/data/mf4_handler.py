@@ -249,7 +249,7 @@ class MF4Handler(MDF, AresDataInterface):
                 if selected_signal:
                     found_signals.extend(selected_signal)
 
-            else:
+            elif len(occurence) >= 2:
                 logger.warning(
                     f"Signal '{channel_name}' has {len(occurence)} occurrences in mf4 data file."
                 )
