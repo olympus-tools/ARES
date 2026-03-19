@@ -180,7 +180,11 @@ class AresParamInterface(ABC):
         match wf_element_value.mode:
             case "read":
                 for file_path in wf_element_value.file_path:
-                    cls.create(file_path=file_path, **kwargs)
+                    cls.create(
+                        file_path=file_path,
+                        label_filter=wf_element_value.label_filter,
+                        **kwargs,
+                    )
 
             case "write":
                 if not input_hash_list or not output_dir:

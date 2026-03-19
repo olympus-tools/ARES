@@ -190,6 +190,8 @@ class AresDataInterface(ABC):
                 for file_path in wf_element_value.file_path:
                     cls.create(
                         file_path=file_path,
+                        label_filter=wf_element_value.label_filter,
+                        stepsize=wf_element_value.stepsize,
                         vstack_pattern=wf_element_value.vstack_pattern,
                     )
 
