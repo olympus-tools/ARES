@@ -80,8 +80,8 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
     data_storage: dict[str, AresDataInterface] = AresDataInterface.cache
 
     # evaluation of all sinks, that were found in workflow json files
-    for wf_element_name, wf_element_value in ares_wf.workflow.items():
-        logger.info(f"Processing workflow element: {wf_element_name}")
+    for wf_element_value in ares_wf.workflow.values():
+        logger.info(f"Processing workflow element: {wf_element_value.name}")
 
         tmp_param_hash_list: list[list[str]] = []
         for parameter in getattr(wf_element_value, "parameter", []):
@@ -96,7 +96,6 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
         match wf_element_value.type:
             case "data":
                 AresDataInterface.wf_element_handler(
-                    wf_element_name=wf_element_name,
                     wf_element_value=wf_element_value,
                     input_hash_list=tmp_data_hash_list,
                     output_dir=output_dir,
@@ -104,7 +103,6 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
 
             case "parameter":
                 AresParamInterface.wf_element_handler(
-                    wf_element_name=wf_element_name,
                     wf_element_value=wf_element_value,
                     input_hash_list=tmp_param_hash_list,
                     output_dir=output_dir,
@@ -112,11 +110,8 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
 
             case "plugin" | "sim_unit" | "merge":
                 plugin_input: SimUnitElement | PluginElement | MergeElement = (
-                    wf_element_value.model_copy(
-                        update={"wf_element_name": wf_element_name}
-                    )
+                    wf_element_value.model_copy()
                 )
-                # plugin_input["wf_element_name"] = wf_element_name
 
                 if wf_element_value.type == "sim_unit":
                     plugin_input.plugin_path = (

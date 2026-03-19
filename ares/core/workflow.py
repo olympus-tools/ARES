@@ -117,7 +117,7 @@ class Workflow:
 
         # TODO: make relative path evaluation easier and more intuitive
 
-        for wf_element_name, wf_element_value in self.workflow.items():
+        for wf_element_value in self.workflow.values():
             for field_name, field_value in wf_element_value.__dict__.items():
                 # Case 1: single Path
                 if isinstance(field_value, Path):
@@ -131,7 +131,7 @@ class Workflow:
                             abs_path = (base_dir / field_value).resolve()
                             setattr(wf_element_value, field_name, abs_path)
                             logger.debug(
-                                f"Resolved relative path in workflow file for '{wf_element_name}.{field_name}': {abs_path}",
+                                f"Resolved relative path in workflow file for '{wf_element_value.name}.{field_name}': {abs_path}",
                             )
 
                 # Case 2: list of Paths
@@ -158,7 +158,7 @@ class Workflow:
                     if changed:
                         setattr(wf_element_value, field_name, abs_paths)
                         logger.debug(
-                            f"Resolved relative paths in workflow file for '{wf_element_name}.{field_name}': {abs_paths}",
+                            f"Resolved relative paths in workflow file for '{wf_element_value.name}.{field_name}': {abs_paths}",
                         )
 
     @error_msg(
@@ -344,31 +344,31 @@ class Workflow:
     @typechecked
     def _eval_element_workflow(self) -> None:
         """Assigns the workflow from a data source to each workflow element."""
-        for wf_element_name, wf_element in self.workflow.items():
+        for wf_element_value in self.workflow.values():
             element_workflow: list[str] = []
 
-            if hasattr(wf_element, "parameter") and wf_element.parameter:
-                for param_name in wf_element.parameter:
+            if hasattr(wf_element_value, "parameter") and wf_element_value.parameter:
+                for param_name in wf_element_value.parameter:
                     param_elem = self.workflow.get(param_name)
                     if param_elem:
                         element_workflow.extend(param_elem.element_workflow)
                         element_workflow.append(param_name)
 
-            if hasattr(wf_element, "init") and wf_element.init:
-                for init_name in wf_element.init:
+            if hasattr(wf_element_value, "init") and wf_element_value.init:
+                for init_name in wf_element_value.init:
                     init_elem = self.workflow.get(init_name)
                     if init_elem:
                         element_workflow.extend(init_elem.element_workflow)
                         element_workflow.append(init_name)
 
-            elif hasattr(wf_element, "data") and wf_element.data:
-                for input_name in wf_element.data:
+            elif hasattr(wf_element_value, "data") and wf_element_value.data:
+                for input_name in wf_element_value.data:
                     input_elem = self.workflow.get(input_name)
                     if input_elem:
                         element_workflow.extend(input_elem.element_workflow)
                         element_workflow.append(input_name)
 
-            self.workflow[wf_element_name].element_workflow = list(
+            self.workflow[wf_element_value.name].element_workflow = list(
                 dict.fromkeys(element_workflow)
             )
 

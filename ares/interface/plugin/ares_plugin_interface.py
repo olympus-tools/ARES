@@ -64,9 +64,7 @@ def AresPluginInterface(
         # Create module specification
         spec = importlib.util.spec_from_file_location(module_name, plugin_path)
         if spec is None or spec.loader is None:
-            logger.error(
-                f"{plugin_input.wf_element_name}: Could not load plugin {plugin_path}"
-            )
+            logger.error(f"{plugin_input.name}: Could not load plugin {plugin_path}")
             return
 
         # Create and configure module
@@ -94,12 +92,12 @@ def AresPluginInterface(
                 getattr(module, plugin_name)(plugin_input=plugin_input)
             else:
                 logger.error(
-                    f"{plugin_input.wf_element_name}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
+                    f"{plugin_input.name}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
                 )
                 return
 
             logger.debug(
-                f"{plugin_input.wf_element_name}: Plugin {plugin_path.name} executed successfully"
+                f"{plugin_input.name}: Plugin {plugin_path.name} executed successfully"
             )
 
         finally:
@@ -111,6 +109,6 @@ def AresPluginInterface(
 
     except Exception as e:
         logger.error(
-            f"{plugin_input.wf_element_name}: Plugin execution failed for {plugin_input.plugin_path.name}: {e}"
+            f"{plugin_input.name}: Plugin execution failed for {plugin_input.plugin_path.name}: {e}"
         )
         return

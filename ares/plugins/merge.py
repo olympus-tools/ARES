@@ -39,6 +39,7 @@ from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.pydantic_models.workflow_model import MergeElement
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
@@ -65,12 +66,12 @@ def get_hash_combinations(
     return hash_combinations
 
 
-def ares_plugin(plugin_input):
+def ares_plugin(plugin_input: MergeElement):
     """ARES plugin that merges multiple ARES outputs into a single output.
 
     Args:
-        plugin_input (dict): Dictionary containing all plugin configuration and data.
-            wf_element_name (str): Name of the workflow element.
+        plugin_input (MergeElement): Pydantic model containing all plugin configuration and data.
+            name (str): Name of the workflow element.
             parameter_hash_list (list[list[str]]): List of parameter hash combinations for plugin input.
             data_hash_list (list[list[str]]): List of data hash combinations for plugin input.
             ...: Other fields from WorkflowElement as needed.
@@ -125,7 +126,7 @@ def ares_plugin(plugin_input):
         AresDataInterface.create(
             data=merge_data,
             dependencies=data_dependency_list,
-            source_name=plugin_input.wf_element_name,
+            source_name=plugin_input.name,
             stepsize=plugin_input.stepsize,
             label_filter=plugin_input.label_filter_data,
             vstack_pattern=plugin_input.vstack_pattern_data,

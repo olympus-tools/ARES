@@ -51,6 +51,7 @@ from typing_extensions import Literal
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
+    name: str | None = None
     element_workflow: list[str] = []
     hash_list: dict[str, list[str]] = {}
 
@@ -247,6 +248,19 @@ WorkflowElement = Annotated[
 class WorkflowModel(RootModel):
     root: dict[str, WorkflowElement]
 
+    @model_validator(mode="after")
+    def _inject_element_names(self):
+        """Inject the workflow key name into each element's 'name' field."""
+        for key, element in self.root.items():
+            element.name = key
+        return self
+
+    def values(self):
+        return self.root.values()
+
+    def keys(self):
+        return self.root.keys()
+
     def __getitem__(self, key: str) -> WorkflowElement:
         return self.root[key]
 
@@ -255,21 +269,6 @@ class WorkflowModel(RootModel):
 
     def __delitem__(self, key: str) -> None:
         del self.root[key]
-
-    def __iter__(self):
-        return iter(self.root)
-
-    def __len__(self) -> int:
-        return len(self.root)
-
-    def items(self):
-        return self.root.items()
-
-    def values(self):
-        return self.root.values()
-
-    def keys(self):
-        return self.root.keys()
 
     def get(self, key: str, default: Any = None):
         """Get an item from the workflow.
@@ -282,7 +281,3 @@ class WorkflowModel(RootModel):
             WorkflowElement | Any: The found element or the default value.
         """
         return self.root.get(key, default)
-
-    def model_dump_json(self, **kwargs) -> str:
-        """Dump workflow JSON as string."""
-        return super().model_dump_json(**kwargs)
