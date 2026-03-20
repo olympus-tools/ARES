@@ -107,16 +107,20 @@ class DataDictionaryModel(BaseModel):
     """Data Dictionary Model with separate signals and parameters sections.
 
     Args:
-        signals (dict[str, SignalElement]): Dictionary of signal definitions (in, inout, out)
-        parameters (dict[str, ParameterModel]): Dictionary of parameter definitions
+        signals (dict[str, SignalElement] | None): Dictionary of signal definitions (in, inout, out)
+        parameters (dict[str, ParameterModel] | None): Dictionary of parameter definitions
         execution_order (ExecutionOrder | None): Optional execution order containing initialization and cyclical function lists
 
     Returns:
         DataDictionaryModel: Validated data dictionary instance
     """
 
-    signals: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], SignalElement]
-    parameters: dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], ParameterModel]
+    signals: (
+        dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], SignalElement] | None
+    ) = None
+    parameters: (
+        dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], ParameterModel] | None
+    ) = None
     execution_order: ExecutionOrder | None = None
 
     class Config:

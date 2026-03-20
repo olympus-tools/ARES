@@ -35,6 +35,7 @@ limitations under the License:
 
 import ctypes
 import json
+from collections.abc import Mapping
 from itertools import chain
 from pathlib import Path
 from typing import Any, ClassVar, TypeVar
@@ -46,7 +47,11 @@ from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
-from ares.pydantic_models.datadictionary_model import DataDictionaryModel
+from ares.pydantic_models.datadictionary_model import (
+    DataDictionaryModel,
+    ParameterModel,
+    SignalElement,
+)
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -180,9 +185,8 @@ class SimUnit:
         """
         dll_interface: dict[str, Any] = {}
 
-        # iterate over both data and parameters
         for dd_element_name, dd_element_value in chain(
-            self._dd.signals.items(), self._dd.parameters.items()
+            (self._dd.signals or {}).items(), (self._dd.parameters or {}).items()
         ):
             try:
                 datatype = dd_element_value.datatype
@@ -305,12 +309,12 @@ class SimUnit:
 
         data_dict = self._list_to_dict(data if data else [])
         data_dict = self._input_typecast(
-            sim_input=data_dict, dd_element_dict=self._dd.signals
+            sim_input=data_dict, dd_element_dict=self._dd.signals or {}
         )
 
         parameter_dict = self._list_to_dict(parameters if parameters else [])
         parameter_dict = self._input_typecast(
-            sim_input=parameter_dict, dd_element_dict=self._dd.parameters
+            sim_input=parameter_dict, dd_element_dict=self._dd.parameters or {}
         )
 
         if data:
@@ -331,7 +335,7 @@ class SimUnit:
         self._write_parameters_to_dll(parameters=parameter_dict)
 
         output_signals = [
-            k for k, v in self._dd.signals.items() if v.type in ["out", "inout"]
+            k for k, v in (self._dd.signals or {}).items() if v.type in ["out", "inout"]
         ]
         for signal in output_signals:
             size = self._dd.signals[signal].size
@@ -437,7 +441,7 @@ class SimUnit:
             if data_dict
             else np.arange(time_steps, dtype=np.float64)
         )
-        for dd_element_name, dd_element_value in self._dd.signals.items():
+        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
             try:
                 mapped = False
 
@@ -612,7 +616,7 @@ class SimUnit:
             data (dict[str, AresSignal]): Dictionary with signal names as keys and AresSignal objects as values.
             time_step_idx (int): The index of the current time step.
         """
-        for dd_element_name, dd_element_value in self._dd.signals.items():
+        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
             try:
                 if dd_element_value.type not in ["in", "inout"]:
                     continue
@@ -620,7 +624,11 @@ class SimUnit:
                 if dd_element_name in data:
                     input_value = data[dd_element_name].value[time_step_idx]
                     size = dd_element_value.size
-                    self._write_value_to_dll(dd_element_name, input_value, size)
+                    self._write_value_to_dll(
+                        dd_element_name=dd_element_name,
+                        input_value=input_value,
+                        size=size,
+                    )
 
             except Exception as e:
                 logger.warning(
@@ -636,12 +644,16 @@ class SimUnit:
         Args:
             parameters (dict[str, AresParameter]): Dictionary with parameter names as keys and AresParameter objects as values.
         """
-        for dd_element_name, dd_element_value in self._dd.parameters.items():
+        for dd_element_name, dd_element_value in (self._dd.parameters or {}).items():
             try:
                 if dd_element_name in parameters:
                     input_value = parameters[dd_element_name].value
                     size = dd_element_value.size
-                    self._write_value_to_dll(dd_element_name, input_value, size)
+                    self._write_value_to_dll(
+                        dd_element_name=dd_element_name,
+                        input_value=input_value,
+                        size=size,
+                    )
 
             except Exception as e:
                 logger.warning(
@@ -650,7 +662,9 @@ class SimUnit:
 
     @typechecked
     def _input_typecast(
-        self, sim_input: dict[str, AresBaseType], dd_element_dict
+        self,
+        sim_input: dict[str, AresBaseType],
+        dd_element_dict: Mapping[str, SignalElement | ParameterModel],
     ) -> dict[str, AresBaseType]:
         """
         Typecasts the values of a dictionary of AresParameter or AresSignal objects to the numpy dtypes
@@ -686,7 +700,7 @@ class SimUnit:
                 values read from the C library for the current time step. Returns `None` if an error occurs.
         """
         step_result: dict[str, Any] = {}
-        for dd_element_name, dd_element_value in self._dd.signals.items():
+        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
             try:
                 if dd_element_value.type not in ["out", "inout"]:
                     continue
@@ -734,7 +748,7 @@ class SimUnit:
         """
         signal_keys = []
 
-        for dd_element_name, dd_element_value in self._dd.signals.items():
+        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
             if dd_element_value.type in ["in", "inout"]:
                 if dd_element_name not in signal_keys:
                     signal_keys.append(dd_element_name)
@@ -759,7 +773,7 @@ class SimUnit:
         """
         parameter_keys = []
 
-        for parameter_name in self._dd.parameters.keys():
+        for parameter_name in (self._dd.parameters or {}).keys():
             if parameter_name not in parameter_keys:
                 parameter_keys.append(parameter_name)
 
