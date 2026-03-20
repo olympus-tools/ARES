@@ -227,6 +227,10 @@ class MF4Handler(MDF, AresDataInterface):
         with the most samples when multiple occurrences exist. Missing signals are
         skipped with a warning instead of causing errors.
 
+        info:
+        Per default asammdf's select() with raw=True is used to get the original timestamps, values.
+        More information can be found here: https://asammdf.readthedocs.io/en/stable/api.html
+
         Args:
             label_filter (list[str]): List of signal names to retrieve from the mf4 file.
             **kwargs (Any): Additional arguments passed to asammdf's select() method.
@@ -237,6 +241,9 @@ class MF4Handler(MDF, AresDataInterface):
         """
 
         found_signals: list[Signal] = []
+        kwargs.setdefault(
+            "raw", True
+        )  # ensure raw=True is set for select() to get original timestamps,values
 
         for channel_name in label_filter:
             occurence = self.whereis(channel_name)
