@@ -449,7 +449,7 @@ class AresDataInterface(ABC):
                     if pattern.groups == 2:
                         x_axis_idx = (
                             vstack_element.x_axis
-                            if isinstance(vstack_element.x_axis, int)
+                            if vstack_element.x_axis is not None
                             else 2
                         )
                         number_columns = len(pattern_matches)
@@ -495,7 +495,7 @@ class AresDataInterface(ABC):
                 elif pattern.groups == 3:
                     x_axis_idx = (
                         vstack_element.x_axis
-                        if isinstance(vstack_element.x_axis, int)
+                        if vstack_element.x_axis is not None
                         else 2
                     )
                     y_axis_idx = (
