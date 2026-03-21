@@ -243,7 +243,7 @@ class MF4Handler(MDF, AresDataInterface):
         found_signals: list[Signal] = []
         kwargs.setdefault(
             "raw", True
-        )  # ensure raw=True is set for select() to get original timestamps,values
+        ) 
 
         for channel_name in label_filter:
             occurence = self.whereis(channel_name)
