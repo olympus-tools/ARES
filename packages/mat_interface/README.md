@@ -1,7 +1,8 @@
 
 # mat_interface
 
-This package provides a standalone interface for reading and writing MATLAB MAT-files of version v7.3 and v7.0 or lower. 
+This package provides a standalone interface for reading and writing MATLAB MAT-files. It supports reading version v7.3 (HDF5) via `h5py` and older versions (v7.0 and lower) via `scipy.io.loadmat`. The `get` method intelligently determines the MAT-file version and uses the appropriate backend for reading.
+The default `write` function specifically targets v7.3 files. 
 It is designed for easy usage with minimal dependencies.
 
 ## Usage
@@ -30,19 +31,19 @@ output_file = Path('output.mat')
 MatInterface.write(output_path=output_file, signals=signals_to_write)
 
 # Example: Reading a MAT file
-signals_read = MatInterface.get_signals(file_path=output_file)
+signals_read = MatInterface.get(file_path=output_file)
 print(signals_read)
 
 # Example: Reading specific signals from a struct
-signals_from_struct = MatInterface.get_signals(file_path=output_file, struct_name=['my_struct'])
+signals_from_struct = MatInterface.get(file_path=output_file, struct_name=['my_struct'])
 
 # Example: Reading signals with a label filter
-signal_1_data = MatInterface.get_signals(file_path=output_file, label_filter=['signal1'])
+signal_1_data = MatInterface.get(file_path=output_file, label_filter=['signal1'])
 ```
 
 ## Supported Data Layouts
 
-The `MatInterface` supports two primary layouts when reading MAT 7.3 files.
+The `MatInterface` supports two primary layouts when reading MAT files.
 
 ### 1. Timeseries Struct Layout (Default for `write`)
 Each signal is encapsulated in its own group containing its specific time vector and data.
@@ -111,12 +112,11 @@ Additional the group carries `MATLAB_class = "timeseries"` and `MATLAB_fields` a
         *   `'value'` (np.ndarray): A 1-D, 2-D, or 3-D NumPy array representing the signal's values. The dtype will be mapped to a corresponding MATLAB numerical type.
 *   **Note:** This method adds MATLAB-specific headers and attributes for compatibility. MATLAB's `load()` will recognize the structure, but true MATLAB `timeseries` objects require MATLAB's MCOS serialization, which cannot be produced from Python.
 
-### `MatInterface.get_signals(file_path: Path, label_filter: list[str] | None = None, struct_name: list[str] | None = None) -> list[dict[str, str | np.typing.NDArray[np.generic]]]`
+### `MatInterface.get(file_path: Path, label_filter: list[str] | None = None, struct_name: list[str] | None = None) -> list[dict[str, str | np.typing.NDArray[np.generic]]]`
 
-*   **Description:** Reads signals from a MAT 7.3 file. It supports 2 different data layouts:
+*   **Description:** Reads signals from a MAT 7.3 or lower file. It intelligently determines the MAT-file version and uses either `h5py` for v7.3 (HDF5) files or `scipy.io.loadmat` for older versions. It supports 2 different data layouts:
     *   **Timeseries struct layout:** Each signal is a group containing 'Time' and 'Data' sub-datasets.
     *   **Flat signal arrays:** Signals are top-level datasets, with timestamps assumed to be in a separate dataset named 'timestamps' or 'time'.
-    
     It can optionally filter signals by `label_filter` or by reading from specific `struct_name` groups within the MAT file.
 *   **Parameters:**
     *   `file_path` (Path): The path to the MAT file to read.

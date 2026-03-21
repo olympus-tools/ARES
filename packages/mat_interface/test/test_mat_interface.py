@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 import struct
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -163,3 +164,80 @@ def test_unsupported_dimensions(tmp_path):
     ]
     with pytest.raises(ValueError, match="does not support more than 3 dimensions"):
         MatInterface._write73(test_file, signals)
+
+
+def test_round_trip_v7(tmp_path):
+    """Test writing and reading back 1D signals in v7 format."""
+    test_file = tmp_path / "test_v7.mat"
+    signals = [
+        {
+            "label": "sig_float",
+            "timestamps": np.linspace(0, 5, 10),
+            "value": np.cos(np.linspace(0, 5, 10)),
+        },
+        {
+            "label": "sig_bool",
+            "timestamps": np.linspace(0, 1, 2),
+            "value": np.array([True, False], dtype=bool),
+        },
+    ]
+
+    MatInterface.write(test_file, signals, format="v7")
+    read_signals = MatInterface.get(test_file)
+    assert len(read_signals) == 2
+
+    # Check sig_float
+    sig_float = next(s for s in read_signals if s["label"] == "sig_float")
+    np.testing.assert_array_almost_equal(
+        sig_float["timestamps"], signals[0]["timestamps"]
+    )
+    np.testing.assert_array_almost_equal(sig_float["value"], signals[0]["value"])
+
+    # Check sig_bool
+    sig_bool = next(s for s in read_signals if s["label"] == "sig_bool")
+    np.testing.assert_array_almost_equal(
+        sig_bool["timestamps"], signals[1]["timestamps"]
+    )
+    np.testing.assert_array_equal(sig_bool["value"], signals[1]["value"])
+
+
+def test_read_v7_flat_signals_example():
+    """Test reading flat signals from an existing v7 MAT file."""
+    file_path = Path("examples/data/mat_v7_flat_signals.mat")
+    # Use label_filter to get specific signals we know exist
+    signals = MatInterface.get(file_path, label_filter=["sig_a_f32", "sig_b_f32"])
+
+    assert len(signals) == 2
+
+    sig_a = next(s for s in signals if s["label"] == "sig_a_f32")
+    sig_b = next(s for s in signals if s["label"] == "sig_b_f32")
+
+    assert sig_a["value"].shape == (11,)
+    assert sig_a["value"].dtype == np.float32
+    assert sig_a["timestamps"].shape == (11,)
+
+    assert sig_b["value"].shape == (11, 3)
+    assert sig_b["value"].dtype == np.float32
+    assert sig_b["timestamps"].shape == (11,)
+
+
+def test_read_v7_timeseries_example():
+    """Test reading timeseries structs from an existing v7 MAT file."""
+    file_path = Path("examples/data/mat_v7_flat_timeseries.mat")
+    # Use label_filter to get specific signals we know exist
+    signals = MatInterface.get(file_path, label_filter=["ts_sig_a_f32", "ts_sig_b_f32"])
+
+    assert len(signals) == 2
+
+    sig_a = next(s for s in signals if s["label"] == "ts_sig_a_f32")
+    sig_b = next(s for s in signals if s["label"] == "ts_sig_b_f32")
+
+    assert sig_a["label"] == "ts_sig_a_f32"
+    assert sig_a["timestamps"].shape == (11,)
+    assert sig_a["value"].shape == (11,)
+    assert sig_a["value"].dtype == np.float32
+
+    assert sig_b["label"] == "ts_sig_b_f32"
+    assert sig_b["timestamps"].shape == (11,)
+    assert sig_b["value"].shape == (11, 3)
+    assert sig_b["value"].dtype == np.float32

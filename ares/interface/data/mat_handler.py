@@ -36,10 +36,11 @@ limitations under the License:
 from pathlib import Path
 from typing import override
 
-from mat_interface.mat_interface import MatInterface
+from mat_interface.mat_interface import MatInterface, MatSignal
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
+from ares.pydantic_models.workflow_model import VStackPatternElement
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -56,7 +57,7 @@ class MATHandler(AresDataInterface):
 
     To handle both versions the packages:
     - h5py ( version 7.3 )
-    - scipy ( version 7/6/4 )
+    - scipy ( version 7/6/... )
     are used.
 
     note: for version 7.3 based on h5py and own ares-package MAT73Interface was implemented.
@@ -66,7 +67,9 @@ class MATHandler(AresDataInterface):
         self,
         file_path: Path | None = None,
         data: list[AresSignal] | None = None,
-        vstack_pattern: list[str] | None = None,
+        vstack_pattern: list[VStackPatternElement] | None = None,
+        stepsize: int | None = None,
+        label_filter: list[str] | None = None,
         **kwargs,
     ):
         """Initialize MATHandler and load available signals.
@@ -86,6 +89,8 @@ class MATHandler(AresDataInterface):
             file_path (Path | None): Path to the mf4 file to load or write.
             data (list[AresSignal] | None): Optional list of AresSignal objects to initialize with
             vstack_pattern (list[str] | None): Pattern (regex) used to stack AresSignal's
+            stepsize (int | None): Optional step size for resampling signals when reading.
+            label_filter (list[str] | None): Optional list of signal names or patterns to filter
             **kwargs (Any): Additional arguments passed.
         """
         AresDataInterface.__init__(
@@ -93,8 +98,10 @@ class MATHandler(AresDataInterface):
             file_path=file_path,
             dependencies=kwargs.pop("dependencies", None),
             vstack_pattern=vstack_pattern,
+            stepsize=stepsize,
+            label_filter=label_filter,
         )
-        self.data: list[AresSignal] = list()
+        self.data: list[AresSignal] = []
         self._available_signals: list[str] = []
 
         if file_path is None:
@@ -112,13 +119,13 @@ class MATHandler(AresDataInterface):
     )
     @typechecked
     def _save(self, output_path: Path, **kwargs) -> None:
-        """Save mat file. Default is version 7.3.
+        """Save mat file. Default from MatInterface is version 7.3.
 
         Args:
             output_path (str): Absolute path where the mat file should be written.
             **kwargs (Any): Additional arguments passed to MatInterface.write().
         """
-        signals = [
+        signals: list[MatSignal] = [
             {
                 "label": signal.label,
                 "timestamps": signal.timestamps,
@@ -140,7 +147,7 @@ class MATHandler(AresDataInterface):
         self,
         label_filter: list[str] | None = None,
         stepsize: int | None = None,
-        vstack_pattern: list[str] | None = None,
+        vstack_pattern: list[VStackPatternElement] | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
         """Get signals from mat file with optional resampling.
@@ -158,33 +165,55 @@ class MATHandler(AresDataInterface):
             list[AresSignal] | None: List of AresSignal objects, optionally resampled to common time vector.
                 Returns None if no signals were found.
         """
-        mat_data = []
         vstack_pattern = (
             self._vstack_pattern
             if vstack_pattern is None
             else (self._vstack_pattern or []) + vstack_pattern
         )
 
-        signals_data = MatInterface.get(
-            file_path=Path(self.file_path),
-            label_filter=label_filter,
-            **kwargs,
+        label_filter = (
+            self._label_filter
+            if label_filter is None
+            else (self._label_filter or []) + label_filter
         )
 
-        # extend available signals variable
-        self._available_signals.extend(
-            sig["label"]
-            for sig in signals_data
-            if sig["label"] not in self._available_signals
-        )
+        stepsize = self._stepsize if stepsize is None else stepsize
 
-        # transform standarized matinterface to AresSignal
-        for sig in signals_data:
-            label = sig["label"]
-            value = sig["value"]
-            timestamps = sig["timestamps"]
+        # check for already loaded signals - otherwise try to load
+        missing_signals: list[str] = [
+            signal_label
+            for signal_label in (label_filter or [])
+            if signal_label not in self._available_signals
+        ]
 
-            mat_data.append(AresSignal(label=label, value=value, timestamps=timestamps))
+        # extend available signals
+        if missing_signals or label_filter is None:
+            new_signals: list[MatSignal] = MatInterface.get(
+                file_path=Path(self.file_path),
+                label_filter=missing_signals if label_filter is not None else None,
+                **kwargs,
+            )
+
+            self._available_signals.extend(
+                sig["label"]
+                for sig in new_signals
+                if sig["label"] not in self._available_signals
+            )
+
+            # transform standarized matinterface to AresSignal
+            for sig in new_signals:
+                label = sig["label"]
+                value = sig["value"]
+                timestamps = sig["timestamps"]
+
+                self.data.append(
+                    AresSignal(label=label, value=value, timestamps=timestamps)
+                )
+        mat_data: list[AresSignal] = [
+            signal
+            for signal in self.data
+            if (not label_filter or signal.label in label_filter)
+        ]
 
         if not mat_data:
             return None
@@ -214,5 +243,13 @@ class MATHandler(AresDataInterface):
             data (list[AresSignal]): List of AresSignal objects to append to mat file.
             **kwargs (Any): Additional arguments:
         """
-        self.data.extend(data)
-        [self._available_signals.append(signal.label) for signal in data]
+        # TODO: write available_signals as set
+        # Assuming self._available_signals is a set
+        # for signal in data:
+        #     if signal.label not in self._available_signals:
+        #         self.data.append(signal)
+        #         self._available_signals.add(signal.label)
+        for signal in data:
+            if signal.label not in self._available_signals:
+                self.data.append(signal)
+                self._available_signals.append(signal.label)

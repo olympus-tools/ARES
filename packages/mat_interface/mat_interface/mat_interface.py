@@ -37,11 +37,19 @@ import datetime
 import struct
 import warnings
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Iterable, Literal, TypedDict
 
 import h5py
 import numpy as np
 import scipy.io as sio
+
+DEFAULT_TIMESTAMP = "timestamps"  # default name of "timestamps" for flat signals
+
+
+class MatSignal(TypedDict):
+    label: str
+    timestamps: np.ndarray
+    value: np.ndarray
 
 
 class MatInterface:
@@ -60,7 +68,7 @@ class MatInterface:
     @staticmethod
     def write(
         output_path: Path,
-        signals: list[dict[str, str | np.typing.NDArray[np.generic]]],
+        signals: list[MatSignal],
         format: Literal["v7.3", "v7"] = "v7.3",
         **kwargs,
     ) -> None:
@@ -84,7 +92,7 @@ class MatInterface:
         label_filter: list[str] | None = None,
         struct_list: list[str] | None = None,
         **kwargs,
-    ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+    ) -> list[MatSignal]:
         """Read signals from a MAT 7.3 (HDF5) or lower.
 
         Supports two modes (defined via struct_list):
@@ -135,9 +143,7 @@ class MatInterface:
 
     # MAT 7.0 functions (scipy wrapper)
     @staticmethod
-    def _write7(
-        output_path: Path, signals: list[dict[str, str | np.typing.NDArray[np.generic]]]
-    ) -> None:
+    def _write7(output_path: Path, signals: list[MatSignal]) -> None:
         """Write signals to a MAT 7.0 file via scipy.
 
         Args:
@@ -169,7 +175,7 @@ class MatInterface:
         label_filter: list[str] | None = None,
         struct_list: list[str] | None = None,
         **kwargs,
-    ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+    ) -> list[MatSignal]:
         """Read signals from a MAT 7.0 or lower file via scipy.io package.
 
         Args:
@@ -186,15 +192,16 @@ class MatInterface:
             "__version__",
             "__globals__",
         ]  # define obsolete mat fields thar are always skipped during reading and define default timestamp
-        _TIMESTAMP = "timestamps"  # default name of "timestamps" for flat signals
+        _TIMESTAMP = DEFAULT_TIMESTAMP
+        mat_data: list[MatSignal] = []
 
         # helper functions for scipy (transform to standard format)
         def _get_timeseries(
             tmp_data: dict[str, Any], label_filter: list[str]
-        ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+        ) -> list[MatSignal]:
             """Read timeseries struct from mat file."""
-            mat_data: list[dict[str, str | np.typing.NDArray[np.generic]]] = list()
-            mat_data.extend(
+            nonlocal mat_data
+            signals_to_add: Iterable[MatSignal] = [
                 {
                     "label": signal_name,
                     "timestamps": signal_dict.get("Time"),
@@ -202,26 +209,34 @@ class MatInterface:
                 }
                 for signal_name, signal_dict in tmp_data.items()
                 if signal_name not in _OBSOLETE_MATFIELDS  # skip mat-fields
-                and signal_name not in label_filter  # skip signals not in label-filter
+                and (not label_filter or signal_name in label_filter)  # label-filter
                 and type(signal_dict) is dict  # check 'timeseries'-struct
                 and "Time" in signal_dict
                 and "Data" in signal_dict
-            )
+            ]
+            mat_data.extend(signals_to_add)
             return mat_data
 
         def _get_signals(
             tmp_data: dict[str, Any],
             timestamps: np.ndarray,
             label_filter: list[str],
-        ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+        ) -> list[MatSignal]:
             """Read flat signals from mat file."""
-            mat_data: list[dict[str, str | np.typing.NDArray[np.generic]]] = list()
-            mat_data.extend(
-                {"label": signal_name, "timestamps": timestamps, "value": signal_value}
+            nonlocal mat_data
+            signals_to_add: Iterable[MatSignal] = [
+                {
+                    "label": signal_name,
+                    "timestamps": timestamps,
+                    "value": signal_value,
+                }
                 for signal_name, signal_value in tmp_data.items()
                 if signal_name not in _OBSOLETE_MATFIELDS  # skip mat-fields
-                and signal_name not in label_filter  # skip signals not in label-filter
-            )
+                and signal_name != _TIMESTAMP  # skip timestamp itself
+                and (not label_filter or signal_name in label_filter)  # label-filter
+                and isinstance(signal_value, np.ndarray)  # Ensure it's a numpy array
+            ]
+            mat_data.extend(signals_to_add)
             return mat_data
 
         # define standard flags to guarantee readability
@@ -247,7 +262,7 @@ class MatInterface:
     @staticmethod
     def _write73(
         output_path: Path,
-        signals: list[dict[str, str | np.typing.NDArray[np.generic]]],
+        signals: list[MatSignal],
     ) -> None:
         """Write signals to a MAT 7.3 file (HDF5).
         Each signal is stored as a top-level HDF5 group containing three members:
@@ -313,13 +328,18 @@ class MatInterface:
                 group = h5file.create_group(label)
                 group.attrs["MATLAB_class"] = np.bytes_(b"timeseries")
                 _write_mat_fields(group, "Time", "Data", "Events")
-                group.create_group("Events")
+                event_group = group.create_group("Events")
+                event_group.attrs["MATLAB_class"] = np.bytes_(b"struct")
+                _write_mat_fields(event_group)
 
                 # write timestamp
                 timestamps_single = timestamps.astype(np.float32)
                 ti = group.create_dataset("Time", data=timestamps_single.T)
                 _write_ds_matlab_class(ti.id, b"single")
 
+                # bool/logical: MATLAB requires uint8 storage
+                if np.issubdtype(dtype, np.bool_):
+                    value = value.astype(np.uint8)
                 # write signal data
                 if value.ndim <= 2:
                     ds = group.create_dataset("Data", data=value.T)
@@ -330,6 +350,10 @@ class MatInterface:
                         "MatInterface does not support more than 3 dimensions."
                     )
                 _write_ds_matlab_class(ds.id, MatInterface._get_matlab_class(dtype))
+
+                # bool/logical: MATLAB requires MATLAB_int_decode=1
+                if np.issubdtype(dtype, np.bool_):
+                    ds.attrs["MATLAB_int_decode"] = np.uint8(1)
 
         # add MATLAB specific 128-byte header
         date_str = datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
@@ -361,7 +385,7 @@ class MatInterface:
         file_path: Path,
         label_filter: list[str] | None = None,
         struct_list: list[str] | None = None,
-    ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+    ) -> list[MatSignal]:
         """Read signals from a MAT 7.3 file.
 
         Args:
@@ -378,7 +402,7 @@ class MatInterface:
             "Data",
             "Time",
         }  # Events can be ignored, only important for writing
-        _TIMESTAMP_NAMES = {"timestamps"}
+        _TIMESTAMP_NAMES = {DEFAULT_TIMESTAMP}
 
         # helper functions for reading
         def _is_timeseries_group(obj) -> bool:
@@ -408,7 +432,7 @@ class MatInterface:
             if label_filter is not None:
                 candidate_keys = [k for k in candidate_keys if k in label_filter]
 
-            # Lazily resolve the shared flat timestamp vector within this group
+            # resolve the shared flat timestamp vector
             _ts: np.ndarray | None = None
             _ts_resolved = False
 
