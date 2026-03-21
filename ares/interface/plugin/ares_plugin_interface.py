@@ -36,9 +36,12 @@ limitations under the License:
 import importlib.util
 import os
 import sys
-from pathlib import Path
-from typing import Any
 
+from ares.pydantic_models.workflow_model import (
+    MergeElement,
+    PluginElement,
+    SimUnitElement,
+)
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -47,23 +50,21 @@ logger = create_logger(__name__)
 
 @typechecked
 def AresPluginInterface(
-    plugin_input: dict[str, Any],
+    plugin_input: MergeElement | PluginElement | SimUnitElement,
 ):
     """Execute plugin based on wf_element_value configuration using importlib.
 
     Args:
-        plugin_input (dict[str, Any]): Dictionary containing plugin configuration
+        plugin_input (MergeElement | PluginElement | SimunitElement ): pydantic model containing plugin configuration
     """
     try:
-        plugin_path = plugin_input["plugin_path"]
+        plugin_path = plugin_input.plugin_path
         module_name = f"ares_plugin_{plugin_path.stem}_{os.getpid()}"
 
         # Create module specification
         spec = importlib.util.spec_from_file_location(module_name, plugin_path)
         if spec is None or spec.loader is None:
-            logger.error(
-                f"{plugin_input.get('wf_element_name')}: Could not load plugin {plugin_path}"
-            )
+            logger.error(f"{plugin_input.name}: Could not load plugin {plugin_path}")
             return
 
         # Create and configure module
@@ -82,8 +83,8 @@ def AresPluginInterface(
             spec.loader.exec_module(module)
 
             # Call plugin's main function with explicit arguments
-            if plugin_input["plugin_name"]:
-                plugin_name = plugin_input["plugin_name"]
+            if plugin_input.plugin_name:
+                plugin_name = plugin_input.plugin_name
             else:
                 plugin_name = "ares_plugin"
 
@@ -91,12 +92,12 @@ def AresPluginInterface(
                 getattr(module, plugin_name)(plugin_input=plugin_input)
             else:
                 logger.error(
-                    f"{plugin_input.get('wf_element_name')}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
+                    f"{plugin_input.name}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
                 )
                 return
 
             logger.debug(
-                f"{plugin_input.get('wf_element_name')}: Plugin {plugin_path.name} executed successfully"
+                f"{plugin_input.name}: Plugin {plugin_path.name} executed successfully"
             )
 
         finally:
@@ -108,6 +109,6 @@ def AresPluginInterface(
 
     except Exception as e:
         logger.error(
-            f"{plugin_input.get('wf_element_name')}: Plugin execution failed for {plugin_input['plugin_path'].name}: {e}"
+            f"{plugin_input.name}: Plugin execution failed for {plugin_input.plugin_path.name}: {e}"
         )
         return

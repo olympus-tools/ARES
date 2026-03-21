@@ -33,17 +33,16 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-from typing import Any
-
 import numpy as np
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.pydantic_models.workflow_model import PluginElement
 
 
-def plugin_example_1(plugin_input: dict[str, Any]):
+def plugin_example_1(plugin_input: PluginElement):
     """ARES plugin function demonstrating combinatorial parameter and data interface creation.
 
     This example shows how to create AresDataInterface and AresParamInterface objects
@@ -54,18 +53,16 @@ def plugin_example_1(plugin_input: dict[str, Any]):
     allowing the workflow to track which outputs were generated from which input combinations.
 
     Args:
-        plugin_input (dict[str, Any]): Dictionary containing all plugin configuration and data:
-            - wf_element_name: str - Name of the workflow element
+        plugin_input (PluginElement): Dictionary/pydantic-model containing all plugin configuration and data:
+            - name: str - Name of the workflow element
             - parameter: list[list[AresParamInterface]] - Nested list of parameter interfaces
-            - input: list[list[AresDataInterface]] - Nested list of data interfaces
+            - data: list[list[AresDataInterface]] - Nested list of data interfaces
             - plugin_path: str - Path to this plugin file
             - type: str - Element type ("plugin" or "sim_unit")
             - element_workflow: list[str] - Workflow element sequence
     """
-    element_parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
-        "parameter", []
-    )
-    element_data_lists: list[list[AresDataInterface]] = plugin_input.get("input", [])
+    element_parameter_lists: list[list[AresParamInterface]] = plugin_input.parameter_obj
+    element_data_lists: list[list[AresDataInterface]] = plugin_input.data_obj
 
     new_params = [
         AresParameter(
@@ -103,5 +100,5 @@ def plugin_example_1(plugin_input: dict[str, Any]):
                     AresDataInterface.create(
                         data=combined_signals,
                         dependencies=dependencies,
-                        source_name=plugin_input.get("wf_element_name"),
+                        source_name=plugin_input.name,
                     )

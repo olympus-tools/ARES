@@ -34,18 +34,67 @@ limitations under the License:
 """
 
 import os
+import re
 from pathlib import Path
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Field, RootModel, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    model_validator,
+)
 from typing_extensions import Literal
 
 
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
+    name: str | None = None
     element_workflow: list[str] = []
     hash_list: dict[str, list[str]] = {}
+
+
+class VStackPatternElement(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    pattern: str
+    signal_name: str | int | None = None
+    x_axis: int | None = None
+    y_axis: int | None = None
+
+    @model_validator(mode="after")
+    def _validate_model(self):
+        """Validates that required fields are present based on the given pattern (number of groups)."""
+        pattern = re.compile(self.pattern)
+
+        if pattern.groups >= 3:
+            if (
+                isinstance(self.signal_name, str)
+                and any([self.x_axis, self.y_axis])
+                and not all([self.x_axis, self.y_axis])
+            ):
+                raise ValueError(
+                    "When 'signal_name' is a string, either both 'x_axis' and 'y_axis' must be provided or neither should be provided."
+                )
+            elif any([self.signal_name, self.x_axis, self.y_axis]) and not all(
+                [self.signal_name, self.x_axis, self.y_axis]
+            ):
+                raise ValueError(
+                    "At least one field of 'signal_name','x_axis','y_axis' was provided. Then for deterministic behaviour all others must be provided."
+                )
+        elif pattern.groups == 2:
+            if self.y_axis:
+                raise ValueError(
+                    "Only 2 groups are given, field 'y_axis' is only valid with 3 groups."
+                )
+            elif self.x_axis and not self.signal_name:
+                raise ValueError(
+                    "The field of 'x_axis' was provided. Then for deterministic behaviour 'signal_name' must be provided."
+                )
+
+        return self
 
 
 class DataElement(BaseElement):
@@ -55,13 +104,13 @@ class DataElement(BaseElement):
     file_path: list[Path] | None = []
     data: list[str] | None = []
     label_filter: list[str] | None = None
-    vstack_pattern: list[str] | None = None
+    vstack_pattern: list[VStackPatternElement | str] | None = None
     output_format: Literal["mf4"] | None = None
     stepsize: int | None = None
 
     @model_validator(mode="after")
-    def validate_mode_requirements(self):
-        """Validates that required fields are present based on the mode."""
+    def _validate_model(self):
+        """Validates that required fields are present based on the mode and the given vstack pattern."""
         if self.mode == "read":
             if not self.file_path:
                 raise ValueError("Field 'file_path' is required for mode='read'.")
@@ -70,6 +119,15 @@ class DataElement(BaseElement):
                 raise ValueError("Field 'data' is required for mode='write'.")
             if not self.output_format:
                 raise ValueError("Field 'output_format' is required for mode='write'.")
+
+        if self.vstack_pattern is not None:
+            self.vstack_pattern = [
+                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                if isinstance(pattern, str)
+                else pattern
+                for pattern in self.vstack_pattern
+            ]
+
         return self
 
 
@@ -83,7 +141,7 @@ class ParameterElement(BaseElement):
     output_format: Literal["json", "dcm"] | None = None
 
     @model_validator(mode="after")
-    def validate_mode_requirements(self):
+    def _validate_model(self):
         """Validates that required fields are present based on the mode."""
         if self.mode == "read":
             if not self.file_path:
@@ -101,6 +159,10 @@ class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
     file_path: Path | None = None
     plugin_name: str | None = None
+    parameter_obj: list[Any] | None = None
+    data_obj: list[Any] | None = None
+    parameter_hash_lists: list[list[str]] = []
+    data_hash_lists: list[list[str]] = []
 
 
 class SimUnitElement(PluginElement):
@@ -121,7 +183,23 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
-    vstack_pattern: list[str] | None = None
+    vstack_pattern: list[VStackPatternElement | str] | None = None
+    parameter_obj: list[Any] | None = None
+    data_obj: list[Any] | None = None
+    parameter_hash_lists: list[list[str]] = []
+    data_hash_lists: list[list[str]] = []
+
+    @model_validator(mode="after")
+    def _validate_model(self):
+        if self.vstack_pattern is not None:
+            self.vstack_pattern = [
+                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                if isinstance(pattern, str)
+                else pattern
+                for pattern in self.vstack_pattern
+            ]
+
+        return self
 
 
 class MergeElement(PluginElement):
@@ -137,6 +215,28 @@ class MergeElement(PluginElement):
     )
     data: list[str] | None = []
     parameter: list[str] | None = []
+    label_filter_data: list[str] | None = None
+    label_filter_parameter: list[str] | None = None
+    vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
+    vstack_pattern_parameter: list[VStackPatternElement] | list[str] | None = None
+    stepsize: int | None = None
+    parameter_obj: list[Any] | None = None
+    data_obj: list[Any] | None = None
+    parameter_hash_lists: list[list[str]] = []
+    data_hash_lists: list[list[str]] = []
+
+    @model_validator(mode="after")
+    def _validate_model(self):
+        if self.vstack_pattern_data is not None and isinstance(
+            self.vstack_pattern_data[0], str
+        ):
+            self.vstack_pattern_data = [
+                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                for pattern in self.vstack_pattern_data
+                if isinstance(pattern, str)
+            ]
+
+        return self
 
 
 WorkflowElement = Annotated[
@@ -149,6 +249,19 @@ WorkflowElement = Annotated[
 class WorkflowModel(RootModel):
     root: dict[str, WorkflowElement]
 
+    @model_validator(mode="after")
+    def _inject_element_names(self):
+        """Inject the workflow key name into each element's 'name' field."""
+        for key, element in self.root.items():
+            element.name = key
+        return self
+
+    def values(self):
+        return self.root.values()
+
+    def keys(self):
+        return self.root.keys()
+
     def __getitem__(self, key: str) -> WorkflowElement:
         return self.root[key]
 
@@ -157,21 +270,6 @@ class WorkflowModel(RootModel):
 
     def __delitem__(self, key: str) -> None:
         del self.root[key]
-
-    def __iter__(self):
-        return iter(self.root)
-
-    def __len__(self) -> int:
-        return len(self.root)
-
-    def items(self):
-        return self.root.items()
-
-    def values(self):
-        return self.root.values()
-
-    def keys(self):
-        return self.root.keys()
 
     def get(self, key: str, default: Any = None):
         """Get an item from the workflow.
@@ -184,7 +282,3 @@ class WorkflowModel(RootModel):
             WorkflowElement | Any: The found element or the default value.
         """
         return self.root.get(key, default)
-
-    def model_dump_json(self, **kwargs) -> str:
-        """Dump workflow JSON as string."""
-        return super().model_dump_json(**kwargs)

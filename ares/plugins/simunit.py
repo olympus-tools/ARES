@@ -52,6 +52,7 @@ from ares.pydantic_models.datadictionary_model import (
     ParameterModel,
     SignalElement,
 )
+from ares.pydantic_models.workflow_model import SimUnitElement
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -780,12 +781,12 @@ class SimUnit:
         return parameter_keys
 
 
-def ares_plugin(plugin_input):
+def ares_plugin(plugin_input: SimUnitElement):
     """ARES plugin entrypoint for sim_unit elements.
 
     Args:
-        plugin_input (dict): Dictionary containing all plugin configuration and data.
-            wf_element_name (str): Name of the workflow element.
+        plugin_input (SimUnitElement): Pydantic model containing all plugin configuration and data.
+            name (str): Name of the workflow element.
             file_path (Path): Path to the shared library file (.so, .dll, .dylib).
             data_dictionary (Path): Path to the Data Dictionary JSON file.
             parameter_obj (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
@@ -796,10 +797,8 @@ def ares_plugin(plugin_input):
         None
     """
 
-    parameter_lists: list[list[AresParamInterface]] = plugin_input.get(
-        "parameter_obj", None
-    )
-    data_lists: list[list[AresDataInterface]] = plugin_input.get("data_obj", None)
+    parameter_lists: list[list[AresParamInterface]] = plugin_input.parameter_obj
+    data_lists: list[list[AresDataInterface]] = plugin_input.data_obj
 
     if not parameter_lists:
         parameter_lists = [[AresParamInterface.create()]]
@@ -807,8 +806,8 @@ def ares_plugin(plugin_input):
         data_lists = [[AresDataInterface.create()]]
 
     sim_unit = SimUnit(
-        file_path=plugin_input["file_path"],
-        dd_path=plugin_input["data_dictionary"],
+        file_path=plugin_input.file_path,
+        dd_path=plugin_input.data_dictionary,
     )
 
     label_filter_signal = sim_unit.data_keys()
@@ -822,9 +821,9 @@ def ares_plugin(plugin_input):
 
                     sim_result = sim_unit.run(
                         data=data_obj.get(
-                            stepsize=plugin_input["stepsize"],
+                            stepsize=plugin_input.stepsize,
                             label_filter=label_filter_signal,
-                            vstack_pattern=plugin_input.get("vstack_pattern"),
+                            vstack_pattern=plugin_input.vstack_pattern,
                         ),
                         parameters=parameter_obj.get(
                             label_filter=label_filter_parameter
@@ -835,5 +834,5 @@ def ares_plugin(plugin_input):
                         AresDataInterface.create(
                             data=sim_result,
                             dependencies=dependencies,
-                            source_name=plugin_input.get("wf_element_name"),
+                            source_name=plugin_input.name,
                         )

@@ -40,6 +40,11 @@ from ares.core.workflow import Workflow
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.interface.plugin.ares_plugin_interface import AresPluginInterface
+from ares.pydantic_models.workflow_model import (
+    MergeElement,
+    PluginElement,
+    SimUnitElement,
+)
 from ares.utils.decorators import error_msg
 from ares.utils.logger import create_logger
 
@@ -75,8 +80,8 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
     data_storage: dict[str, AresDataInterface] = AresDataInterface.cache
 
     # evaluation of all sinks, that were found in workflow json files
-    for wf_element_name, wf_element_value in ares_wf.workflow.items():
-        logger.info(f"Processing workflow element: {wf_element_name}")
+    for wf_element_value in ares_wf.workflow.values():
+        logger.info(f"Processing workflow element: {wf_element_value.name}")
 
         tmp_param_hash_list: list[list[str]] = []
         for parameter in getattr(wf_element_value, "parameter", []):
@@ -91,7 +96,6 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
         match wf_element_value.type:
             case "data":
                 AresDataInterface.wf_element_handler(
-                    wf_element_name=wf_element_name,
                     wf_element_value=wf_element_value,
                     input_hash_list=tmp_data_hash_list,
                     output_dir=output_dir,
@@ -99,42 +103,40 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
 
             case "parameter":
                 AresParamInterface.wf_element_handler(
-                    wf_element_name=wf_element_name,
                     wf_element_value=wf_element_value,
                     input_hash_list=tmp_param_hash_list,
                     output_dir=output_dir,
                 )
 
             case "plugin" | "sim_unit" | "merge":
-                plugin_input: dict[str, Any] = wf_element_value.model_dump()
-                plugin_input["wf_element_name"] = wf_element_name
+                plugin_input: SimUnitElement | PluginElement | MergeElement = (
+                    wf_element_value.model_copy()
+                )
 
                 if wf_element_value.type == "sim_unit":
-                    plugin_input["plugin_path"] = (
+                    plugin_input.plugin_path = (
                         Path(__file__).parent.parent / "plugins" / "simunit.py"
                     )
                 elif wf_element_value.type == "merge":
-                    plugin_input["plugin_path"] = (
+                    plugin_input.plugin_path = (
                         Path(__file__).parent.parent / "plugins" / "merge.py"
                     )
                 else:
-                    plugin_input["plugin_path"] = plugin_input["file_path"]
+                    plugin_input.plugin_path = plugin_input.file_path
 
                 # filtering relevant parameter for plugin element
-                plugin_input["parameter"] = wf_element_value.parameter
-                plugin_input["parameter_obj"] = [
+                plugin_input.parameter_obj = [
                     [param_storage[hash] for hash in hash_list if hash in param_storage]
                     for hash_list in tmp_param_hash_list
                 ]
-                plugin_input["parameter_hash_lists"] = tmp_param_hash_list
+                plugin_input.parameter_hash_lists = tmp_param_hash_list
 
                 # filtering relevant data for plugin element
-                plugin_input["data"] = wf_element_value.data
-                plugin_input["data_obj"] = [
+                plugin_input.data_obj = [
                     [data_storage[hash] for hash in hash_list if hash in data_storage]
                     for hash_list in tmp_data_hash_list
                 ]
-                plugin_input["data_hash_lists"] = tmp_data_hash_list
+                plugin_input.data_hash_lists = tmp_data_hash_list
 
                 AresPluginInterface(
                     plugin_input=plugin_input,

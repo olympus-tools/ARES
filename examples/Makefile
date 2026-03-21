@@ -191,5 +191,3 @@ simunit_vstack:
 		-wf workflow/sim_unit/simunit_vstack.wf.json \
 		--output output/ \
 		--log-level=10
-
-

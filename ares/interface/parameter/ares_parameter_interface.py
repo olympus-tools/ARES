@@ -117,6 +117,7 @@ class AresParamInterface(ABC):
         self,
         file_path: Path | None,
         dependencies: list[str] | None = None,
+        label_filter: list[str] | None = None,
     ):
         """Initialize base attributes for all parameter handlers.
 
@@ -125,12 +126,14 @@ class AresParamInterface(ABC):
         Args:
             file_path (Path | None): Path to the parameter file to load
             dependencies (list[str] | None): Optional list of parameter labels that this instance depends on
+            label_filter (list[str] | None): Optional list of parameter names or patterns to filter
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(
             self, "dependencies", dependencies if dependencies is not None else []
         )
+        object.__setattr__(self, "_label_filter", label_filter)
 
     @classmethod
     @typechecked
@@ -150,7 +153,6 @@ class AresParamInterface(ABC):
         exception_msg="Error while executing wf_element_handler in ares-parameter-interface.",
         log=logger,
         include_args=[
-            "wf_element_name",
             "wf_element_value",
             "input_hash_list",
             "output_dir",
@@ -159,7 +161,6 @@ class AresParamInterface(ABC):
     @typechecked
     def wf_element_handler(
         cls,
-        wf_element_name: str,
         wf_element_value: ParameterElement,
         input_hash_list: list[list[str]] | None = None,
         output_dir: Path | None = None,
@@ -170,7 +171,6 @@ class AresParamInterface(ABC):
         Decides between _load() and save() based on mode from ParameterElement.
 
         Args:
-            wf_element_name (str): Name of the element being processed
             wf_element_value (ParameterElement): ParameterElement containing mode, file_path, and output_format
             input_hash_list (list[list[str]] | None): Nested list of parameter hashes for writing operations
             output_dir (Path | None): Output directory path for writing operations
@@ -180,7 +180,11 @@ class AresParamInterface(ABC):
         match wf_element_value.mode:
             case "read":
                 for file_path in wf_element_value.file_path:
-                    cls.create(file_path=file_path, **kwargs)
+                    cls.create(
+                        file_path=file_path,
+                        label_filter=wf_element_value.label_filter,
+                        **kwargs,
+                    )
 
             case "write":
                 if not input_hash_list or not output_dir:
@@ -211,7 +215,7 @@ class AresParamInterface(ABC):
                                 output_hash=output_hash,
                                 output_dir=output_dir,
                                 output_format=wf_element_value.output_format,
-                                wf_element_name=wf_element_name,
+                                wf_element_name=wf_element_value.name,
                             )
 
                             target_instance._save(output_path=output_path, **kwargs)
