@@ -81,7 +81,7 @@
             "name": "ARES example data_vstack",
             "type": "debugpy",
             "request": "launch",
-            "python": "python",
+            "python": "${command:python.interpreterPath}",
             "module": "ares",
             "args": [
                 "pipeline",

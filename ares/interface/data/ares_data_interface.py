@@ -500,7 +500,7 @@ class AresDataInterface(ABC):
                     )
                     y_axis_idx = (
                         vstack_element.y_axis
-                        if isinstance(vstack_element.y_axis, int)
+                        if vstack_element.y_axis is not None
                         else 3
                     )
 
