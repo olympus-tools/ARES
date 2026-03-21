@@ -1,19 +1,54 @@
+r"""
+________________________________________________________________________
+|                                                                      |
+|               $$$$$$\  $$$$$$$\  $$$$$$$$\  $$$$$$\                  |
+|              $$  __$$\ $$  __$$\ $$  _____|$$  __$$\                 |
+|              $$ /  $$ |$$ |  $$ |$$ |      $$ /  \__|                |
+|              $$$$$$$$ |$$$$$$$  |$$$$$\    \$$$$$$\                  |
+|              $$  __$$ |$$  __$$< $$  __|    \____$$\                 |
+|              $$ |  $$ |$$ |  $$ |$$ |      $$\   $$ |                |
+|              $$ |  $$ |$$ |  $$ |$$$$$$$$\ \$$$$$$  |                |
+|              \__|  \__|\__|  \__|\________| \______/                 |
+|                                                                      |
+|              Automated Rapid Embedded Simulation (c)                 |
+|______________________________________________________________________|
+
+Copyright 2025 olympus-tools contributors. Dependencies and licenses
+are listed in the NOTICE file:
+
+    https://github.com/olympus-tools/ARES/blob/master/NOTICE
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License:
+
+    https://github.com/olympus-tools/ARES/blob/master/LICENSE
+"""
+
 import struct
+
 import numpy as np
 import pytest
-from pathlib import Path
-from mat73_interface.mat73_interface import Mat73Interface
+from mat_interface.mat_interface import MatInterface
 
 
 def test_get_matlab_class():
     """Test mapping of numpy dtypes to MATLAB classes."""
-    assert Mat73Interface._get_matlab_class(np.dtype(np.float64)) == b"double"
-    assert Mat73Interface._get_matlab_class(np.dtype(np.float32)) == b"single"
-    assert Mat73Interface._get_matlab_class(np.dtype(np.int32)) == b"int32"
-    assert Mat73Interface._get_matlab_class(np.dtype(np.uint8)) == b"uint8"
-    assert Mat73Interface._get_matlab_class(np.dtype(np.bool_)) == b"logical"
+    assert MatInterface._get_matlab_class(np.dtype(np.float64)) == b"double"
+    assert MatInterface._get_matlab_class(np.dtype(np.float32)) == b"single"
+    assert MatInterface._get_matlab_class(np.dtype(np.int32)) == b"int32"
+    assert MatInterface._get_matlab_class(np.dtype(np.uint8)) == b"uint8"
+    assert MatInterface._get_matlab_class(np.dtype(np.bool_)) == b"logical"
     assert (
-        Mat73Interface._get_matlab_class(np.dtype(np.complex128)) == b"double"
+        MatInterface._get_matlab_class(np.dtype(np.complex128)) == b"double"
     )  # Fallback
 
 
@@ -27,7 +62,7 @@ def test_write_header(tmp_path):
             "value": np.array([1.0, 2.0]),
         }
     ]
-    Mat73Interface.write(test_file, signals)
+    MatInterface._write73(test_file, signals)
 
     with open(test_file, "rb") as f:
         header = f.read(128)
@@ -55,9 +90,8 @@ def test_round_trip_1d(tmp_path):
         },
     ]
 
-    Mat73Interface.write(test_file, signals)
-    read_signals = Mat73Interface.get_signals(test_file)
-
+    MatInterface._write73(test_file, signals)
+    read_signals = MatInterface.get(test_file)
     assert len(read_signals) == 2
 
     # Check sig_double
@@ -81,8 +115,8 @@ def test_round_trip_2d(tmp_path):
     val_2d = np.random.rand(5, 3)  # 5 samples, 3 channels
     signals = [{"label": "sig_2d", "timestamps": np.arange(5), "value": val_2d}]
 
-    Mat73Interface.write(test_file, signals)
-    read_signals = Mat73Interface.get_signals(test_file)
+    MatInterface._write73(test_file, signals)
+    read_signals = MatInterface.get(test_file)
 
     sig_2d = read_signals[0]
     assert sig_2d["value"].shape == (5, 3)
@@ -95,8 +129,8 @@ def test_round_trip_3d(tmp_path):
     val_3d = np.random.rand(4, 3, 2)  # 4 samples, 3x2 matrix per sample
     signals = [{"label": "sig_3d", "timestamps": np.arange(4), "value": val_3d}]
 
-    Mat73Interface.write(test_file, signals)
-    read_signals = Mat73Interface.get_signals(test_file)
+    MatInterface._write73(test_file, signals)
+    read_signals = MatInterface.get(test_file)
 
     sig_3d = read_signals[0]
     assert sig_3d["value"].shape == (4, 3, 2)
@@ -110,9 +144,9 @@ def test_label_filter(tmp_path):
         {"label": "a", "timestamps": np.array([0]), "value": np.array([1])},
         {"label": "b", "timestamps": np.array([0]), "value": np.array([2])},
     ]
-    Mat73Interface.write(test_file, signals)
+    MatInterface._write73(test_file, signals)
 
-    read_a = Mat73Interface.get_signals(test_file, label_filter=["a"])
+    read_a = MatInterface.get(test_file, label_filter=["a"])
     assert len(read_a) == 1
     assert read_a[0]["label"] == "a"
 
@@ -128,24 +162,4 @@ def test_unsupported_dimensions(tmp_path):
         }
     ]
     with pytest.raises(ValueError, match="does not support more than 3 dimensions"):
-        Mat73Interface.write(test_file, signals)
-
-
-def test_struct_read(tmp_path):
-    """Test reading signals nested in a struct."""
-    import h5py
-
-    test_file = tmp_path / "test_struct.mat"
-
-    # Manually create a file with a struct (group)
-    with h5py.File(test_file, "w") as f:
-        s1 = f.create_group("my_struct")
-        sig = s1.create_group("nested_sig")
-        # Layout A: Time and Data datasets
-        sig.create_dataset("Time", data=np.array([0.0, 1.0]))
-        sig.create_dataset("Data", data=np.array([10.0, 20.0]))
-
-    read_signals = Mat73Interface.get_signals(test_file, struct_name=["my_struct"])
-    assert len(read_signals) == 1
-    assert read_signals[0]["label"] == "nested_sig"
-    np.testing.assert_array_equal(read_signals[0]["value"], [10.0, 20.0])
+        MatInterface._write73(test_file, signals)

@@ -1,15 +1,16 @@
 
-# mat73_interface
+# mat_interface
 
-This package provides a standalone interface for reading and writing MATLAB 7.3 MAT-files, which are HDF5-based. It is designed for easy usage with minimal dependencies.
+This package provides a standalone interface for reading and writing MATLAB MAT-files of version v7.3 and v7.0 or lower. 
+It is designed for easy usage with minimal dependencies.
 
 ## Usage
 
-To use this interface, you can import the `Mat73Interface` class and call its static methods.
+To use this interface, you can import the `MatInterface` class and call its static methods.
 
 ```python
 from pathlib import Path
-from mat73_interface.mat73_interface import Mat73Interface
+from mat_interface.mat_interface import MatInterface
 import numpy as np
 
 # Example: Writing a MAT file
@@ -26,22 +27,22 @@ signals_to_write = [
     }
 ]
 output_file = Path('output.mat')
-Mat73Interface.write(output_path=output_file, signals=signals_to_write)
+MatInterface.write(output_path=output_file, signals=signals_to_write)
 
 # Example: Reading a MAT file
-signals_read = Mat73Interface.get_signals(file_path=output_file)
+signals_read = MatInterface.get_signals(file_path=output_file)
 print(signals_read)
 
 # Example: Reading specific signals from a struct
-signals_from_struct = Mat73Interface.get_signals(file_path=output_file, struct_name=['my_struct'])
+signals_from_struct = MatInterface.get_signals(file_path=output_file, struct_name=['my_struct'])
 
 # Example: Reading signals with a label filter
-signal_1_data = Mat73Interface.get_signals(file_path=output_file, label_filter=['signal1'])
+signal_1_data = MatInterface.get_signals(file_path=output_file, label_filter=['signal1'])
 ```
 
 ## Supported Data Layouts
 
-The `Mat73Interface` supports two primary layouts when reading MAT 7.3 files.
+The `MatInterface` supports two primary layouts when reading MAT 7.3 files.
 
 ### 1. Timeseries Struct Layout (Default for `write`)
 Each signal is encapsulated in its own group containing its specific time vector and data.
@@ -98,7 +99,7 @@ Each signal within the struct is its own group containing its specific time vect
 
 ## API Documentation
 
-### `Mat73Interface.write(output_path: Path, signals: list[dict[str, str | np.typing.NDArray[np.generic]]]) -> None`
+### `MatInterface.write(output_path: Path, signals: list[dict[str, str | np.typing.NDArray[np.generic]]]) -> None`
 
 *   **Description:** Writes a list of signals to a MAT 7.3 file (HDF5). Each signal is stored as a top-level HDF5 group containing 'Time', 'Data', and 'Events' members ('Events' can be ignored, just for MATLAB compatibility). 
 Additional the group carries `MATLAB_class = "timeseries"` and `MATLAB_fields` attributes for MATLAB compatibility.
@@ -110,7 +111,7 @@ Additional the group carries `MATLAB_class = "timeseries"` and `MATLAB_fields` a
         *   `'value'` (np.ndarray): A 1-D, 2-D, or 3-D NumPy array representing the signal's values. The dtype will be mapped to a corresponding MATLAB numerical type.
 *   **Note:** This method adds MATLAB-specific headers and attributes for compatibility. MATLAB's `load()` will recognize the structure, but true MATLAB `timeseries` objects require MATLAB's MCOS serialization, which cannot be produced from Python.
 
-### `Mat73Interface.get_signals(file_path: Path, label_filter: list[str] | None = None, struct_name: list[str] | None = None) -> list[dict[str, str | np.typing.NDArray[np.generic]]]`
+### `MatInterface.get_signals(file_path: Path, label_filter: list[str] | None = None, struct_name: list[str] | None = None) -> list[dict[str, str | np.typing.NDArray[np.generic]]]`
 
 *   **Description:** Reads signals from a MAT 7.3 file. It supports 2 different data layouts:
     *   **Timeseries struct layout:** Each signal is a group containing 'Time' and 'Data' sub-datasets.

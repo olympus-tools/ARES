@@ -94,6 +94,7 @@ release = [
 "Security Policy" = "https://github.com/olympus-tools/ARES/security/policy"
 "Contributing" = "https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md"
 
+
 [tool.setuptools.packages.find]
 include = ["ares*"]
 

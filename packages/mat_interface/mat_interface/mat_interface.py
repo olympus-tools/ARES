@@ -37,23 +37,215 @@ import datetime
 import struct
 import warnings
 from pathlib import Path
+from typing import Any, Literal
 
 import h5py
 import numpy as np
+import scipy.io as sio
 
 
-class Mat73Interface:
-    """A standalone interface for reading and writing MATLAB 7.3 MAT-files (HDF5 based).
+class MatInterface:
+    """A standalone interface for reading and writing MATLAB MAT-files supporting
+        - v7.3 files (HDF5 based)
+        - v7.0/6.0 files (via scipy)
 
-    The Mat73Interface is based on python standard interfaces to guarantee easy usage and minimum dependencies.
+    The MatInterface is based on python standard interfaces to guarantee easy usage and minimum dependencies.
 
     additional information see:
     https://de.mathworks.com/help/matlab/import_export/mat-file-versions.html?s_tid=srchtitle_site_search_1_mat+files
     https://www.hdfgroup.org/solutions/hdf5/
+    https://docs.scipy.org/doc/scipy/reference/generated/scipy.io.loadmat.html
     """
 
     @staticmethod
     def write(
+        output_path: Path,
+        signals: list[dict[str, str | np.typing.NDArray[np.generic]]],
+        format: Literal["v7.3", "v7"] = "v7.3",
+        **kwargs,
+    ) -> None:
+        """Write signals to a MAT 7.3 (HDF5) or lower.
+
+        Args:
+            output_path (Path): Path to the output file.
+            signals (list[dict]): List of dicts, each with:
+                - ``'label'``      (str):        signal name
+                - ``'timestamps'`` (np.ndarray): 1-D time vector
+                - ``'value'``      (np.ndarray): 1-D / 2-D / 3-D value array
+        """
+        if format == "v7.3":
+            MatInterface._write73(output_path=output_path, signals=signals, **kwargs)
+        elif format == "v7":
+            MatInterface._write7(output_path=output_path, signals=signals, **kwargs)
+
+    @staticmethod
+    def get(
+        file_path: Path,
+        label_filter: list[str] | None = None,
+        struct_list: list[str] | None = None,
+        **kwargs,
+    ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+        """Read signals from a MAT 7.3 (HDF5) or lower.
+
+        Supports two modes (defined via struct_list):
+            - flat   : signals exist at the highest layer
+            - struct : signals are divided into structs each with providing its own timestamp
+
+        where each mode can read two types of signals:
+            - **timeseries struct layout**: each signal is a struct containing "Time","Data"
+            - **flat signal arrays**: each signal is a array whereas one array represents the shared timestamp
+
+        Note: MATLAB MCOS ``timeseries`` *objects* (``MATLAB_object_decode==3``)
+        store their data in an opaque ``#refs#`` pool and cannot be decoded
+        without a full MATLAB OOP deserialiser.
+        Therefore not the 'real' MATLAB timeseries supported.
+
+        Assumptions:
+        Considering the ''flat'' signal structure the assumption that the shared timevector is called
+            - timestamps
+        is made.
+
+        Args:
+            file_path (Path): Path to the MAT file.
+            label_filter (list[str] | None): List of signal names to read.
+            struct_list (list[str] | None): List of structs which contain the signals to extract.
+
+        Returns:
+            list[dict]: List of ``{'label', 'timestamps', 'value'}`` dicts.
+        """
+        matfile_version = sio.matlab.matfile_version(file_path)
+
+        if matfile_version[0] == 2:
+            signal_data = MatInterface._get73(
+                file_path=file_path,
+                label_filter=label_filter,
+                struct_list=struct_list,
+                **kwargs,
+            )
+        elif matfile_version[0] == 1:
+            signal_data = MatInterface._get7(
+                file_path=file_path,
+                label_filter=label_filter,
+                struct_list=struct_list,
+                **kwargs,
+            )
+        else:
+            raise ValueError(f"Unsupported/Unknown matfile-version {matfile_version}.")
+        return signal_data
+
+    # MAT 7.0 functions (scipy wrapper)
+    @staticmethod
+    def _write7(
+        output_path: Path, signals: list[dict[str, str | np.typing.NDArray[np.generic]]]
+    ) -> None:
+        """Write signals to a MAT 7.0 file via scipy.
+
+        Args:
+            output_path (Path): Path to the output file.
+            signals (list[dict]): List of dicts, each with:
+                - ``'label'``      (str):        signal name
+                - ``'timestamps'`` (np.ndarray): 1-D time vector
+                - ``'value'``      (np.ndarray): 1-D / 2-D / 3-D value array
+        """
+        # defaults for saving with scipy.sio
+        kw = dict(
+            oned_as="column",
+            long_field_names=True,
+            do_compression=True,
+        )
+
+        mat_data_dict = {}
+        for signal in signals:
+            mat_data_dict[signal["label"]] = {
+                "Time": signal["timestamps"],
+                "Data": signal["value"],
+                "Events": np.array([]),  # Empty array for MATLAB compatibility
+            }
+        sio.savemat(output_path, mat_data_dict, **kw)
+
+    @staticmethod
+    def _get7(
+        file_path: Path,
+        label_filter: list[str] | None = None,
+        struct_list: list[str] | None = None,
+        **kwargs,
+    ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+        """Read signals from a MAT 7.0 or lower file via scipy.io package.
+
+        Args:
+            file_path (Path): Path to the MAT file.
+            label_filter (list[str] | None): List of signal names to read.
+            struct_list (list[str] | None): List of structs which contain the signals to extract.
+            **kwargs : additional arguments passed to scipy "loadmat"
+
+        Returns:
+            list[dict]: List of ``{'label', 'timestamps', 'value'}`` dicts.
+        """
+        _OBSOLETE_MATFIELDS = [
+            "__header__",
+            "__version__",
+            "__globals__",
+        ]  # define obsolete mat fields thar are always skipped during reading and define default timestamp
+        _TIMESTAMP = "timestamps"  # default name of "timestamps" for flat signals
+
+        # helper functions for scipy (transform to standard format)
+        def _get_timeseries(
+            tmp_data: dict[str, Any], label_filter: list[str]
+        ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+            """Read timeseries struct from mat file."""
+            mat_data: list[dict[str, str | np.typing.NDArray[np.generic]]] = list()
+            mat_data.extend(
+                {
+                    "label": signal_name,
+                    "timestamps": signal_dict.get("Time"),
+                    "value": signal_dict.get("Data"),
+                }
+                for signal_name, signal_dict in tmp_data.items()
+                if signal_name not in _OBSOLETE_MATFIELDS  # skip mat-fields
+                and signal_name not in label_filter  # skip signals not in label-filter
+                and type(signal_dict) is dict  # check 'timeseries'-struct
+                and "Time" in signal_dict
+                and "Data" in signal_dict
+            )
+            return mat_data
+
+        def _get_signals(
+            tmp_data: dict[str, Any],
+            timestamps: np.ndarray,
+            label_filter: list[str],
+        ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
+            """Read flat signals from mat file."""
+            mat_data: list[dict[str, str | np.typing.NDArray[np.generic]]] = list()
+            mat_data.extend(
+                {"label": signal_name, "timestamps": timestamps, "value": signal_value}
+                for signal_name, signal_value in tmp_data.items()
+                if signal_name not in _OBSOLETE_MATFIELDS  # skip mat-fields
+                and signal_name not in label_filter  # skip signals not in label-filter
+            )
+            return mat_data
+
+        # define standard flags to guarantee readability
+        kwargs = {**kwargs}
+        kwargs.setdefault("simplify_cells", True)
+        tmp_data = sio.loadmat(file_path, **kwargs)
+
+        # differentiate between struct-mode, plain-mode, timeseries
+        if struct_list:
+            tmp_data.update([tmp_data.get(struct) for struct in struct_list])
+
+        # check for timessignal -> timeseries or plain-mode
+        timestamps = tmp_data.get(_TIMESTAMP, None)
+        if timestamps is None:
+            mat_data = _get_timeseries(tmp_data, label_filter if label_filter else [])
+        else:
+            mat_data = _get_signals(
+                tmp_data, timestamps, label_filter if label_filter else []
+            )
+        return mat_data
+
+    # MAT 7.3 functions
+    @staticmethod
+    def _write73(
         output_path: Path,
         signals: list[dict[str, str | np.typing.NDArray[np.generic]]],
     ) -> None:
@@ -65,7 +257,7 @@ class Mat73Interface:
 
         The group carries ``MATLAB_class = "timeseries"`` and ``MATLAB_fields``
         attributes so that MATLAB's ``load()`` recognises the layout.
-        note:
+        Note:
             MATLAB's ``load()`` will return each signal as a **struct** with fields
             ``Time``, ``Data``, and ``Events``.
             The struct represents the base of a MATLAB ``timeseries``.
@@ -135,9 +327,9 @@ class Mat73Interface:
                     ds = group.create_dataset("Data", data=value.transpose(2, 1, 0))
                 else:
                     raise ValueError(
-                        "Mat73Interface does not support more than 3 dimensions."
+                        "MatInterface does not support more than 3 dimensions."
                     )
-                _write_ds_matlab_class(ds.id, Mat73Interface._get_matlab_class(dtype))
+                _write_ds_matlab_class(ds.id, MatInterface._get_matlab_class(dtype))
 
         # add MATLAB specific 128-byte header
         date_str = datetime.datetime.now().strftime("%a %b %d %H:%M:%S %Y")
@@ -165,40 +357,20 @@ class Mat73Interface:
             h5file.write(signature)
 
     @staticmethod
-    def get_signals(
+    def _get73(
         file_path: Path,
         label_filter: list[str] | None = None,
-        struct_name: list[str] | None = None,
+        struct_list: list[str] | None = None,
     ) -> list[dict[str, str | np.typing.NDArray[np.generic]]]:
         """Read signals from a MAT 7.3 file.
-
-        Supports two modes (defined via struct_name):
-            - flat   : signals exist at the highest layer
-            - struct : signals are divided into structs each with providing its own timestamp
-
-        where each mode can read two types of signals:
-            - **timeseries struct layout**: each signal is a struct containing "Time","Data"
-            - **flat signal arrays**: each signal is a array whereas one array represents the shared timestamp
-
-        Note: MATLAB MCOS ``timeseries`` *objects* (``MATLAB_object_decode==3``)
-        store their data in an opaque ``#refs#`` pool and cannot be decoded
-        without a full MATLAB OOP deserialiser.
-        Therefore not the 'real' MATLAB timeseries supported (same holds for scipy).
-
-        Assumptions:
-        Considering the ''flat'' signal structure the assumption that the shared timevector is called either
-            - timestamps
-            - time
-        is made.
 
         Args:
             file_path (Path): Path to the MAT file.
             label_filter (list[str] | None): List of signal names to read.
-            struct_name (list[str] | None): List of structs which contain the signals to extract.
+            struct_list (list[str] | None): List of structs which contain the signals to extract.
 
         Returns:
             list[dict]: List of ``{'label', 'timestamps', 'value'}`` dicts.
-            list[str]: List of all signalnames found in mat-file.
         """
         _HDF5_INTERNAL = {"#refs#", "#subsystem#"}
         _NUMERIC_KINDS = set("bifcu")
@@ -206,7 +378,7 @@ class Mat73Interface:
             "Data",
             "Time",
         }  # Events can be ignored, only important for writing
-        _TIMESTAMP_NAMES = {"timestamps", "time"}
+        _TIMESTAMP_NAMES = {"timestamps"}
 
         # helper functions for reading
         def _is_timeseries_group(obj) -> bool:
@@ -221,7 +393,7 @@ class Mat73Interface:
         def _is_numeric_dataset(obj) -> bool:
             """Dataset = numeric"""
             return (
-                isinstance(obj, h5py.Dataset) # type: ignore
+                isinstance(obj, h5py.Dataset)  # type: ignore
                 and obj.attrs.get("MATLAB_object_decode") is None
                 and obj.dtype.kind in _NUMERIC_KINDS
             )
@@ -247,9 +419,10 @@ class Mat73Interface:
                 _ts_resolved = True
                 for k in group.keys():
                     if k.lower() in _TIMESTAMP_NAMES and isinstance(
-                        group[k], h5py.Dataset # type: ignore
+                        group[k],
+                        h5py.Dataset,  # type: ignore
                     ):
-                        _ts = Mat73Interface._mat_load_num(group[k])
+                        _ts = MatInterface._mat_load_num(group[k])
                         break
                 return _ts
 
@@ -261,8 +434,8 @@ class Mat73Interface:
                     result.append(
                         {
                             "label": key,
-                            "timestamps": Mat73Interface._mat_load_num(element["Time"]),
-                            "value": Mat73Interface._mat_load_num(element["Data"]),
+                            "timestamps": MatInterface._mat_load_num(element["Time"]),
+                            "value": MatInterface._mat_load_num(element["Data"]),
                         }
                     )
                 elif _is_numeric_dataset(element):
@@ -273,17 +446,17 @@ class Mat73Interface:
                         {
                             "label": key,
                             "timestamps": _get_flat_timestamps(),
-                            "value": Mat73Interface._mat_load_num(element),
+                            "value": MatInterface._mat_load_num(element),
                         }
                     )
 
             return result
 
         # read HDF5 (mat-file)
-        with h5py.File(file_path, mode="r") as matfile: # type: ignore
+        with h5py.File(file_path, mode="r") as matfile:  # type: ignore
             signals = []
-            if struct_name:
-                for struct in struct_name:
+            if struct_list:
+                for struct in struct_list:
                     if struct not in matfile:
                         warnings.warn(
                             f"Struct group '{struct}' not found in {file_path}. ",
@@ -326,7 +499,7 @@ class Mat73Interface:
 
     @staticmethod
     def _mat_load_num(
-        dataset: h5py.Dataset, # type: ignore
+        dataset: h5py.Dataset,  # type: ignore
     ) -> np.ndarray:
         """Load numerical data from h5py dataset and adjust dimensions."""
         samples = np.squeeze(dataset[()], axis=None)
@@ -336,7 +509,7 @@ class Mat73Interface:
 
     # INFO: the following functions are currently not used, useful to read more complex data
     @staticmethod
-    def _mat_load_string(file: h5py.File, dataset: h5py.Dataset) -> np.ndarray: # type: ignore
+    def _mat_load_string(file: h5py.File, dataset: h5py.Dataset) -> np.ndarray:  # type: ignore
         """Load string data from h5py dataset."""
         n_el = dataset.shape[1]
         el_string = []
@@ -345,7 +518,7 @@ class Mat73Interface:
         return np.asarray(el_string)
 
     @staticmethod
-    def _mat_load_numstring(dataset: h5py.Dataset) -> np.ndarray | str: # type: ignore
+    def _mat_load_numstring(dataset: h5py.Dataset) -> np.ndarray | str:  # type: ignore
         """Load numeric string data from h5py dataset."""
         try:
             samples = bytes(dataset[()])[::2].decode()

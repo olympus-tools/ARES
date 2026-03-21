@@ -39,7 +39,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 import pytest
-from mat73_interface.mat73_interface import Mat73Interface
+from mat_interface.mat_interface import MatInterface
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.data.mat_handler import MATHandler
@@ -304,7 +304,7 @@ class TestMatlabAttributes:
 )
 def test_get_matlab_class_mapping(dtype, expected_class):
     """_get_matlab_class maps NumPy dtypes to the correct MATLAB class bytes."""
-    result = Mat73Interface._get_matlab_class(np.dtype(dtype))
+    result = MatInterface._get_matlab_class(np.dtype(dtype))
     assert result == expected_class, (
         f"For dtype {dtype}, expected {expected_class!r}, got {result!r}."
     )
@@ -312,7 +312,7 @@ def test_get_matlab_class_mapping(dtype, expected_class):
 
 def test_get_matlab_class_fallback_to_double():
     """_get_matlab_class falls back to b'double' for unrecognised dtypes."""
-    result = Mat73Interface._get_matlab_class(np.dtype(np.complex128))
+    result = MatInterface._get_matlab_class(np.dtype(np.complex128))
     assert result == b"double"
 
 
