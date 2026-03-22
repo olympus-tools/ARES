@@ -84,16 +84,16 @@ test-coverage: setup-venv
 
 .PHONY: format
 format: setup-venv
-	@"$(VENV_BIN)/ruff" format . --exclude ares/core/version.py --exclude .venv
+	@"$(VENV_BIN)/ruff" format .
 
 .PHONY: format-check
 format-check: setup-venv
-	@"$(VENV_BIN)/ruff" format --check . --exclude ares/core/version.py --exclude .venv
+	@"$(VENV_BIN)/ruff" format --check .
 
 .PHONY: build-executable
 build-executable: setup-venv
 	@echo "Building executable with PyInstaller..."
-	@"$(VENV_BIN)/pyinstaller" --onefile --name ares --paths . --paths packages/param_dcm --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "param_dcm" --hidden-import "param_dcm.param_dcm" ares/__main__.py
+	@"$(VENV_BIN)/pyinstaller" --onefile --name ares --paths . --paths submodules/dcmi --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "dcmi" --hidden-import "dcmi.dcmi" ares/__main__.py
 	@echo ""
 	@echo "Executable created in dist/ares"
 

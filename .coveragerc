@@ -6,7 +6,7 @@ omit =
     test/*
     examples/*
     scripts/*
-    packages/*
+    submodules/*
     ares.egg-info/*
     *.log
 

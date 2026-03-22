@@ -49,6 +49,7 @@ dependencies = [
     "typeguard==4.4.4",
     "click==8.2.1",
     "colorlog==6.9.0",
+    "dcmi @ file:submodules/dcmi",
 ]
 dynamic = ["version"]
 
@@ -91,11 +92,8 @@ release = [
 "Security Policy" = "https://github.com/olympus-tools/ARES/security/policy"
 "Contributing" = "https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md"
 
-[tool.setuptools]
-packages = ["ares", "param_dcm"]
-
-[tool.setuptools.package-dir]
-param_dcm = "packages/param_dcm/param_dcm"
+[tool.setuptools.packages.find]
+include = ["ares*"]
 
 [tool.setuptools.package-data]
 ares = ["py.typed"]
@@ -115,6 +113,13 @@ addopts = [
 line-length = 88
 # The target Python version.
 target-version = "py312"
+# Excluded files and directories.
+exclude = [
+    "ares/core/version.py",
+    "packages",
+    "submodules",
+    ".venv",
+]
 
 [tool.ruff.format]
 # The preferred quote style.
@@ -124,7 +129,7 @@ indent-style = "space"
 
 [tool.pyright]
 # Pyright will analyze files in this directory.
-include = ["ares", "packages", "test"]
+include = ["ares", "submodules", "test"]
 reportAny = "none"
 reportExplicitAny = "none"
 venvPath = "."
