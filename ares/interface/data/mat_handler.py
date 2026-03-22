@@ -36,7 +36,7 @@ limitations under the License:
 from pathlib import Path
 from typing import override
 
-from mat_interface.mat_interface import MatInterface, MatSignal
+from mati.mati import MatInterface, MatSignal
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal

@@ -93,7 +93,7 @@ format-check: setup-venv
 .PHONY: build-executable
 build-executable: setup-venv
 	@echo "Building executable with PyInstaller..."
-	@"$(VENV_BIN)/pyinstaller" --onefile --name ares --paths . --paths submodules/dcmi --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "dcmi" --hidden-import "dcmi.dcmi" ares/__main__.py
+	@"$(VENV_BIN)/pyinstaller" --onefile --name ares --paths . --paths submodules/dcmi --paths submodules/mati --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "dcmi" --hidden-import "dcmi.dcmi" --hidden-import "mati" --hidden-import "mati.mati" ares/__main__.py
 	@echo ""
 	@echo "Executable created in dist/ares"
 

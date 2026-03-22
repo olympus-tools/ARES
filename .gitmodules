@@ -1,3 +1,7 @@
 [submodule "submodules/dcmi"]
 	path = submodules/dcmi
 	url = https://github.com/olympus-tools/DCMI.git
+[submodule "submodules/mati"]
+	path = submodules/mati
+	url = https://github.com:olympus-tools/MATI.git
+

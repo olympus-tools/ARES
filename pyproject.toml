@@ -52,6 +52,7 @@ dependencies = [
     "click==8.2.1",
     "colorlog==6.9.0",
     "dcmi @ file:submodules/dcmi",
+    "mati @ file:submodules/mati",
 ]
 dynamic = ["version"]
 
@@ -93,7 +94,6 @@ release = [
 "Source" = "https://github.com/olympus-tools/ARES"
 "Security Policy" = "https://github.com/olympus-tools/ARES/security/policy"
 "Contributing" = "https://github.com/olympus-tools/ARES/blob/master/CONTRIBUTING.md"
-
 
 [tool.setuptools.packages.find]
 include = ["ares*"]

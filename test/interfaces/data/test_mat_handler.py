@@ -39,7 +39,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 import pytest
-from mat_interface.mat_interface import MatInterface
+from mati.mati import MatInterface
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.data.mat_handler import MATHandler
