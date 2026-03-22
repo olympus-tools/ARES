@@ -1,0 +1,28 @@
+name: Check PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - labeled
+      - unlabeled
+      - synchronize
+
+jobs:
+  formal-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for required label
+        env:
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          REQUIRED_LABELS=("documentation" "feature" "bugfix" "test")
+          for label in "${REQUIRED_LABELS[@]}"; do
+            if echo "$LABELS" | grep -q "\"$label\""; then
+              echo "Found required label: $label"
+              exit 0
+            fi
+          done
+          echo "ERROR: PR must have at least one of the following labels: documentation, feature, bugfix, test"
+          exit 1

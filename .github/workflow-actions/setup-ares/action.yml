@@ -14,3 +14,8 @@ runs:
         echo "Running on Linux"
         uname -a
         python --version
+
+    - name: Setup virtual environment
+      shell: bash
+      run: |
+        make setup-venv VENV_RELEASE=true VENV_RECREATE=true

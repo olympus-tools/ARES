@@ -8,6 +8,7 @@
 #   - make format
 #   - make format-check
 #   - make build-executable
+#   - make docs
 #   - make clean
 #   - make clean-light
 #   - make release-checklist
@@ -18,6 +19,7 @@
 
 VENV_DIR := .venv
 VENV_RECREATE := false
+VENV_RELEASE := false
 
 # Platform detection for virtual environment binary path
 ifeq ($(OS),Windows_NT)
@@ -49,10 +51,18 @@ setup-venv:
 	# Check if .git exists to decide on versioning strategy for editable install \
 	if [ ! -d ".git" ]; then \
 		echo "NOTE: .git directory not found. Setting pretend version for installation."; \
-		SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+		if [ "$(VENV_RELEASE)" = "true" ] || [ "$(VENV_RELEASE)" = "TRUE" ]; then \
+			SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_BIN)/pip" install -e ".[release]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+		else \
+			SETUPTOOLS_SCM_PRETEND_VERSION_FOR_ARES=0.0.1 "$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (no Git)."; exit 1; }; \
+		fi; \
 	else \
 		echo "NOTE: .git directory found. Using setuptools_scm for versioning."; \
-		"$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
+		if [ "$(VENV_RELEASE)" = "true" ] || [ "$(VENV_RELEASE)" = "TRUE" ]; then \
+			"$(VENV_BIN)/pip" install -e ".[release]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
+		else \
+			"$(VENV_BIN)/pip" install -e ".[dev]" || { echo "Error: Failed to install dependencies (with Git)."; exit 1; }; \
+		fi; \
 	fi
 
 .PHONY: examples
@@ -139,6 +149,12 @@ release: release-checklist release-changelog thirdpartycheck build-executable re
 	@echo ""
 	@echo "Release process complete!"
 
+.PHONY: docs
+docs: setup-venv
+	@"$(VENV_BIN)/sphinx-build" -M html docs docs/_build
+	@echo ""
+	@echo "Open docs/_build/html/index.html in your browser."
+
 .PHONY: clean
 clean:
 	@printf "WARNING: This will permanently delete all generated files, caches, and logs. Continue? [y/n] "; \
@@ -150,6 +166,7 @@ clean:
 		rm -rf build; \
 		rm -rf dist; \
 		rm -rf examples/output; \
+		rm -rf docs/_build; \
 		echo "Project cleaned successfully in mode full."; \
 	else \
 		echo "Clean cancelled."; \

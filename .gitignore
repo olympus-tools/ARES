@@ -4,6 +4,7 @@ dist/*
 logs/*
 dist/*
 build/*
+docs/_build/*
 
 # python
 **/.venv/*

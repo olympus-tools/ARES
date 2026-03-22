@@ -70,6 +70,16 @@ dev = [
     "pyinstaller==6.15.0",
     "ares[test]",
 ]
+docs = [
+    "sphinx==8.2.3",
+    "furo==2024.8.6",
+    "myst-parser==4.0.1",
+    "sphinx-autodoc-typehints==3.1.0",
+]
+release = [
+    "ares[dev]",
+    "ares[docs]",
+]
 
 [project.urls]
 "Homepage" = "https://github.com/olympus-tools/ARES"
