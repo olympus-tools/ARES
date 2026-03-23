@@ -226,7 +226,7 @@ class MF4Handler(MDF, AresDataInterface):
         for regex in label_filter:
             found_labels = self.search(regex, mode="regex")
             if not found_labels:
-                logger.warning(
+                logger.debug(
                     f"Label filter '{regex}' did not match any signal in mf4 file."
                 )
             else:
@@ -254,32 +254,35 @@ class MF4Handler(MDF, AresDataInterface):
             list[AresSignal]: List of AresSignal objects extracted from the mf4 file.
                 Only contains signals that were actually found.
         """
-        found_signals: list[Signal] = []
         kwargs.setdefault("raw", True)
 
-        for channel_name in label_filter:
-            occurence = self.whereis(channel_name)
+        found_signals: list[Signal] = []
+        single_signals: list[str] = []
 
-            if len(occurence) == 1:
+        for channel_name in label_filter:
+            occurrence = self.whereis(channel_name)
+
+            if len(occurrence) == 1:  # single ocurrence: combined select() call
                 logger.debug(
                     f"Signal '{channel_name}' has single occurrence in mf4 data file."
                 )
-                selected_signal = super().select([channel_name], **kwargs)
-                if selected_signal:
-                    found_signals.extend(selected_signal)
+                single_signals.append(channel_name)
 
-            elif len(occurence) >= 2:
+            elif len(occurrence) >= 2:  # multi ocurrence: one select() call per signal
                 logger.warning(
-                    f"Signal '{channel_name}' has {len(occurence)} occurrences in mf4 data file."
+                    f"Signal '{channel_name}' has {len(occurrence)} occurrences in mf4 data file."
                 )
-                sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurence]
-                all_signals = super().select(sel_signal, **kwargs)
-                len_samples = [len(s.samples) for s in all_signals]
-                idx = len_samples.index(max(len_samples))
+                sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurrence]
+                all_occurrences = super().select(sel_signal, **kwargs)
+                len_samples = [len(s.samples) for si in all_occurrences]
                 logger.debug(
-                    f"Selected occurrence {idx} with {len_samples[idx]} samples."
+                    f"Selected occurrence {idx} with {len_samples[idx]} samples for '{channel_name}'."
                 )
-                found_signals.append(all_signals[idx])
+                found_signals.append(all_Occurrences[idx])
+
+        # single ocurrence: combined select()
+        if single_signals:
+            found_signals.extend(super().select(single_signals, **kwargs))
 
         ares_signals = []
         for signal in found_signals:
