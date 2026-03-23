@@ -309,8 +309,11 @@ class SimUnit:
         time_steps = len(data[0].timestamps) if data else 1
 
         data_dict = self._list_to_dict(data if data else [])
-        data_dict = self._input_typecast(
-            sim_input=data_dict, dd_element_dict=self._dd.signals or {}
+        mapped_input = self._map_sim_input_data(
+            data_dict=data_dict, time_steps=time_steps
+        )
+        mapped_input = self._input_typecast(
+            sim_input=mapped_input, dd_element_dict=self._dd.signals or {}
         )
 
         parameter_dict = self._list_to_dict(parameters if parameters else [])
@@ -328,10 +331,6 @@ class SimUnit:
             logger.info(
                 "No input data (time array) provided => executing single time step."
             )
-
-        mapped_input = self._map_sim_input_data(
-            data_dict=data_dict, time_steps=time_steps
-        )
 
         self._write_parameters_to_dll(parameters=parameter_dict)
 
@@ -432,7 +431,7 @@ class SimUnit:
             time_steps (int): The total number of simulation steps.
 
         Returns:
-            dict[str, AresSignal] | None: A dictionary of mapped AresSignal objects, or `None` if a mapping error occurs.
+            dict[str, AresSignal]: A dictionary of mapped AresSignal objects.
         """
 
         mapped_input: dict[str, AresSignal] = {}
@@ -524,7 +523,6 @@ class SimUnit:
                 logger.warning(
                     f"Mapping dynamic simulation input to signal {dd_element_name} could not be executed: {e}",
                 )
-                return None
 
         logger.debug(
             "Mapping dynamic simulation input to data source has been successfully finished."
