@@ -28,7 +28,7 @@ ARES is currently under active development and is distributed as a source packag
 
 Before setting up ARES, ensure your system meets the following requirements:
 
-*   **Operating System**: Linux (currently the only supported OS)
+*   **Operating System**: Linux, Windows
 *   **Python**: Version equal 3.13.7 or higher and lower than 3.14
 *   **Build Tools**: `make` (only required for **Option A: Automated Setup**)
 
@@ -40,7 +40,7 @@ Using a virtual environment is recommended to avoid conflicts with system packag
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/olympus-tools/ARES.git
+    git clone --recurse-submodules https://github.com/olympus-tools/ARES.git
     cd ares
     ```
 
@@ -48,6 +48,10 @@ Using a virtual environment is recommended to avoid conflicts with system packag
     This command creates a `.venv` directory and installs dependencies:
     ```bash
     make setup-venv
+    ```
+    To also install documentation dependencies (required for `make docs`), add the `VENV_RELEASE=true` flag:
+    ```bash
+    make setup-venv VENV_RELEASE=true
     ```
 
 3.  **Activate the environment:**
@@ -57,6 +61,12 @@ Using a virtual environment is recommended to avoid conflicts with system packag
     
     # Fish
     source .venv/bin/activate.fish
+    
+    # Windows (CMD)
+    .venv\Scripts\activate.bat
+    
+    # Windows (PowerShell)
+    .venv\Scripts\Activate.ps1
     ```
 
 #### Option B: Manual Setup
@@ -75,30 +85,17 @@ If you prefer to configure the virtual environment manually:
     
     # Fish
     source .venv/bin/activate.fish
+    
+    # Windows (CMD)
+    .venv\Scripts\activate.bat
+    
+    # Windows (PowerShell)
+    .venv\Scripts\Activate.ps1
     ```
 
 3.  **Install ARES:**
     ```bash
     pip install .
-    ```
-
-### 1.3. Installation in System Python
-
-You can also install ARES directly into your global Python environment. Note that this might require `sudo` permissions and could conflict with other packages.
-
-1.  **Navigate to the project root:**
-    ```bash
-    cd ares
-    ```
-
-2.  **Install the package:**
-    For standard installation:
-    ```bash
-    pip install .
-    ```
-    For development (editable mode):
-    ```bash
-    pip install -e .
     ```
 
 ## 2. Usage

@@ -8,17 +8,11 @@ For complete license texts, please visit the respective project URLs.
 
 This product contains dependencies with the following licenses:
 
-0BSD OR CC0-1.0 License:
-------------------------------------------------------------------------------
-  * roman-numerals 4.1.0
-    URL: https://github.com/AA-Turner/roman-numerals/blob/master/CHANGES.rst
-
-  * roman-numerals-py 4.1.0
-    URL: UNKNOWN
-
-
 Apache Software License License:
 ------------------------------------------------------------------------------
+  * dcmi 0.0.1
+    URL: https://github.com/olympus-tools/DCMI
+
   * id 1.6.1
     URL: https://pypi.org/project/id/
 
@@ -70,17 +64,8 @@ Apache-2.0 OR BSD-3-Clause License:
 
 BSD License License:
 ------------------------------------------------------------------------------
-  * Jinja2 3.1.6
-    URL: https://github.com/pallets/jinja/
-
   * Pygments 2.19.2
     URL: https://pygments.org
-
-  * alabaster 1.0.0
-    URL: https://alabaster.readthedocs.io/
-
-  * babel 2.18.0
-    URL: https://babel.pocoo.org/
 
   * canmatrix 1.2
     URL: http://github.com/ebroecker/canmatrix
@@ -100,47 +85,17 @@ BSD License License:
   * smmap 5.0.3
     URL: https://github.com/gitpython-developers/smmap
 
-  * snowballstemmer 3.0.1
-    URL: https://github.com/snowballstem/snowball
 
-  * sphinxcontrib-applehelp 2.0.0
-    URL: https://www.sphinx-doc.org/
-
-  * sphinxcontrib-devhelp 2.0.0
-    URL: https://www.sphinx-doc.org/
-
-  * sphinxcontrib-htmlhelp 2.1.0
-    URL: https://www.sphinx-doc.org/
-
-  * sphinxcontrib-jsmath 1.0.1
-    URL: http://sphinx-doc.org/
-
-  * sphinxcontrib-qthelp 2.0.0
-    URL: https://www.sphinx-doc.org/
-
-  * sphinxcontrib-serializinghtml 2.0.0
-    URL: https://www.sphinx-doc.org/
-
-
-BSD License; GNU General Public License (GPL); Public Domain; Python Software Foundation License License:
+BSD License; GNU General Public License (GPL); Public Domain License:
 ------------------------------------------------------------------------------
-  * docutils 0.21.2
+  * docutils 0.22.4
     URL: https://docutils.sourceforge.io
-
-
-BSD-2-Clause License:
-------------------------------------------------------------------------------
-  * Sphinx 8.2.3
-    URL: https://www.sphinx-doc.org/
 
 
 BSD-3-Clause License:
 ------------------------------------------------------------------------------
   * GitPython 3.1.45
     URL: https://github.com/gitpython-developers/GitPython
-
-  * MarkupSafe 3.0.3
-    URL: https://github.com/pallets/markupsafe/
 
   * SecretStorage 3.5.0
     URL: https://github.com/mitya57/secretstorage
@@ -232,41 +187,23 @@ MIT License:
 
 MIT License License:
 ------------------------------------------------------------------------------
-  * PyYAML 6.0.3
-    URL: https://pyyaml.org/
-
   * altgraph 0.17.5
     URL: https://altgraph.readthedocs.io
 
   * annotated-types 0.7.0
     URL: https://github.com/annotated-types/annotated-types
 
-  * beautifulsoup4 4.14.3
-    URL: https://www.crummy.com/software/BeautifulSoup/bs4/
-
   * colorlog 6.9.0
     URL: https://github.com/borntyping/python-colorlog
-
-  * furo 2024.8.6
-    URL: UNKNOWN
-
-  * imagesize 2.0.0
-    URL: https://github.com/shibukawa/imagesize_py
 
   * jaraco.classes 3.4.0
     URL: https://github.com/jaraco/jaraco.classes
 
-  * markdown-it-py 3.0.0
+  * markdown-it-py 4.0.0
     URL: https://github.com/executablebooks/markdown-it-py
-
-  * mdit-py-plugins 0.5.0
-    URL: https://github.com/executablebooks/mdit-py-plugins
 
   * mdurl 0.1.2
     URL: https://github.com/executablebooks/mdurl
-
-  * myst-parser 4.0.1
-    URL: https://github.com/executablebooks/MyST-Parser
 
   * pipdeptree 2.23.4
     URL: https://github.com/tox-dev/pipdeptree
@@ -297,15 +234,6 @@ MIT License License:
 
   * six 1.17.0
     URL: https://github.com/benjaminp/six
-
-  * soupsieve 2.8.3
-    URL: https://github.com/facelessuser/soupsieve
-
-  * sphinx-autodoc-typehints 3.1.0
-    URL: https://github.com/tox-dev/sphinx-autodoc-typehints
-
-  * sphinx-basic-ng 1.0.0b2
-    URL: https://github.com/pradyunsg/sphinx-basic-ng
 
 
 Mozilla Public License 2.0 (MPL 2.0) License:

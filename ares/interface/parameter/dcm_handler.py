@@ -36,7 +36,7 @@ limitations under the License:
 from pathlib import Path
 from typing import override
 
-from param_dcm.param_dcm import ParamDCM
+from dcmi.core.dcmi import DCMI
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
@@ -48,10 +48,10 @@ from ares.utils.resolve_label_filter import resolve_label_filter
 logger = create_logger(__name__)
 
 
-class DCMHandler(ParamDCM, AresParamInterface):
+class DCMHandler(DCMI, AresParamInterface):
     """DCM Parameter interface for ARES ParameterHandler.
 
-    This class extends ParamDCM with ARES-specific interface functionality,
+    This class extends DCMI with ARES-specific interface functionality,
     allowing seamless integration into ARES workflows with flyweight pattern
     based on content hash.
 
@@ -79,7 +79,7 @@ class DCMHandler(ParamDCM, AresParamInterface):
             dependencies=kwargs.pop("dependencies", None),
             label_filter=label_filter,
         )
-        ParamDCM.__init__(self, file_path=file_path)
+        DCMI.__init__(self, file_path=file_path)
 
     @override
     @safely_run(

@@ -1,0 +1,3 @@
+[submodule "submodules/dcmi"]
+	path = submodules/dcmi
+	url = https://github.com/olympus-tools/DCMI.git
