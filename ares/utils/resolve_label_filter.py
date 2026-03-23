@@ -62,7 +62,7 @@ def resolve_label_filter(
             element for element in available_elements if pattern.search(element)
         ]
         if not found_labels:
-            logger.warning(
+            logger.debug(
                 f"Label filter '{regex}' did not match any entry in available elements."
             )
         result_list.extend(found_labels)

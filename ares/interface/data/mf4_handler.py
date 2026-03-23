@@ -226,7 +226,7 @@ class MF4Handler(MDF, AresDataInterface):
         for regex in label_filter:
             found_labels = self.search(regex, mode="regex")
             if not found_labels:
-                logger.warning(
+                logger.debug(
                     f"Label filter '{regex}' did not match any signal in mf4 file."
                 )
             else:
