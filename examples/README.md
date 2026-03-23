@@ -12,10 +12,12 @@ This directory contains example workflows and data to demonstrate the capabiliti
     * [2.3. Data Resampling](#23-data-resampling)
     * [2.4. Data Conversion (TODO)](#24-data-conversion-todo)
     * [2.5. Data Vertical Stack](#25-data-vertical-stack)
+    * [2.6. Data Merge](#26-data-merge)
 * [3. Parameter Interface Examples](#3-parameter-interface-examples)
     * [3.1. Parameter Caching](#31-parameter-caching)
     * [3.2. Parameter Conversion](#32-parameter-conversion)
     * [3.3. Parameter Label Filter](#33-parameter-label-filter)
+    * [3.4. Parameter Merge](#34-parameter-merge)
 * [4. Plugin Examples](#4-plugin-examples)
     * [4.1. Plugin Manipulation](#41-plugin-manipulation)
 * [5. Simulation Unit Examples](#5-simulation-unit-examples)
@@ -71,8 +73,8 @@ make -C examples simunit_dependencies
 ```
 
 Available targets:
-- **Data Interface**: `data_caching`, `data_labelfilter`, `data_resampling`, `data_vstack`
-- **Parameter Interface**: `param_caching`, `param_convertion`, `param_labelfilter`
+- **Data Interface**: `data_caching`, `data_labelfilter`, `data_resampling`, `data_vstack`, `data_merge`
+- **Parameter Interface**: `param_caching`, `param_convertion`, `param_labelfilter`, `param_merge`
 - **Plugin**: `plugin_manipulation`
 - **Simulation Units**: `simunit_dependencies`, `simunit_interface_alt`, `simunit_interface_alt_default`, `simunit_interface_alt_value`, `simunit_interface_std`, `simunit_vstack`
 
@@ -194,6 +196,44 @@ python -m ares pipeline \
     --log-level 20
 ```
 
+### 2.6. Data Merge
+
+*   **Workflow**: `examples/workflow/data_interface/data_merge.wf.json`
+*   **Purpose**: Demonstrates merging of multiple data sources into a combined output, including different merge orderings.
+*   **Key Concepts**:
+    *   Reading multiple MF4 data files from different sources.
+    *   Merging data from multiple inputs using the `merge` type.
+    *   Creating multiple merge variants with different input orderings.
+    *   Writing all merged results to a single output file.
+
+```mermaid
+flowchart LR
+    data_in_1(data_in_1) --> data_merge_1(data_merge_1)
+    data_in_2(data_in_2) --> data_merge_1
+    data_in_3(data_in_3) --> data_merge_1
+    data_in_4(data_in_4) --> data_merge_1
+    data_in_2 --> data_merge_2(data_merge_2)
+    data_in_1 --> data_merge_2
+    data_in_3 --> data_merge_2
+    data_in_4 --> data_merge_2
+    data_merge_1 --> data_out_1(data_out_1)
+    data_merge_2 --> data_out_1
+
+    classDef Data color:#1e9bec, stroke:#1e9bec;
+    classDef Merge color:#7b2d8b, stroke:#7b2d8b;
+
+    class data_in_1,data_in_2,data_in_3,data_in_4,data_out_1 Data;
+    class data_merge_1,data_merge_2 Merge;
+```
+
+**Run via CLI:**
+```bash
+python -m ares pipeline \
+    --workflow examples/workflow/data_interface/data_merge.wf.json \
+    --output examples/output/ \
+    --log-level 20
+```
+
 ## 3. Parameter Interface Examples
 
 These examples demonstrate parameter handling operations such as reading, writing, converting between formats (DCM/JSON), and filtering.
@@ -275,6 +315,40 @@ flowchart LR
 ```bash
 python -m ares pipeline \
     --workflow examples/workflow/parameter_interface/param_labelfilter.wf.json \
+    --output examples/output/ \
+    --log-level 20
+```
+
+### 3.4. Parameter Merge
+
+*   **Workflow**: `examples/workflow/parameter_interface/param_merge.wf.json`
+*   **Purpose**: Demonstrates merging of multiple parameter sources into a combined output, including different merge orderings.
+*   **Key Concepts**:
+    *   Reading multiple parameter files in different formats (DCM, JSON).
+    *   Merging parameters from multiple inputs using the `merge` type.
+    *   Creating multiple merge variants with different input orderings.
+    *   Writing all merged results to a single JSON output file.
+
+```mermaid
+flowchart LR
+    parameter_in_1(parameter_in_1) --> parameter_merge_1(parameter_merge_1)
+    parameter_in_2(parameter_in_2) --> parameter_merge_1
+    parameter_in_2 --> parameter_merge_2(parameter_merge_2)
+    parameter_in_1 --> parameter_merge_2
+    parameter_merge_1 --> parameter_out_1(parameter_out_1)
+    parameter_merge_2 --> parameter_out_1
+
+    classDef Parameters color:#a44300, stroke:#a44300;
+    classDef Merge color:#7b2d8b, stroke:#7b2d8b;
+
+    class parameter_in_1,parameter_in_2,parameter_out_1 Parameters;
+    class parameter_merge_1,parameter_merge_2 Merge;
+```
+
+**Run via CLI:**
+```bash
+python -m ares pipeline \
+    --workflow examples/workflow/parameter_interface/param_merge.wf.json \
     --output examples/output/ \
     --log-level 20
 ```
