@@ -420,7 +420,7 @@ class SimUnit:
     @typechecked
     def _map_sim_input_data(
         self, data_dict: dict[str, AresSignal], time_steps: int
-    ) -> dict[str, AresSignal] | None:
+    ) -> dict[str, AresSignal]:
         """Maps the provided input data to the expected simulation variables from the DD.
 
         This method handles missing signals by checking for alternative names or assigning
