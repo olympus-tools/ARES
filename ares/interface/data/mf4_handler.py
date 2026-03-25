@@ -274,11 +274,12 @@ class MF4Handler(MDF, AresDataInterface):
                 )
                 sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurrence]
                 all_occurrences = super().select(sel_signal, **kwargs)
-                len_samples = [len(s.samples) for si in all_occurrences]
+                len_samples = [len(s.samples) for s in all_occurrences]
+                idx = len_samples.index(max(len_samples))
                 logger.debug(
                     f"Selected occurrence {idx} with {len_samples[idx]} samples for '{channel_name}'."
                 )
-                found_signals.append(all_Occurrences[idx])
+                found_signals.append(all_occurrences[idx])
 
         # single ocurrence: combined select()
         if single_signals:
