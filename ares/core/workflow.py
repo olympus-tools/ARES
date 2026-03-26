@@ -35,7 +35,6 @@ limitations under the License:
 
 import json
 import os
-import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -65,7 +64,6 @@ class Workflow:
         """
         self._file_path: Path = file_path
         self.workflow: WorkflowModel = self._load_and_validate_wf()
-        self._evaluate_relative_paths()
         self.workflow_sinks: list[str] = self._find_sinks()
         self.workflow_order: list[str] = self._eval_workflow_order()
         self._sort_workflow()
@@ -91,75 +89,14 @@ class Workflow:
         with open(str(self._file_path), "r", encoding="utf-8") as file:
             workflow_raw = json.load(file)
 
-        workflow_raw_pydantic = WorkflowModel.model_validate(workflow_raw)
+        workflow_raw_pydantic = WorkflowModel.model_validate(
+            workflow_raw, context={"base_dir": self._file_path.parent}
+        )
 
         logger.info(
             f"Workflow file {self._file_path} successfully loaded and validated.",
         )
         return workflow_raw_pydantic
-
-    @error_msg(
-        exception_msg="Error evaluating relative paths in workflow file.",
-        log=logger,
-        instance_el=["_file_path"],
-    )
-    @typechecked
-    def _evaluate_relative_paths(self) -> None:
-        """Converts all relative file paths in workflow elements to absolute paths.
-
-        This method iterates over all workflow elements and inspects each of their fields.
-        If a field contains a Path or a list of Paths that appear to be file paths,
-        it converts any relative paths into absolute paths based on the directory of the
-        workflow JSON file (`self._file_path`). Absolute paths are left unchanged.
-        """
-        base_dir = self._file_path.parent
-        path_eval_pattern = r"\.[a-zA-Z0-9]+$"
-
-        # TODO: make relative path evaluation easier and more intuitive
-
-        for wf_element_value in self.workflow.values():
-            for field_name, field_value in wf_element_value.__dict__.items():
-                # Case 1: single Path
-                if isinstance(field_value, Path):
-                    field_value_str = str(field_value)
-                    if (
-                        "/" in field_value_str
-                        or "\\" in field_value_str
-                        or re.search(path_eval_pattern, field_value_str) is not None
-                    ):
-                        if not field_value.is_absolute():
-                            abs_path = (base_dir / field_value).resolve()
-                            setattr(wf_element_value, field_name, abs_path)
-                            logger.debug(
-                                f"Resolved relative path in workflow file for '{wf_element_value.name}.{field_name}': {abs_path}",
-                            )
-
-                # Case 2: list of Paths
-                elif isinstance(field_value, list) and all(
-                    isinstance(file_path, Path) for file_path in field_value
-                ):
-                    abs_paths = []
-                    changed = False
-                    for path in field_value:
-                        path_str = str(path)
-                        if (
-                            "/" in path_str
-                            or "\\" in path_str
-                            or re.search(path_eval_pattern, path_str) is not None
-                        ):
-                            if not path.is_absolute():
-                                abs_paths.append((base_dir / path).resolve())
-                                changed = True
-                            else:
-                                abs_paths.append(path)
-                        else:
-                            abs_paths.append(path)
-
-                    if changed:
-                        setattr(wf_element_value, field_name, abs_paths)
-                        logger.debug(
-                            f"Resolved relative paths in workflow file for '{wf_element_value.name}.{field_name}': {abs_paths}",
-                        )
 
     @error_msg(
         exception_msg="Error while searching workflow sinks.",
