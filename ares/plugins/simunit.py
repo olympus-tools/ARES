@@ -35,6 +35,7 @@ limitations under the License:
 
 import ctypes
 import json
+import time
 from collections.abc import Mapping
 from itertools import chain
 from pathlib import Path
@@ -323,9 +324,9 @@ class SimUnit:
 
         if data:
             logger.info(
-                f"The simulation starts at timestamps {min(data[0].timestamps)} seconds "
-                f"and ends at timestamps {max(data[0].timestamps)} seconds - duration: "
-                f"{max(data[0].timestamps) - min(data[0].timestamps)} seconds",
+                f"The simulation starts at timestamps {min(data[0].timestamps):.3f} seconds "
+                f"and ends at timestamps {max(data[0].timestamps):.3f} seconds - duration: "
+                f"{max(data[0].timestamps) - min(data[0].timestamps):.3f} seconds",
             )
         else:
             logger.info(
@@ -361,6 +362,8 @@ class SimUnit:
             logger.info(f"Running cyclical functions for {time_steps} time steps...")
             progress_indices = [round(i * (time_steps - 1) / 10) for i in range(11)]
             progress_step = 0
+            time_real_start = time.perf_counter()
+            time_sim_start = float(data[0].timestamps[0]) if data else 0.0
             for time_step_idx in range(time_steps):
                 self._write_signals_to_dll(
                     data=mapped_input, time_step_idx=time_step_idx
@@ -378,8 +381,25 @@ class SimUnit:
                     sim_result["timestamps"][time_step_idx] = 0.0
 
                 if time_step_idx >= progress_indices[progress_step]:
-                    logger.info(f"Simulation progress: {progress_step * 10}%")
+                    time_real_elapsed = time.perf_counter() - time_real_start
+                    time_sim_elapsed = (
+                        float(data[0].timestamps[time_step_idx]) - time_sim_start
+                        if data
+                        else 0.0
+                    )
+                    time_speedup_hint = (
+                        f" - speedup factor {time_sim_elapsed / time_real_elapsed:.0f}"
+                        if time_real_elapsed > 0 and time_sim_elapsed > 0
+                        else ""
+                    )
+                    logger.info(
+                        f"Simulation progress: {progress_step * 10}%{time_speedup_hint}"
+                    )
                     progress_step += 1
+                    time_real_start = time.perf_counter()
+                    time_sim_start = (
+                        float(data[0].timestamps[time_step_idx]) if data else 0.0
+                    )
 
         logger.info("ares simulation successfully finished.")
         return [
