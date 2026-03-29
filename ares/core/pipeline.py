@@ -46,7 +46,7 @@ from ares.pydantic_models.workflow_model import (
     SimUnitElement,
 )
 from ares.utils.decorators import error_msg
-from ares.utils.logger import create_logger
+from ares.utils.logger import create_logger, logger_workflow_element
 
 logger = create_logger(__name__)
 
@@ -81,6 +81,7 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
 
     # evaluation of all sinks, that were found in workflow json files
     for wf_element_value in ares_wf.workflow.values():
+        logger_workflow_element.set(wf_element_value.name)
         logger.info(f"Processing workflow element: {wf_element_value.name}")
 
         tmp_param_hash_list: list[list[str]] = []

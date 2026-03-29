@@ -34,12 +34,34 @@ limitations under the License:
 """
 # TODO:use: https://pypi.org/project/python-json-logger/ -> ?
 
+import contextvars
 import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 
 import colorlog
+
+# Context variable for the current workflow element
+logger_workflow_element: contextvars.ContextVar[str] = contextvars.ContextVar(
+    "workflow_element", default="N/A"
+)
+
+
+class AresContextFilter(logging.Filter):
+    """
+    Filter to inject the current workflow element name from contextvars into the log record.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Function to mutate logger record to contain workflow_element name.
+        Args:
+            record (LogRecord) : LogRecord element inherited through calling logger.debug/info/warning/error.
+        Returns:
+            True: function returns always True, injection is valid when it runs without exceptions.
+        """
+        record.workflow_element = logger_workflow_element.get()
+        return True
 
 
 def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
@@ -54,7 +76,6 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     Returns:
         logging.Logger: A configured logger instance for ARES.
     """
-    # create/get logdir: "logs"
     logdir = Path(__file__).parent / "../../logs"
     logdir.mkdir(parents=True, exist_ok=True)
 
@@ -67,6 +88,8 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
         logger = logging.getLogger(name)
         logfile = Path(logdir, f"{name}.log")
 
+    logger.addFilter(AresContextFilter())
+
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True
 
@@ -77,7 +100,7 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
 
-    fmt_plain = "%(levelname)-8s | %(asctime)s | %(filename)s:%(lineno)s >> %(message)s"
+    fmt_plain = "%(levelname)-8s | %(asctime)s | %(workflow_element)s | %(filename)s:%(lineno)s >> %(message)s"
     fmt_color = "%(log_color)s" + fmt_plain
     datefmt = "%d.%m.%Y %H:%M:%S"
 
