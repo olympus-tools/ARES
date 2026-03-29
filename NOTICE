@@ -19,8 +19,8 @@ Apache Software License License:
   * readme_renderer 44.0
     URL: UNKNOWN
 
-  * requests 2.32.5
-    URL: https://requests.readthedocs.io
+  * requests 2.33.0
+    URL: https://github.com/psf/requests
 
   * requests-toolbelt 1.0.0
     URL: https://toolbelt.readthedocs.io/
@@ -58,15 +58,12 @@ Apache-2.0 OR BSD-2-Clause License:
 
 Apache-2.0 OR BSD-3-Clause License:
 ------------------------------------------------------------------------------
-  * cryptography 46.0.5
+  * cryptography 46.0.6
     URL: https://github.com/pyca/cryptography
 
 
 BSD License License:
 ------------------------------------------------------------------------------
-  * Pygments 2.19.2
-    URL: https://pygments.org
-
   * canmatrix 1.2
     URL: http://github.com/ebroecker/canmatrix
 
@@ -90,6 +87,12 @@ BSD License; GNU General Public License (GPL); Public Domain License:
 ------------------------------------------------------------------------------
   * docutils 0.22.4
     URL: https://docutils.sourceforge.io
+
+
+BSD-2-Clause License:
+------------------------------------------------------------------------------
+  * Pygments 2.20.0
+    URL: https://pygments.org
 
 
 BSD-3-Clause License:
@@ -163,7 +166,7 @@ MIT License:
   * more-itertools 10.8.0
     URL: https://github.com/more-itertools/more-itertools
 
-  * nh3 0.3.3
+  * nh3 0.3.4
     URL: UNKNOWN
 
   * numexpr 2.14.1
