@@ -108,18 +108,18 @@ class MF4Handler(MDF, AresDataInterface):
 
         if file_path is None:
             super().__init__(**kwargs)
-            self._available_signals: list[str] = []
+            self._available_signals: set[str] = set()
 
             if data:
                 self.add(data=data, **kwargs)
 
         else:
             super().__init__(file_path, **kwargs)
-            self._available_signals = list(self.channels_db.keys())
+            self._available_signals = set(self.channels_db.keys())
 
             for obs_channel in OBSOLETE_SIGNALS:
                 if obs_channel in self._available_signals:
-                    self._available_signals.remove(obs_channel)
+                    self._available_signals.discard(obs_channel)
 
     @override
     @safely_run(
@@ -185,7 +185,7 @@ class MF4Handler(MDF, AresDataInterface):
         stepsize = self._stepsize if stepsize is None else stepsize
 
         tmp_data = (
-            self._get_signals(label_filter=self._available_signals, **kwargs)
+            self._get_signals(label_filter=list(self._available_signals), **kwargs)
             if label_filter is None
             else self._get_signals(
                 label_filter=self._resolve_label_filter(label_filter=label_filter),
@@ -341,48 +341,49 @@ class MF4Handler(MDF, AresDataInterface):
 
         signals_to_write = []
         for signal in data:
-            if signal.ndim == 1:
-                signals_to_write.append(
-                    Signal(
-                        samples=signal.value,
-                        timestamps=signal.timestamps,
-                        name=signal.label,
-                        unit=signal.unit if signal.unit else "",
-                        comment=signal.description if signal.description else "",
-                        source=source,
-                        encoding="utf-8",
+            if signal.label not in self._available_signals:
+                self._available_signals.add(signal.label)
+                if signal.ndim == 1:
+                    signals_to_write.append(
+                        Signal(
+                            samples=signal.value,
+                            timestamps=signal.timestamps,
+                            name=signal.label,
+                            unit=signal.unit if signal.unit else "",
+                            comment=signal.description if signal.description else "",
+                            source=source,
+                            encoding="utf-8",
+                        )
                     )
-                )
 
-            elif signal.ndim in [2, 3]:
-                dtype_str = self.DTYPE_MAP[signal.dtype]
+                elif signal.ndim in [2, 3]:
+                    dtype_str = self.DTYPE_MAP[signal.dtype]
 
-                if signal.ndim == 2:
-                    array_size = signal.shape[1]
-                    dimension_str = f"({array_size},)"
+                    if signal.ndim == 2:
+                        array_size = signal.shape[1]
+                        dimension_str = f"({array_size},)"
+                    else:
+                        rows, cols = signal.shape[1], signal.shape[2]
+                        dimension_str = f"({rows}, {cols})"
+
+                    types = [(signal.label, f"{dimension_str}{dtype_str}")]
+                    samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
+
+                    signals_to_write.append(
+                        Signal(
+                            samples=samples,
+                            timestamps=signal.timestamps,
+                            name=signal.label,
+                            unit=signal.unit if signal.unit else "",
+                            comment=signal.description if signal.description else "",
+                            source=source,
+                            encoding="utf-8",
+                        )
+                    )
+
                 else:
-                    rows, cols = signal.shape[1], signal.shape[2]
-                    dimension_str = f"({rows}, {cols})"
-
-                types = [(signal.label, f"{dimension_str}{dtype_str}")]
-                samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
-
-                signals_to_write.append(
-                    Signal(
-                        samples=samples,
-                        timestamps=signal.timestamps,
-                        name=signal.label,
-                        unit=signal.unit if signal.unit else "",
-                        comment=signal.description if signal.description else "",
-                        source=source,
-                        encoding="utf-8",
+                    logger.warning(
+                        f"Unsupported signal dimension: {signal.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
                     )
-                )
-
-            else:
-                logger.warning(
-                    f"Unsupported signal dimension: {signal.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
-                )
 
         self.append(signals_to_write)
-        [self._available_signals.append(signal.label) for signal in data]
