@@ -167,7 +167,7 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
 | `type`             | Yes        | `str`       | `"data"`            | Unique identifier for the element type.             |
 | `mode`             | Yes        | `str`       | `"read"`, `"write"` | Operation mode.                                     |
-| `file_path`        | If `read`  | `list[str]` |                     | Path(s) to input data files (e.g., `.mf4`).         |
+| `file_path`        | If `read`  | `list[str]` |                     | Path(s) to input data files or directories. Accepted file format: `.mf4`. Directories are scanned non-recursively — all matching files are included, others are silently skipped. |
 | `data`            | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name or pattern.         |
@@ -182,7 +182,7 @@ Handles parameter sets that remain constant throughout the simulation duration. 
 | :----------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
 | `type`             | Yes        | `str`       | `"parameter"`       | Unique identifier for the element type.             |
 | `mode`             | Yes        | `str`       | `"read"`, `"write"` | Operation mode.                                     |
-| `file_path`        | If `read`  | `list[str]` |                     | Path(s) to parameter files (e.g., `.dcm`, `.json`). |
+| `file_path`        | If `read`  | `list[str]` |                     | Path(s) to parameter files or directories. Accepted file formats: `.dcm`, `.json`. Directories are scanned non-recursively — all matching files are included, others are silently skipped. |
 | `parameter`        | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"dcm"`, `"json"`   | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific parameters by name or pattern.      |
