@@ -102,7 +102,7 @@ class MATHandler(AresDataInterface):
             label_filter=label_filter,
         )
         self.data: list[AresSignal] = []
-        self._available_signals: list[str] = []
+        self._available_signals: set[str] = set()
 
         if file_path is None:
             if data:
@@ -194,11 +194,7 @@ class MATHandler(AresDataInterface):
                 **kwargs,
             )
 
-            self._available_signals.extend(
-                sig["label"]
-                for sig in new_signals
-                if sig["label"] not in self._available_signals
-            )
+            self._available_signals.update(sig["label"] for sig in new_signals)
 
             # transform standarized matinterface to AresSignal
             for sig in new_signals:
@@ -243,13 +239,7 @@ class MATHandler(AresDataInterface):
             data (list[AresSignal]): List of AresSignal objects to append to mat file.
             **kwargs (Any): Additional arguments:
         """
-        # TODO: write available_signals as set
-        # Assuming self._available_signals is a set
-        # for signal in data:
-        #     if signal.label not in self._available_signals:
-        #         self.data.append(signal)
-        #         self._available_signals.add(signal.label)
         for signal in data:
             if signal.label not in self._available_signals:
                 self.data.append(signal)
-                self._available_signals.append(signal.label)
+                self._available_signals.add(signal.label)
