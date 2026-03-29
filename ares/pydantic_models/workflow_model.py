@@ -35,6 +35,7 @@ limitations under the License:
 
 import os
 import re
+from enum import StrEnum
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -47,6 +48,32 @@ from pydantic import (
     model_validator,
 )
 from typing_extensions import Literal
+
+
+class DataFormat(StrEnum):
+    """Allowed output formats for data elements."""
+
+    MF4 = "mf4"
+
+
+class ParameterFormat(StrEnum):
+    """Allowed output formats for parameter elements."""
+
+    JSON = "json"
+    DCM = "dcm"
+
+
+class SimUnitFormat(StrEnum):
+    """Allowed file formats for sim unit shared libraries."""
+
+    SO = "so"
+    DLL = "dll"
+
+
+class PluginFormat(StrEnum):
+    """Allowed file formats for plugin elements."""
+
+    PY = "py"
 
 
 class BaseElement(BaseModel):
@@ -84,6 +111,36 @@ class BaseElement(BaseModel):
         if is_path_like and not file_path.is_absolute():
             return (base_dir / file_path).resolve()
         return file_path
+
+    @staticmethod
+    def _validate_file_path_format(
+        file_paths: list[Path] | Path | None,
+        allowed_format: type[StrEnum],
+    ) -> None:
+        """Validates that all provided paths have a suffix matching the allowed formats.
+
+        Derives the allowed suffixes from the enum values by prepending a dot
+        (e.g. ``DataFormat.MF4 = "mf4"`` → ``.mf4``).
+
+        Args:
+            file_paths (list[Path] | Path | None): Single path or list of paths to validate.
+                Empty lists and ``None`` are silently accepted.
+            allowed_format (type[StrEnum]): The ``StrEnum`` class whose values define
+                the allowed file extensions (without leading dot).
+
+        Returns:
+            None
+        """
+        if not file_paths:
+            return
+        paths = [file_paths] if isinstance(file_paths, Path) else file_paths
+        allowed_suffixes = {f".{fmt.value}" for fmt in allowed_format}
+        for path in paths:
+            if path.suffix not in allowed_suffixes:
+                raise ValueError(
+                    f"File '{path.name}' has unsupported format '{path.suffix or '(no extension)'}'."
+                    f" Allowed: {sorted(allowed_suffixes)}."
+                )
 
     @model_validator(mode="after")
     def _resolve_paths(self, info: ValidationInfo) -> "BaseElement":
@@ -183,7 +240,7 @@ class DataElement(BaseElement):
     data: list[str] | None = []
     label_filter: list[str] | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
-    output_format: Literal["mf4"] | None = None
+    output_format: DataFormat | None = None
     stepsize: int | None = None
 
     @model_validator(mode="after")
@@ -192,6 +249,9 @@ class DataElement(BaseElement):
         if self.mode == "read":
             if not self.file_path:
                 raise ValueError("Field 'file_path' is required for mode='read'.")
+            self._validate_file_path_format(
+                file_paths=self.file_path, allowed_format=DataFormat
+            )
         if self.mode == "write":
             if not self.data:
                 raise ValueError("Field 'data' is required for mode='write'.")
@@ -216,7 +276,7 @@ class ParameterElement(BaseElement):
     file_path: list[Path] | None = []
     parameter: list[str] | None = []
     label_filter: list[str] | None = None
-    output_format: Literal["json", "dcm"] | None = None
+    output_format: ParameterFormat | None = None
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -224,6 +284,9 @@ class ParameterElement(BaseElement):
         if self.mode == "read":
             if not self.file_path:
                 raise ValueError("Field 'file_path' is required for mode='read'.")
+            self._validate_file_path_format(
+                file_paths=self.file_path, allowed_format=ParameterFormat
+            )
         if self.mode == "write":
             if not self.parameter:
                 raise ValueError("Field 'parameter' is required for mode='write'.")
@@ -241,6 +304,12 @@ class PluginElement(BaseElement):
     data_obj: list[Any] | None = None
     parameter_hash_lists: list[list[str]] = []
     data_hash_lists: list[list[str]] = []
+
+    @model_validator(mode="after")
+    def _validate_model(self):
+        """Validates that file_path, if provided, points to a Python (.py) file."""
+        self._validate_file_path_format(self.file_path, PluginFormat)
+        return self
 
 
 class SimUnitElement(PluginElement):
@@ -269,6 +338,7 @@ class SimUnitElement(PluginElement):
 
     @model_validator(mode="after")
     def _validate_model(self):
+        self._validate_file_path_format(self.file_path, SimUnitFormat)
         if self.vstack_pattern is not None:
             self.vstack_pattern = [
                 VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
