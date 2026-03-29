@@ -60,6 +60,7 @@ ares = "ares.cli.ares:cli"
 test = [
     "pytest==8.4.1",
     "pytest-cov==6.0.0",
+    "h5py>=3.16.0",
 ]
 dev = [
     "ruff==0.12.11",
