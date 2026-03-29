@@ -43,6 +43,7 @@ from pydantic import (
     ConfigDict,
     Field,
     RootModel,
+    ValidationInfo,
     model_validator,
 )
 from typing_extensions import Literal
@@ -54,6 +55,83 @@ class BaseElement(BaseModel):
     name: str | None = None
     element_workflow: list[str] = []
     hash_list: dict[str, list[str]] = {}
+
+    @staticmethod
+    def _resolve_single_path(
+        base_dir: Path, file_path: Path, path_eval_pattern: str
+    ) -> Path:
+        """Resolve a single path to an absolute path if it is path-like and relative.
+
+        A path is considered path-like when it contains a path separator
+        (``/`` or ``\\``) or ends with a file extension matched by
+        *path_eval_pattern*. Leaves the path unchanged if it is already
+        absolute or not considered path-like.
+
+        Args:
+            base_dir (Path): Base directory used to anchor relative paths.
+            file_path (Path): The path to potentially resolve.
+            path_eval_pattern (str): Regex pattern used to detect file extensions.
+
+        Returns:
+            Path: The resolved absolute path, or the original path if no change is needed.
+        """
+        file_path_str = str(file_path)
+        is_path_like = (
+            "/" in file_path_str
+            or "\\" in file_path_str
+            or re.search(path_eval_pattern, file_path_str) is not None
+        )
+        if is_path_like and not file_path.is_absolute():
+            return (base_dir / file_path).resolve()
+        return file_path
+
+    @model_validator(mode="after")
+    def _resolve_paths(self, info: ValidationInfo) -> "BaseElement":
+        """Resolves relative Path fields to absolute paths using the workflow file's base directory.
+
+        Requires validation context with key 'base_dir' (Path). Handles both single
+        Path fields and list[Path] fields. Paths without path separators or file
+        extensions are left unchanged.
+
+        Args:
+            info (ValidationInfo): Pydantic validation context, expected to contain
+                a 'base_dir' key with the base directory as a Path.
+
+        Returns:
+            BaseElement: The model instance with all relative Path fields resolved
+                to absolute paths.
+        """
+        if not info.context or "base_dir" not in info.context:
+            return self
+        base_dir: Path = info.context["base_dir"]
+        path_eval_pattern = r"\.[a-zA-Z0-9]+$"
+
+        for field_name, field_value in self.__dict__.items():
+            if isinstance(field_value, Path):
+                resolved_path = self._resolve_single_path(
+                    base_dir=base_dir,
+                    file_path=field_value,
+                    path_eval_pattern=path_eval_pattern,
+                )
+                if resolved_path != field_value:
+                    setattr(self, field_name, resolved_path)
+
+            elif (
+                isinstance(field_value, list)
+                and field_value
+                and all(isinstance(p, Path) for p in field_value)
+            ):
+                resolved_list = [
+                    self._resolve_single_path(
+                        base_dir=base_dir,
+                        file_path=p,
+                        path_eval_pattern=path_eval_pattern,
+                    )
+                    for p in field_value
+                ]
+                if resolved_list != field_value:
+                    setattr(self, field_name, resolved_list)
+        return self
 
 
 class VStackPatternElement(BaseModel):
