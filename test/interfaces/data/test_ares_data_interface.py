@@ -109,7 +109,7 @@ class TestAresDataInterfaceNew:
         assert instance1 is instance2
 
     def test_new_with_file_path_creates_instance(self, tmp_path):
-        test_file = tmp_path / "test.bin"
+        test_file = tmp_path / "test.file"
         test_file.write_bytes(b"test content")
 
         instance = ConcreteDataInterface(file_path=test_file)
@@ -182,24 +182,32 @@ class TestAresDataInterfaceCalculateHash:
     """Tests for the _calculate_hash static method."""
 
     def test_calculate_hash_from_file(self, tmp_path):
-        test_file = tmp_path / "test.bin"
+        test_file = tmp_path / "test.file"
         test_file.write_bytes(b"test content")
         hash_result = AresDataInterface._calculate_hash(file_path=test_file)
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
+        assert (
+            hash_result
+            == "6ae8a75555209fd6c44157c0aed8016e763ff435a19cf186f76863140143ff72"
+        )
 
     def test_calculate_hash_from_string(self):
         hash_result = AresDataInterface._calculate_hash(input_string="test_string")
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
+        assert (
+            hash_result
+            == "4b641e9a923d1ea57e18fe41dcb543e2c4005c41ff210864a710b0fbb2654c11"
+        )
 
     def test_calculate_hash_no_args_raises(self):
         with pytest.raises(Exception):
             AresDataInterface._calculate_hash()
 
     def test_calculate_hash_consistency(self, tmp_path):
-        test_file = tmp_path / "test.bin"
-        test_file.write_bytes(b"test content")
+        test_file = tmp_path / "test.file"
+        test_file.write_bytes(b"test content test")
         hash1 = AresDataInterface._calculate_hash(file_path=test_file)
         hash2 = AresDataInterface._calculate_hash(file_path=test_file)
         assert hash1 == hash2
@@ -394,14 +402,19 @@ class TestAresDataInterfaceVstack:
     def test_vstack_no_matching_signals(self):
         signals = [
             AresSignal(
-                label="other_signal",
+                label="data_0",
                 timestamps=np.array([0.0, 1.0], dtype=np.float32),
                 value=np.array([1.0, 2.0], dtype=np.float32),
-            )
+            ),
+            AresSignal(
+                label="data_1",
+                timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
+                value=np.array([3.0, 4.0, 5.0], dtype=np.float32),
+            ),
         ]
-        pattern = [VStackPatternElement(pattern="(data_\\d+)")]
+        pattern = [VStackPatternElement(pattern="(nodata_\\d+)")]
         result = AresDataInterface._vstack(signals, pattern)
-        assert len(result) == 1
+        assert len(result) == 2
 
 
 class TestAresDataInterfaceWfElementHandler:
