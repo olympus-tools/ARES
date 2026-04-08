@@ -799,24 +799,30 @@ class SimUnit:
         return parameter_keys
 
 
-def ares_plugin(plugin_input: SimUnitElement):
+def ares_plugin(workflow_scope: dict[str, SimUnitElement], **kwargs):
     """ARES plugin entrypoint for sim_unit elements.
 
     Args:
-        plugin_input (SimUnitElement): Pydantic model containing all plugin configuration and data.
-            name (str): Name of the workflow element.
-            file_path (Path): Path to the shared library file (.so, .dll, .dylib).
-            data_dictionary (Path): Path to the Data Dictionary JSON file.
-            parameter_obj (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
-            data_obj (dict[str, AresDataInterface]): AresData storage with hashes as keys.
-            ...: Other fields from WorkflowElement as needed.
+        workflow_scope (dict[str, SimUnitElement]): Scope of workflow elements passed by
+            the plugin interface. The first value must be the active ``SimUnitElement``
+            with the following fields populated:
+            - file_path (Path): Path to the shared library file (.so or .dll).
+            - data_dictionary (Path): Path to the Data Dictionary JSON file.
+            - stepsize (int): Simulation step size in microseconds.
+            - vstack_pattern (list[VStackPatternElement] | None): Optional signal stacking pattern.
+            - parameter_obj (list[list[AresParamInterface]]): Nested parameter objects.
+            - data_obj (list[list[AresDataInterface]]): Nested data objects.
+            - name (str | None): Name of the workflow element, used as source label.
 
     Returns:
         None
     """
+    simunit_element_value: SimUnitElement = next(iter(workflow_scope.values()))
 
-    parameter_lists: list[list[AresParamInterface]] = plugin_input.parameter_obj
-    data_lists: list[list[AresDataInterface]] = plugin_input.data_obj
+    parameter_lists: list[list[AresParamInterface]] = (
+        simunit_element_value.parameter_obj
+    )
+    data_lists: list[list[AresDataInterface]] = simunit_element_value.data_obj
 
     if not parameter_lists:
         parameter_lists = [[AresParamInterface.create()]]
@@ -824,8 +830,8 @@ def ares_plugin(plugin_input: SimUnitElement):
         data_lists = [[AresDataInterface.create()]]
 
     sim_unit = SimUnit(
-        file_path=plugin_input.file_path,
-        dd_path=plugin_input.data_dictionary,
+        file_path=simunit_element_value.file_path,
+        dd_path=simunit_element_value.data_dictionary,
     )
 
     label_filter_signal = sim_unit.data_keys()
@@ -839,9 +845,9 @@ def ares_plugin(plugin_input: SimUnitElement):
 
                     sim_result = sim_unit.run(
                         data=data_obj.get(
-                            stepsize=plugin_input.stepsize,
+                            stepsize=simunit_element_value.stepsize,
                             label_filter=label_filter_signal,
-                            vstack_pattern=plugin_input.vstack_pattern,
+                            vstack_pattern=simunit_element_value.vstack_pattern,
                         ),
                         parameters=parameter_obj.get(
                             label_filter=label_filter_parameter
@@ -852,5 +858,5 @@ def ares_plugin(plugin_input: SimUnitElement):
                         AresDataInterface.create(
                             data=sim_result,
                             dependencies=dependencies,
-                            source_name=plugin_input.name,
+                            source_name=simunit_element_value.name,
                         )
