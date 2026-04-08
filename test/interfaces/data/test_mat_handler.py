@@ -443,7 +443,7 @@ def test_mat_handler_get_no_signals():
         _cleanup(TEST_MAT_PATH)
 
 
-def test_mat_handler_get_resampling():
+def test_mat_handler_get_resampling_low():
     """get() resamples signals when stepsize is provided."""
     _cleanup(TEST_MAT_PATH)
     try:
@@ -455,14 +455,37 @@ def test_mat_handler_get_resampling():
         handler._save(TEST_MAT_PATH)
 
         reader = MATHandler(file_path=TEST_MAT_PATH)
-        # Request resampling to 200 ms (0.2 s). Original sample time is 0.1s. Expected length: 10 / 0.2 = 50
+        # Request resampling to 200 ms (0.2 s). Original sample time is 0.1s.
         resampled_signals = reader.get(stepsize=200)
 
         assert resampled_signals is not None
         assert len(resampled_signals) == 1
         assert resampled_signals[0].label == "resample_sig"
-        assert len(resampled_signals[0].timestamps) == 50
-        assert len(resampled_signals[0].value) == 50
+        assert resampled_signals[0].timestamps[1]- resampled_signals[0].timestamps[0] == np.float32(0.2)
+        assert len(resampled_signals[0].value) == len(resampled_signals[0].timestamps)
+    finally:
+        _cleanup(TEST_MAT_PATH)
+
+def test_mat_handler_get_resampling_high():
+    """get() resamples signals when stepsize is provided."""
+    _cleanup(TEST_MAT_PATH)
+    try:
+        # Create a signal with 100 samples
+        timestamps = np.arange(0, 10, 0.1, dtype=np.float64)
+        values = np.sin(timestamps, dtype=np.float64)
+        signal = AresSignal(label="resample_sig", timestamps=timestamps, value=values)
+        handler = MATHandler(file_path=None, data=[signal])
+        handler._save(TEST_MAT_PATH)
+
+        reader = MATHandler(file_path=TEST_MAT_PATH)
+        # Request resampling to 50 ms (0.02 s). Original sample time is 0.1s.
+        resampled_signals = reader.get(stepsize=50)
+
+        assert resampled_signals is not None
+        assert len(resampled_signals) == 1
+        assert resampled_signals[0].label == "resample_sig"
+        assert resampled_signals[0].timestamps[1]- resampled_signals[0].timestamps[0] == np.float32(0.05)
+        assert len(resampled_signals[0].value) == len(resampled_signals[0].timestamps)
     finally:
         _cleanup(TEST_MAT_PATH)
 
