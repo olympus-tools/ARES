@@ -352,6 +352,7 @@ class AresDataInterface(ABC):
                 latest_start_time = np.maximum(latest_start_time, signal.timestamps[0])
                 earliest_end_time = np.minimum(earliest_end_time, signal.timestamps[-1])
 
+        # magic number: 1000: rescale factor ms -> s
         timestamps_resample = np.arange(
             0,
             (earliest_end_time - latest_start_time) + (stepsize / 1000.0),
