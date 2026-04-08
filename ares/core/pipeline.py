@@ -40,11 +40,7 @@ from ares.core.workflow import Workflow
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.interface.plugin.ares_plugin_interface import AresPluginInterface
-from ares.pydantic_models.workflow_model import (
-    MergeElement,
-    PluginElement,
-    SimUnitElement,
-)
+from ares.pydantic_models.workflow_model import WorkflowElement
 from ares.utils.decorators import error_msg
 from ares.utils.logger import create_logger, logger_workflow_element
 
@@ -110,37 +106,55 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                 )
 
             case "plugin" | "sim_unit" | "merge":
-                plugin_input: SimUnitElement | PluginElement | MergeElement = (
-                    wf_element_value.model_copy()
-                )
-
                 if wf_element_value.type == "sim_unit":
-                    plugin_input.plugin_path = (
+                    plugin_path = (
                         Path(__file__).parent.parent / "plugins" / "simunit.py"
                     )
+                    scope: list[str] = (
+                        [wf_element_value.name] if wf_element_value.name else []
+                    )
                 elif wf_element_value.type == "merge":
-                    plugin_input.plugin_path = (
-                        Path(__file__).parent.parent / "plugins" / "merge.py"
+                    plugin_path = Path(__file__).parent.parent / "plugins" / "merge.py"
+                    scope: list[str] = (
+                        list(ares_wf.workflow.keys())
+                        if list(ares_wf.workflow.keys())
+                        else []
                     )
                 else:
-                    plugin_input.plugin_path = plugin_input.file_path
+                    plugin_path = Path(wf_element_value.file_path)
+                    scope: list[str] = (
+                        list(ares_wf.workflow.keys())
+                        if list(ares_wf.workflow.keys())
+                        else []
+                    )
+
+                workflow_scope: dict[str, WorkflowElement] = {
+                    wf_element_name: ares_wf.workflow[wf_element_name]
+                    for wf_element_name in scope
+                    if ares_wf.workflow.get(wf_element_name) is not None
+                }
+                workflow_scope[wf_element_value.name].plugin_path = plugin_path
 
                 # filtering relevant parameter for plugin element
-                plugin_input.parameter_obj = [
+                workflow_scope[wf_element_value.name].parameter_obj = [
                     [param_storage[hash] for hash in hash_list if hash in param_storage]
                     for hash_list in tmp_param_hash_list
                 ]
-                plugin_input.parameter_hash_lists = tmp_param_hash_list
-
+                workflow_scope[
+                    wf_element_value.name
+                ].parameter_hash_lists = tmp_param_hash_list
                 # filtering relevant data for plugin element
-                plugin_input.data_obj = [
+                workflow_scope[wf_element_value.name].data_obj = [
                     [data_storage[hash] for hash in hash_list if hash in data_storage]
                     for hash_list in tmp_data_hash_list
                 ]
-                plugin_input.data_hash_lists = tmp_data_hash_list
+                workflow_scope[
+                    wf_element_value.name
+                ].data_hash_lists = tmp_data_hash_list
 
                 AresPluginInterface(
-                    plugin_input=plugin_input,
+                    plugin_element_name=wf_element_value.name,
+                    workflow_scope=workflow_scope,
                 )
 
         # update workflow element hash list and clear temporary hash list for next iteration

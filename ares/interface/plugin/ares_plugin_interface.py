@@ -36,12 +36,9 @@ limitations under the License:
 import importlib.util
 import os
 import sys
+from pathlib import Path
 
-from ares.pydantic_models.workflow_model import (
-    MergeElement,
-    PluginElement,
-    SimUnitElement,
-)
+from ares.pydantic_models.workflow_model import WorkflowElement
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -50,21 +47,25 @@ logger = create_logger(__name__)
 
 @typechecked
 def AresPluginInterface(
-    plugin_input: MergeElement | PluginElement | SimUnitElement,
+    plugin_element_name: str,
+    workflow_scope: dict[str, WorkflowElement],
 ):
     """Execute plugin based on wf_element_value configuration using importlib.
 
     Args:
-        plugin_input (MergeElement | PluginElement | SimunitElement ): pydantic model containing plugin configuration
+        plugin_element_name (str): The name of the workflow element.
+        workflow_scope (dict[str, WorkflowElement]): The scope of the workflow containing all elements.
     """
     try:
-        plugin_path = plugin_input.plugin_path
+        plugin_element_value = workflow_scope[plugin_element_name]
+        plugin_path: Path = getattr(plugin_element_value, "plugin_path")
+
         module_name = f"ares_plugin_{plugin_path.stem}_{os.getpid()}"
 
         # Create module specification
         spec = importlib.util.spec_from_file_location(module_name, plugin_path)
         if spec is None or spec.loader is None:
-            logger.error(f"{plugin_input.name}: Could not load plugin {plugin_path}")
+            logger.error(f"{plugin_element_name}: Could not load plugin {plugin_path}")
             return
 
         # Create and configure module
@@ -82,22 +83,21 @@ def AresPluginInterface(
             sys.modules[module_name] = module
             spec.loader.exec_module(module)
 
-            # Call plugin's main function with explicit arguments
-            if plugin_input.plugin_name:
-                plugin_name = plugin_input.plugin_name
-            else:
-                plugin_name = "ares_plugin"
+            # Determine the plugin entry-point function name
+            plugin_name: str = (
+                getattr(plugin_element_value, "plugin_name", None) or "ares_plugin"
+            )
 
             if hasattr(module, plugin_name):
-                getattr(module, plugin_name)(plugin_input=plugin_input)
+                getattr(module, plugin_name)(workflow_scope=workflow_scope)
             else:
                 logger.error(
-                    f"{plugin_input.name}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
+                    f"{plugin_element_name}: Plugin {plugin_path.name} does not have an '{plugin_name}' function"
                 )
                 return
 
             logger.debug(
-                f"{plugin_input.name}: Plugin {plugin_path.name} executed successfully"
+                f"{plugin_element_name}: Plugin {plugin_path.name} executed successfully"
             )
 
         finally:
@@ -108,7 +108,5 @@ def AresPluginInterface(
                 del sys.modules[module_name]
 
     except Exception as e:
-        logger.error(
-            f"{plugin_input.name}: Plugin execution failed for {plugin_input.plugin_path.name}: {e}"
-        )
+        logger.error(f"{plugin_element_name}: Plugin execution failed: {e}")
         return
