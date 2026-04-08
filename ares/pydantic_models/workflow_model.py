@@ -344,8 +344,8 @@ class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
     file_path: Path | None = None
     plugin_name: str | None = None
-    parameter_obj: list[Any] | None = None
-    data_obj: list[Any] | None = None
+    parameter_obj: list[Any] | None = Field(default=None, exclude=True)
+    data_obj: list[Any] | None = Field(default=None, exclude=True)
     parameter_hash_lists: list[list[str]] = []
     data_hash_lists: list[list[str]] = []
 
@@ -377,8 +377,8 @@ class SimUnitElement(PluginElement):
     init: list[str] | None = []
     cancel_condition: str | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
-    parameter_obj: list[Any] | None = None
-    data_obj: list[Any] | None = None
+    parameter_obj: list[Any] | None = Field(default=None, exclude=True)
+    data_obj: list[Any] | None = Field(default=None, exclude=True)
     parameter_hash_lists: list[list[str]] = []
     data_hash_lists: list[list[str]] = []
 
@@ -416,8 +416,8 @@ class MergeElement(PluginElement):
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
     vstack_pattern_parameter: list[VStackPatternElement] | list[str] | None = None
     stepsize: int | None = None
-    parameter_obj: list[Any] | None = None
-    data_obj: list[Any] | None = None
+    parameter_obj: list[Any] | None = Field(default=None, exclude=True)
+    data_obj: list[Any] | None = Field(default=None, exclude=True)
     parameter_hash_lists: list[list[str]] = []
     data_hash_lists: list[list[str]] = []
 
