@@ -397,7 +397,7 @@ class SimUnit:
                         else 0.0
                     )
                     time_speedup_hint = (
-                        f" - speedup factor {time_sim_elapsed / time_real_elapsed:.0f}"
+                        f" - speedup factor {time_sim_elapsed / time_real_elapsed:.1f}"
                         if time_real_elapsed > 0 and time_sim_elapsed > 0
                         else ""
                     )
