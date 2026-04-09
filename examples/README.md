@@ -482,11 +482,11 @@ python -m ares pipeline \
 ### 5.3. SimUnit Interface Alternative
 
 *   **Workflow**: `examples/workflow/sim_unit/simunit_interface_alt.wf.json`
-*   **Purpose**: Demonstrates alternative signal mapping using the data dictionary's `input_alternatives` field for flexible signal routing.
+*   **Purpose**: Demonstrates alternative signal mapping using the data dictionary's `mapping_alternatives` field for flexible signal routing.
 *   **Simulation Unit**: **In/Out Handling**
 *   **Key Concepts**:
     *   Alternative data dictionary mapping (`_alt.dd.json`).
-    *   Flexible signal name mapping using `input_alternatives` field.
+    *   Flexible signal name mapping using `mapping_alternatives` field.
     *   Workflow signals can have different names than simulation unit expects.
     *   No parameter passing (demonstrates signal-only operation).
 
@@ -552,12 +552,12 @@ python -m ares pipeline \
 ### 5.5. SimUnit Interface Alternative Value
 
 *   **Workflow**: `examples/workflow/sim_unit/simunit_interface_alt_value.wf.json`
-*   **Purpose**: Demonstrates mapping constant values from the `input_alternatives` field instead of workflow signals.
+*   **Purpose**: Demonstrates mapping constant values from the `mapping_alternatives` field instead of workflow signals.
 *   **Simulation Unit**: **In/Out Handling**
 *   **Key Concepts**:
     *   Alternative data dictionary with constant values (`_alt_value.dd.json`).
-    *   Constant values specified in the `input_alternatives` field of the data dictionary.
-    *   The first entry in `input_alternatives` is mapped as constant value for each signal.
+    *   Constant values specified in the `mapping_alternatives` field of the data dictionary.
+    *   The first entry in `mapping_alternatives` is mapped as constant value for each signal.
     *   Allows defining fixed calibration values or test constants directly in the data dictionary.
     *   Simulation unit receives constant values instead of time-varying signals from workflow.
     *   No parameter passing (demonstrates constant value handling only).

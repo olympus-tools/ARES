@@ -476,10 +476,10 @@ class SimUnit:
                     continue
 
                 if (
-                    hasattr(dd_element_value, "input_alternatives")
-                    and dd_element_value.input_alternatives
+                    hasattr(dd_element_value, "mapping_alternatives")
+                    and dd_element_value.mapping_alternatives
                 ):
-                    for alternative_value in dd_element_value.input_alternatives:
+                    for alternative_value in dd_element_value.mapping_alternatives:
                         mapped = False
 
                         if isinstance(alternative_value, str):
@@ -768,7 +768,7 @@ class SimUnit:
     def data_keys(self) -> list[str]:
         """Returns a list of unique signal keys defined in the Data Dictionary.
 
-        Includes both signal names from the DD and string entries from input_alternatives.
+        Includes both signal names from the DD and string entries from mapping_alternatives.
 
         Returns:
             list[str]: A list of unique signal keys and alternative signal names.
@@ -780,10 +780,10 @@ class SimUnit:
                 if dd_element_name not in signal_keys:
                     signal_keys.append(dd_element_name)
                 if (
-                    hasattr(dd_element_value, "input_alternatives")
-                    and dd_element_value.input_alternatives
+                    hasattr(dd_element_value, "mapping_alternatives")
+                    and dd_element_value.mapping_alternatives
                 ):
-                    for alternative in dd_element_value.input_alternatives:
+                    for alternative in dd_element_value.mapping_alternatives:
                         if (
                             isinstance(alternative, str)
                             and alternative not in signal_keys
