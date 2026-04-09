@@ -80,9 +80,7 @@ class OutModel(BaseDDModel):
 
 
 class ParameterModel(BaseDDModel):
-    """Parameter model without type field."""
-
-    pass
+    mapping_alternatives: MappingAlternatives = []
 
 
 SignalElement = InModel | InoutModel | OutModel

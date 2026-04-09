@@ -309,17 +309,22 @@ class SimUnit:
         sim_result: dict[str, np.ndarray] = {}
         time_steps = len(data[0].timestamps) if data else 1
 
+        # mapping and casting of signal list
         data_dict = self._list_to_dict(data if data else [])
-        mapped_input = self._map_sim_input_data(
+        mapped_data_dict = self._map_sim_input_data(
             data_dict=data_dict, time_steps=time_steps
         )
-        mapped_input = self._input_typecast(
-            sim_input=mapped_input, dd_element_dict=self._dd.signals or {}
+        mapped_data_dict = self._input_typecast(
+            sim_input=mapped_data_dict, dd_element_dict=self._dd.signals or {}
         )
 
+        # mapping and casting of parameter list
         parameter_dict = self._list_to_dict(parameters if parameters else [])
-        parameter_dict = self._input_typecast(
-            sim_input=parameter_dict, dd_element_dict=self._dd.parameters or {}
+        mapped_parameter_dict = self._map_sim_input_parameters(
+            parameter_dict=parameter_dict
+        )
+        mapped_parameter_dict = self._input_typecast(
+            sim_input=mapped_parameter_dict, dd_element_dict=self._dd.parameters or {}
         )
 
         if data:
@@ -334,7 +339,7 @@ class SimUnit:
             )
 
         self._write_base_elements_to_dll(
-            base_element_dict=parameter_dict, dd_scope=self._dd.parameters or {}
+            base_element_dict=mapped_parameter_dict, dd_scope=self._dd.parameters or {}
         )
 
         output_signals = [
@@ -368,7 +373,7 @@ class SimUnit:
             time_sim_start = float(data[0].timestamps[0]) if data else 0.0
             for time_step_idx in range(time_steps):
                 self._write_base_elements_to_dll(
-                    base_element_dict=mapped_input,
+                    base_element_dict=mapped_data_dict,
                     dd_scope=self._dd.signals or {},
                     time_step_idx=time_step_idx,
                 )
@@ -458,7 +463,7 @@ class SimUnit:
             dict[str, AresSignal]: A dictionary of mapped AresSignal objects.
         """
 
-        mapped_input: dict[str, AresSignal] = {}
+        mapped_data_dict: dict[str, AresSignal] = {}
 
         timestamps = (
             data_dict[next(iter(data_dict))].timestamps
@@ -474,26 +479,23 @@ class SimUnit:
                     continue
 
                 if dd_element_name in data_dict:
-                    mapped_input[dd_element_name] = data_dict[dd_element_name]
+                    mapped_data_dict[dd_element_name] = data_dict[dd_element_name]
                     logger.debug(
-                        f"Data dictionary variable '{dd_element_name}' could be mapped to the original signal in data source.",
+                        f"Data dictionary signal '{dd_element_name}' could be mapped to the original signal in data source.",
                     )
                     continue
 
-                if (
-                    hasattr(dd_element_value, "mapping_alternatives")
-                    and dd_element_value.mapping_alternatives
-                ):
+                if dd_element_value.mapping_alternatives:
                     for alternative_value in dd_element_value.mapping_alternatives:
                         mapped = False
 
                         if isinstance(alternative_value, str):
                             if alternative_value in data_dict:
-                                mapped_input[dd_element_name] = data_dict[
+                                mapped_data_dict[dd_element_name] = data_dict[
                                     alternative_value
                                 ]
                                 logger.info(
-                                    f"Data dictionary variable '{dd_element_name}' has been mapped to alternative '{alternative_value}' from data source.",
+                                    f"Data dictionary signal '{dd_element_name}' has been mapped to alternative '{alternative_value}' from data source.",
                                 )
                                 mapped = True
                                 break
@@ -504,14 +506,14 @@ class SimUnit:
                                 size=dd_element_value.size,
                                 value=alternative_value,
                             )
-                            mapped_input[dd_element_name] = AresSignal(
+                            mapped_data_dict[dd_element_name] = AresSignal(
                                 label=dd_element_name,
                                 value=static_value,
                                 timestamps=timestamps,
                                 description=f"Static value: {alternative_value}",
                             )
                             logger.info(
-                                f"Data dictionary variable '{dd_element_name}' has been mapped to constant value {alternative_value}.",
+                                f"Data dictionary signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
                             )
                             mapped = True
                             break
@@ -534,14 +536,14 @@ class SimUnit:
                         size=size,
                         value=default_init_value,
                     )
-                    mapped_input[dd_element_name] = AresSignal(
+                    mapped_data_dict[dd_element_name] = AresSignal(
                         label=dd_element_name,
                         value=default_value,
                         timestamps=timestamps,
                         description="Default value: 0",
                     )
                     logger.warning(
-                        f"Data dictionary variable '{dd_element_name}' has been mapped to default constant value 0.",
+                        f"Data dictionary signal '{dd_element_name}' has been mapped to default constant value 0.",
                     )
 
             except Exception as e:
@@ -552,7 +554,102 @@ class SimUnit:
         logger.debug(
             "Mapping dynamic simulation input to data source has been successfully finished."
         )
-        return mapped_input
+        return mapped_data_dict
+
+    @safely_run(
+        default_return=None,
+        exception_msg="Mapping parameter input could not be executed.",
+        log=logger,
+        instance_el=["file_path", "dd_path"],
+    )
+    @typechecked
+    def _map_sim_input_parameters(
+        self, parameter_dict: dict[str, AresParameter]
+    ) -> dict[str, AresParameter]:
+        """Maps the provided parameters to the expected simulation variables from the DD.
+
+        Handles missing parameters by checking mapping_alternatives or assigning a
+        default value of 0. Unlike signal mapping, parameters have no time dimension.
+
+        Args:
+            parameter_dict (dict[str, AresParameter]): Dictionary of input parameters
+                keyed by label.
+
+        Returns:
+            dict[str, AresParameter]: A dictionary of all DD parameters, mapped to
+                either a provided, alternative, or default value.
+        """
+        mapped_parameter_dict: dict[str, AresParameter] = {}
+
+        for dd_element_name, dd_element_value in (self._dd.parameters or {}).items():
+            try:
+                mapped = False
+
+                if dd_element_name in parameter_dict:
+                    mapped_parameter_dict[dd_element_name] = parameter_dict[
+                        dd_element_name
+                    ]
+                    logger.debug(
+                        f"Data dictionary parameter '{dd_element_name}' could be mapped to the original parameter in input.",
+                    )
+                    continue
+
+                if dd_element_value.mapping_alternatives:
+                    for alternative_value in dd_element_value.mapping_alternatives:
+                        mapped = False
+
+                        if isinstance(alternative_value, str):
+                            if alternative_value in parameter_dict:
+                                mapped_parameter_dict[dd_element_name] = parameter_dict[
+                                    alternative_value
+                                ]
+                                logger.info(
+                                    f"Data dictionary parameter '{dd_element_name}' has been mapped to alternative '{alternative_value}' from input.",
+                                )
+                                mapped = True
+                                break
+                        else:
+                            np_dtype = self.DATATYPES[dd_element_value.datatype][1]
+                            mapped_parameter_dict[dd_element_name] = AresParameter(
+                                label=dd_element_name,
+                                value=np.array(alternative_value, dtype=np_dtype),
+                                description=f"Static value: {alternative_value}",
+                            )
+                            logger.info(
+                                f"Data dictionary parameter '{dd_element_name}' has been mapped to constant value {alternative_value}.",
+                            )
+                            mapped = True
+                            break
+
+                if not mapped:
+                    size = dd_element_value.size
+
+                    if len(size) == 0:
+                        default_init_value = 0
+                    elif len(size) == 1:
+                        default_init_value = [0] * size[0]
+                    elif len(size) == 2:
+                        default_init_value = [[0] * size[1] for _ in range(size[0])]
+                    else:
+                        default_init_value = 0
+
+                    np_dtype = self.DATATYPES[dd_element_value.datatype][1]
+                    mapped_parameter_dict[dd_element_name] = AresParameter(
+                        label=dd_element_name,
+                        value=np.array(default_init_value, dtype=np_dtype),
+                        description="Default value: 0",
+                    )
+                    logger.warning(
+                        f"Data dictionary parameter '{dd_element_name}' has been mapped to default constant value 0.",
+                    )
+
+            except Exception as e:
+                logger.warning(
+                    f"Mapping parameter '{dd_element_name}' could not be executed: {e}",
+                )
+
+        logger.debug("Mapping parameter input has been successfully finished.")
+        return mapped_parameter_dict
 
     @safely_run(
         default_return=None,
@@ -564,7 +661,7 @@ class SimUnit:
     @typechecked
     def _map_sim_input_static(
         self, time_steps: int, datatype: str, size: list[int], value: Any
-    ) -> np.ndarray | None:
+    ) -> np.ndarray:
         """Creates a NumPy array of a specified size and datatype, filled with a constant value.
 
         This is used to handle simulation variables that have a static value instead of a signal.
@@ -577,8 +674,7 @@ class SimUnit:
             value (any): The constant value to assign to the variable.
 
         Returns:
-            np.ndarray | None: A NumPy array containing the constant value for all time steps, or `None`
-                if an error occurs.
+            np.ndarray: A NumPy array containing the constant value for all time steps.
         """
         np_dtype = self.DATATYPES[datatype][1]
         if len(size) == 0:
