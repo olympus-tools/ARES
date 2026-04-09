@@ -24,7 +24,42 @@
 			"mapping_alternatives": [
 				[[1.1, 2.2, 3.3],[4.4, 5.5, 6.6]]
 			]
+		},
+		"parameter_scalar_output": {
+			"type": "out",
+			"datatype": "int32",
+			"size": []
+		},
+		"parameter_array1d_output": {
+			"type": "out",
+			"datatype": "uint32",
+			"size": [3]
+		},
+		"parameter_array2d_output": {
+			"type": "out",
+			"datatype": "float",
+			"size": [2, 3]
 		}
 	},
-	"parameters":{}
+	"parameters":{
+		"parameter_scalar": {
+			"datatype": "int32",
+			"size": [],
+			"mapping_alternatives": [32]
+		},
+		"parameter_array1d": {
+			"datatype": "uint32",
+			"size": [3],
+			"mapping_alternatives": [
+				[21, 22, 24]
+			]
+		},
+		"parameter_array2d": {
+			"datatype": "float",
+			"size": [2, 3],
+			"mapping_alternatives": [
+				[[11.1, 22.2, 33.3],[44.4, 55.5, 66.6]]
+			]
+		}
+	}
 }

@@ -20,20 +20,38 @@
 			"datatype": "float",
 			"size": [2, 3],
 			"mapping_alternatives": ["signal_array2d_alt"]
+		},
+		"parameter_scalar_output": {
+			"type": "out",
+			"datatype": "int32",
+			"size": []
+		},
+		"parameter_array1d_output": {
+			"type": "out",
+			"datatype": "uint32",
+			"size": [3]
+		},
+		"parameter_array2d_output": {
+			"type": "out",
+			"datatype": "float",
+			"size": [2, 3]
 		}
 	},
 	"parameters":{
 		"parameter_scalar": {
 			"datatype": "int32",
-			"size": []
+			"size": [],
+			"mapping_alternatives": ["parameter_scalar_alt"]
 		},
 		"parameter_array1d": {
 			"datatype": "uint32",
-			"size": [3]
+			"size": [3],
+			"mapping_alternatives": ["parameter_array1d_alt"]
 		},
 		"parameter_array2d": {
 			"datatype": "float",
-			"size": [2, 3]
+			"size": [2, 3],
+			"mapping_alternatives": ["parameter_array2d_alt"]
 		}
 	}
 }
