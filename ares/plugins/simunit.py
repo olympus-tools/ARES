@@ -39,7 +39,7 @@ import time
 from collections.abc import Mapping
 from itertools import chain
 from pathlib import Path
-from typing import Any, ClassVar, TypeVar
+from typing import Any, ClassVar, Literal, TypeVar
 
 import numpy as np
 from pydantic import ValidationError
@@ -590,7 +590,7 @@ class SimUnit:
                         dd_element_name
                     ]
                     logger.debug(
-                        f"Data dictionary parameter '{dd_element_name}' could be mapped to the original parameter in input.",
+                        f"Data dictionary parameter '{dd_element_name}' could be mapped to the original parameter in parameter sourcee.",
                     )
                     continue
 
@@ -604,7 +604,7 @@ class SimUnit:
                                     alternative_value
                                 ]
                                 logger.info(
-                                    f"Data dictionary parameter '{dd_element_name}' has been mapped to alternative '{alternative_value}' from input.",
+                                    f"Data dictionary parameter '{dd_element_name}' has been mapped to alternative '{alternative_value}' from parameter source.",
                                 )
                                 mapped = True
                                 break
@@ -853,20 +853,36 @@ class SimUnit:
 
         return step_result
 
-    def data_keys(self) -> list[str]:
-        """Returns a list of unique signal keys defined in the Data Dictionary.
+    @typechecked
+    def input_keys(
+        self, dd_element_type: Literal["signals", "parameters"]
+    ) -> list[str]:
+        """Returns a list of unique keys defined in the Data Dictionary for the given element type.
 
-        Includes both signal names from the DD and string entries from mapping_alternatives.
+        For ``"signals"``, only entries with type ``"in"`` or ``"inout"`` are included.
+        For ``"parameters"``, all entries are included regardless of direction.
+
+        In both cases, string entries from ``mapping_alternatives`` are appended as
+        additional lookup keys.
+
+        Args:
+            dd_element_type (Literal["signals", "parameters"]): The DD section to read.
+                Must be either ``"signals"`` or ``"parameters"``.
 
         Returns:
-            list[str]: A list of unique signal keys and alternative signal names.
+            list[str]: Ordered list of unique DD keys and their string alternatives.
         """
-        signal_keys = []
+        dd_element_keys = []
 
-        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
-            if dd_element_value.type in ["in", "inout"]:
-                if dd_element_name not in signal_keys:
-                    signal_keys.append(dd_element_name)
+        for dd_element_name, dd_element_value in (
+            getattr(self._dd, dd_element_type) or {}
+        ).items():
+            if dd_element_type == "parameters" or dd_element_value.type in [
+                "in",
+                "inout",
+            ]:
+                if dd_element_name not in dd_element_keys:
+                    dd_element_keys.append(dd_element_name)
                 if (
                     hasattr(dd_element_value, "mapping_alternatives")
                     and dd_element_value.mapping_alternatives
@@ -874,25 +890,11 @@ class SimUnit:
                     for alternative in dd_element_value.mapping_alternatives:
                         if (
                             isinstance(alternative, str)
-                            and alternative not in signal_keys
+                            and alternative not in dd_element_keys
                         ):
-                            signal_keys.append(alternative)
+                            dd_element_keys.append(alternative)
 
-        return signal_keys
-
-    def parameter_keys(self) -> list[str]:
-        """Returns a list of unique parameter keys defined in the Data Dictionary.
-
-        Returns:
-            list[str]: A list of unique parameter keys.
-        """
-        parameter_keys = []
-
-        for parameter_name in (self._dd.parameters or {}).keys():
-            if parameter_name not in parameter_keys:
-                parameter_keys.append(parameter_name)
-
-        return parameter_keys
+        return dd_element_keys
 
 
 def ares_plugin(plugin_input: SimUnitElement):
@@ -924,8 +926,8 @@ def ares_plugin(plugin_input: SimUnitElement):
         dd_path=plugin_input.data_dictionary,
     )
 
-    label_filter_signal = sim_unit.data_keys()
-    label_filter_parameter = sim_unit.parameter_keys()
+    label_filter_signal = sim_unit.input_keys("signals")
+    label_filter_parameter = sim_unit.input_keys("parameters")
 
     for parameter_list in parameter_lists:
         for parameter_obj in parameter_list:
