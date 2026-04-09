@@ -333,7 +333,9 @@ class SimUnit:
                 "No input data (time array) provided => executing single time step."
             )
 
-        self._write_parameters_to_dll(parameters=parameter_dict)
+        self._write_base_elements_to_dll(
+            base_element_dict=parameter_dict, dd_scope=self._dd.parameters or {}
+        )
 
         output_signals = [
             k for k, v in (self._dd.signals or {}).items() if v.type in ["out", "inout"]
@@ -365,8 +367,10 @@ class SimUnit:
             time_real_start = time.perf_counter()
             time_sim_start = float(data[0].timestamps[0]) if data else 0.0
             for time_step_idx in range(time_steps):
-                self._write_signals_to_dll(
-                    data=mapped_input, time_step_idx=time_step_idx
+                self._write_base_elements_to_dll(
+                    base_element_dict=mapped_input,
+                    dd_scope=self._dd.signals or {},
+                    time_step_idx=time_step_idx,
                 )
                 for sim_function in self._sim_functions_cyclical:
                     sim_function()
@@ -461,6 +465,7 @@ class SimUnit:
             if data_dict
             else np.arange(time_steps, dtype=np.float64)
         )
+
         for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
             try:
                 mapped = False
@@ -626,22 +631,38 @@ class SimUnit:
             raise
 
     @typechecked
-    def _write_signals_to_dll(
-        self, data: dict[str, AresSignal], time_step_idx: int
-    ) -> None:
-        """Writes signal values for a single time step to the DLL interface.
+    def _write_base_elements_to_dll(
+        self,
+        base_element_dict: Mapping[str, AresSignal | AresParameter],
+        dd_scope: Mapping[str, SignalElement | ParameterModel],
+        time_step_idx: int | None = None,
+    ):
+        """Writes base elements (parameters or signals) to the DLL interface.
+
+        This method handles both parameters (no time dimension) and signals (with time
+        dimension). For signals, provide ``time_step_idx`` to index into the value array.
 
         Args:
-            data (dict[str, AresSignal]): Dictionary with signal names as keys and AresSignal objects as values.
-            time_step_idx (int): The index of the current time step.
+            base_element_dict (dict[str, AresSignal | AresParameter]): Dictionary of
+                AresSignal or AresParameter objects keyed by label.
+            dd_scope (dict[str, SignalElement | ParameterModel]): The corresponding
+                section from the Data Dictionary (signals or parameters).
+            time_step_idx (int | None): Time step index for signal values. Use ``None``
+                for parameters which have no time dimension.
         """
-        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
+        for dd_element_name, dd_element_value in dd_scope.items():
             try:
-                if dd_element_value.type not in ["in", "inout"]:
+                element_type = getattr(dd_element_value, "type", None)
+                if element_type is not None and element_type not in ["in", "inout"]:
                     continue
 
-                if dd_element_name in data:
-                    input_value = data[dd_element_name].value[time_step_idx]
+                if dd_element_name in base_element_dict:
+                    raw_value = base_element_dict[dd_element_name].value
+                    input_value = (
+                        raw_value[time_step_idx]
+                        if time_step_idx is not None
+                        else raw_value
+                    )
                     size = dd_element_value.size
                     self._write_value_to_dll(
                         dd_element_name=dd_element_name,
@@ -650,41 +671,12 @@ class SimUnit:
                     )
                 else:
                     logger.warning(
-                        f"Signal '{dd_element_name}' defined in data dictionary but not provided in input data.",
+                        f"Element '{dd_element_name}' defined in data dictionary but not provided in input.",
                     )
 
             except Exception as e:
                 logger.warning(
-                    f"Warning writing signal '{dd_element_name}' to '{self.file_path}' library: {e}",
-                )
-
-    @typechecked
-    def _write_parameters_to_dll(self, parameters: dict[str, AresParameter]) -> None:
-        """Writes parameter values to the DLL interface.
-
-        Parameters have no time dimension and are written once.
-
-        Args:
-            parameters (dict[str, AresParameter]): Dictionary with parameter names as keys and AresParameter objects as values.
-        """
-        for dd_element_name, dd_element_value in (self._dd.parameters or {}).items():
-            try:
-                if dd_element_name in parameters:
-                    input_value = parameters[dd_element_name].value
-                    size = dd_element_value.size
-                    self._write_value_to_dll(
-                        dd_element_name=dd_element_name,
-                        input_value=input_value,
-                        size=size,
-                    )
-                else:
-                    logger.warning(
-                        f"Parameter '{dd_element_name}' defined in data dictionary but not provided in input parameters.",
-                    )
-
-            except Exception as e:
-                logger.warning(
-                    f"Warning writing parameter '{dd_element_name}' to '{self.file_path}' library not possible: {e}",
+                    f"Warning writing element '{dd_element_name}' to '{self.file_path}' library not possible: {e}",
                 )
 
     @typechecked
