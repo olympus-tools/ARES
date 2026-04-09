@@ -648,6 +648,10 @@ class SimUnit:
                         input_value=input_value,
                         size=size,
                     )
+                else:
+                    logger.warning(
+                        f"Signal '{dd_element_name}' defined in data dictionary but not provided in input data.",
+                    )
 
             except Exception as e:
                 logger.warning(
@@ -672,6 +676,10 @@ class SimUnit:
                         dd_element_name=dd_element_name,
                         input_value=input_value,
                         size=size,
+                    )
+                else:
+                    logger.warning(
+                        f"Parameter '{dd_element_name}' defined in data dictionary but not provided in input parameters.",
                     )
 
             except Exception as e:
