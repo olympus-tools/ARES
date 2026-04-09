@@ -16,7 +16,7 @@
         "type": "parameter",
         "mode": "read",
         "file_path": [
-            "../../parameter/parameterset_example_3.json"
+            "../../parameter/parameterset_example_4.json"
         ]
     },
     "simunit_1": {
@@ -24,6 +24,7 @@
         "file_path": "../../sim_unit/inout_handling/inout_handling.so",
         "data_dictionary": "../../sim_unit/inout_handling/inout_handling_alt.dd.json",
         "stepsize": 1000,
+        "parameter": ["parameterset_in_1"],
         "data": [
             "data_in_1"
         ]

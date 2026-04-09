@@ -54,7 +54,7 @@ class Datatype(str, Enum):
     uint64 = "uint64"
 
 
-type InputAlternatives = list[str | float | list[float] | list[list[float]]]
+type MappingAlternatives = list[str | float | list[float] | list[list[float]]]
 
 
 class BaseDDModel(BaseModel):
@@ -67,12 +67,12 @@ class BaseDDModel(BaseModel):
 
 class InModel(BaseDDModel):
     type: Literal["in"]
-    input_alternatives: InputAlternatives = []
+    mapping_alternatives: MappingAlternatives = []
 
 
 class InoutModel(BaseDDModel):
     type: Literal["inout"]
-    input_alternatives: InputAlternatives = []
+    mapping_alternatives: MappingAlternatives = []
 
 
 class OutModel(BaseDDModel):
@@ -80,9 +80,7 @@ class OutModel(BaseDDModel):
 
 
 class ParameterModel(BaseDDModel):
-    """Parameter model without type field."""
-
-    pass
+    mapping_alternatives: MappingAlternatives = []
 
 
 SignalElement = InModel | InoutModel | OutModel

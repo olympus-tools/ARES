@@ -12,11 +12,19 @@
         "data": ["simunit_1"],
         "output_format": "mf4"
     },
+    "parameterset_in_1": {
+        "type": "parameter",
+        "mode": "read",
+        "file_path": [
+            "../../parameter/parameterset_example_4.json"
+        ]
+    },
     "simunit_1": {
         "type": "sim_unit",
         "file_path": "../../sim_unit/inout_handling/inout_handling.so",
         "data_dictionary": "../../sim_unit/inout_handling/inout_handling.dd.json",
         "stepsize": 1000,
+        "parameter": ["parameterset_in_1"],
         "data": [
             "data_in_1"
         ]

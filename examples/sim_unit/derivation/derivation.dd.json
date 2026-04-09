@@ -4,7 +4,7 @@
             "type": "in",
             "datatype": "float",
             "size": [],
-            "input_alternatives": [
+            "mapping_alternatives": [
                 "filter_output"
             ]
         },
