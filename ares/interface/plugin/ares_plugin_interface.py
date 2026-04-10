@@ -42,12 +42,21 @@ from ares.pydantic_models.workflow_model import (
     PluginElement,
     SimUnitElement,
 )
+from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
 logger = create_logger(__name__)
 
 
+@error_msg(
+    exception_msg="Plugin execution failed.",
+    exception_map={
+        FileNotFoundError: "Plugin file not found or could not be loaded as a Python module.",
+    },
+    log=logger,
+    include_args=["plugin_input"],
+)
 @typechecked
 def AresPluginInterface(
     plugin_input: MergeElement | PluginElement | SimUnitElement,
@@ -57,58 +66,52 @@ def AresPluginInterface(
     Args:
         plugin_input (MergeElement | PluginElement | SimunitElement ): pydantic model containing plugin configuration
     """
-    try:
-        plugin_path = plugin_input.plugin_path
-        module_name = f"ares_plugin_{plugin_path.stem}_{os.getpid()}"
+    plugin_path = plugin_input.plugin_path
+    module_name = f"ares_plugin_{plugin_path.stem}_{os.getpid()}"
 
-        # Create module specification
-        spec = importlib.util.spec_from_file_location(module_name, plugin_path)
-        if spec is None or spec.loader is None:
-            logger.error(f"{plugin_input.name}: Could not load plugin {plugin_path}")
+    # Create module specification
+    spec = importlib.util.spec_from_file_location(module_name, plugin_path)
+    if spec is None or spec.loader is None:
+        raise FileNotFoundError(
+            f"Could not load plugin '{plugin_path}' — file not found or not a valid Python module."
+        )
+
+    # Create and configure module
+    module = importlib.util.module_from_spec(spec)
+
+    # Add plugin directory to sys.path temporarily
+    plugin_dir = plugin_path.parent
+    path_added = False
+    if str(plugin_dir) not in sys.path:
+        sys.path.insert(0, str(plugin_dir))
+        path_added = True
+
+    try:
+        # Add to sys.modules and execute
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+
+        # Call plugin's main function with explicit arguments
+        if plugin_input.plugin_name:
+            plugin_name = plugin_input.plugin_name
+        else:
+            plugin_name = "ares_plugin"
+
+        if hasattr(module, plugin_name):
+            getattr(module, plugin_name)(plugin_input=plugin_input)
+        else:
+            logger.error(
+                f"{plugin_input.name}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
+            )
             return
 
-        # Create and configure module
-        module = importlib.util.module_from_spec(spec)
-
-        # Add plugin directory to sys.path temporarily
-        plugin_dir = plugin_path.parent
-        path_added = False
-        if str(plugin_dir) not in sys.path:
-            sys.path.insert(0, str(plugin_dir))
-            path_added = True
-
-        try:
-            # Add to sys.modules and execute
-            sys.modules[module_name] = module
-            spec.loader.exec_module(module)
-
-            # Call plugin's main function with explicit arguments
-            if plugin_input.plugin_name:
-                plugin_name = plugin_input.plugin_name
-            else:
-                plugin_name = "ares_plugin"
-
-            if hasattr(module, plugin_name):
-                getattr(module, plugin_name)(plugin_input=plugin_input)
-            else:
-                logger.error(
-                    f"{plugin_input.name}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
-                )
-                return
-
-            logger.debug(
-                f"{plugin_input.name}: Plugin {plugin_path.name} executed successfully"
-            )
-
-        finally:
-            # Cleanup
-            if path_added and str(plugin_dir) in sys.path:
-                sys.path.remove(str(plugin_dir))
-            if module_name in sys.modules:
-                del sys.modules[module_name]
-
-    except Exception as e:
-        logger.error(
-            f"{plugin_input.name}: Plugin execution failed for {plugin_input.plugin_path.name}: {e}"
+        logger.debug(
+            f"{plugin_input.name}: Plugin {plugin_path.name} executed successfully"
         )
-        return
+
+    finally:
+        # Cleanup
+        if path_added and str(plugin_dir) in sys.path:
+            sys.path.remove(str(plugin_dir))
+        if module_name in sys.modules:
+            del sys.modules[module_name]
