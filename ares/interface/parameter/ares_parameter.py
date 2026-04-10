@@ -59,6 +59,7 @@ class AresParameter:
         name_breakpoints_1 (str | None): Optional name of the first breakpoint axis (for 1D or 2D parameters).
         name_breakpoints_2 (str | None): Optional name of the second breakpoint axis (for 2D parameters).
         description (str | None): Optional textual description of the parameter.
+        source (str | None): Optional source or origin of the parameter data.
         unit (str | None): Optional physical unit of the parameter (e.g., 'km/h', '°C', 'm/s').
     """
 
@@ -67,6 +68,7 @@ class AresParameter:
     name_breakpoints_1: str | None = None
     name_breakpoints_2: str | None = None
     description: str | None = None
+    source: str | None = None
     unit: str | None = None
 
     def __post_init__(self) -> None:
