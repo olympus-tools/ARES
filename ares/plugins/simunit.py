@@ -83,6 +83,7 @@ class SimUnit:
         self,
         file_path: Path,
         dd_path: Path,
+        source_name: str | None = None,
     ):
         """Initializes the simulation unit and sets up all required simulation parameters.
 
@@ -96,10 +97,12 @@ class SimUnit:
         Args:
             file_path (Path): Path to the shared library file (.so, .dll, .dylib).
             dd_path (Path): Path to the Data Dictionary JSON file.
+            source_name (str | None): Optional name of the simulation unit source, used for logging and traceability.
         """
 
         self.file_path: Path = file_path
         self.dd_path: Path = dd_path
+        self.source_name: str | None = source_name
         self._sim_functions_init: list[Any] = []
         self._sim_functions_cyclical: list[Any] = []
 
@@ -416,6 +419,9 @@ class SimUnit:
                 label=signal_name,
                 timestamps=sim_result["timestamps"],
                 value=signal_value,
+                description=self._dd.signals[signal_name].description,
+                source=self.source_name,
+                unit=self._dd.signals[signal_name].unit,
             )
             for signal_name, signal_value in sim_result.items()
             if signal_name != "timestamps"
@@ -510,7 +516,7 @@ class SimUnit:
                                 label=dd_element_name,
                                 value=static_value,
                                 timestamps=timestamps,
-                                description=f"Static value: {alternative_value}",
+                                description=f"Static value as alternative: {alternative_value}",
                             )
                             logger.info(
                                 f"Data dictionary signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
@@ -540,7 +546,7 @@ class SimUnit:
                         label=dd_element_name,
                         value=default_value,
                         timestamps=timestamps,
-                        description="Default value: 0",
+                        description=f"Static value as alternative: {default_value}",
                     )
                     logger.warning(
                         f"Data dictionary signal '{dd_element_name}' has been mapped to default constant value 0.",
@@ -924,6 +930,7 @@ def ares_plugin(plugin_input: SimUnitElement):
     sim_unit = SimUnit(
         file_path=plugin_input.file_path,
         dd_path=plugin_input.data_dictionary,
+        source_name=plugin_input.name,
     )
 
     label_filter_signal = sim_unit.input_keys("signals")
@@ -948,7 +955,5 @@ def ares_plugin(plugin_input: SimUnitElement):
 
                     if sim_result is not None:
                         AresDataInterface.create(
-                            data=sim_result,
-                            dependencies=dependencies,
-                            source_name=plugin_input.name,
+                            data=sim_result, dependencies=dependencies
                         )

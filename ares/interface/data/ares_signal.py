@@ -59,6 +59,7 @@ class AresSignal:
         timestamps (npt.NDArray[np.float32]): Time values as numpy array with floating point dtype (required).
         value (npt.NDArray): Signal data values as numpy array - can be any dtype (required).
         description (str | None): Optional textual description of the signal.
+        source (str | None): Optional source or origin of the signal data.
         unit (str | None): Optional physical unit of the signal (e.g., 'km/h', '°C', 'm/s').
     """
 
@@ -66,6 +67,7 @@ class AresSignal:
     value: npt.NDArray
     timestamps: npt.NDArray[np.float32]
     description: str | None = None
+    source: str | None = None
     unit: str | None = None
 
     def __post_init__(self):

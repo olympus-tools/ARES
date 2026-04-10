@@ -65,17 +65,22 @@ class BaseDDModel(BaseModel):
         extra = "forbid"
 
 
-class InModel(BaseDDModel):
+class SignalModel(BaseDDModel):
+    unit: str | None = None
+    description: str | None = None
+
+
+class InModel(SignalModel):
     type: Literal["in"]
     mapping_alternatives: MappingAlternatives = []
 
 
-class InoutModel(BaseDDModel):
+class InoutModel(SignalModel):
     type: Literal["inout"]
     mapping_alternatives: MappingAlternatives = []
 
 
-class OutModel(BaseDDModel):
+class OutModel(SignalModel):
     type: Literal["out"]
 
 

@@ -189,7 +189,6 @@ class MF4Handler(MDF, AresDataInterface):
             if label_filter is None
             else self._get_signals(
                 label_filter=self._resolve_label_filter(label_filter=label_filter),
-                **kwargs,
             )
         )
 
@@ -254,7 +253,8 @@ class MF4Handler(MDF, AresDataInterface):
             list[AresSignal]: List of AresSignal objects extracted from the mf4 file.
                 Only contains signals that were actually found.
         """
-        kwargs.setdefault("raw", True)
+
+        raw = kwargs.pop("raw", True)
 
         found_signals: list[Signal] = []
         single_signals: list[str] = []
@@ -273,7 +273,7 @@ class MF4Handler(MDF, AresDataInterface):
                     f"Signal '{channel_name}' has {len(occurrence)} occurrences in mf4 data file."
                 )
                 sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurrence]
-                all_occurrences = super().select(sel_signal, **kwargs)
+                all_occurrences = super().select(sel_signal, raw=raw)
                 len_samples = [len(s.samples) for s in all_occurrences]
                 idx = len_samples.index(max(len_samples))
                 logger.debug(
@@ -283,7 +283,7 @@ class MF4Handler(MDF, AresDataInterface):
 
         # single ocurrence: combined select()
         if single_signals:
-            found_signals.extend(super().select(single_signals, **kwargs))
+            found_signals.extend(super().select(single_signals, raw=raw))
 
         ares_signals = []
         for signal in found_signals:
@@ -299,6 +299,9 @@ class MF4Handler(MDF, AresDataInterface):
                     value=value,
                     unit=signal.unit if hasattr(signal, "unit") else None,
                     description=signal.comment if hasattr(signal, "comment") else None,
+                    source=signal.source.path
+                    if hasattr(signal, "source") and signal.source is not None
+                    else None,
                 )
             )
 
@@ -324,23 +327,21 @@ class MF4Handler(MDF, AresDataInterface):
                 - ndim == 1: Scalar value per time step
                 - ndim == 2: 1D array per time step (shape: cycles, array_size)
                 - ndim == 3: 2D array per time step (shape: cycles, rows, cols)
-            **kwargs (Any): Additional arguments:
-                - source_name (str): Name for the signal source. If not provided,
-                  defaults to "ARES_DEFAULT_SOURCE".
         """
         data = AresDataInterface._filter_deduplicates(data=data)
-        source_name = kwargs.pop("source_name", "ARES_DEFAULT_SOURCE")
-
-        source = Source(
-            name=source_name,
-            path=source_name,
-            comment=f"Data source: {source_name}",
-            source_type=1,
-            bus_type=1,
-        )
 
         signals_to_write = []
         for signal in data:
+            source_name = getattr(signal, "source", "ARES_DEFAULT_SOURCE")
+
+            source = Source(
+                name=source_name,
+                path=source_name,
+                comment=f"Data source: {source_name}",
+                source_type=1,
+                bus_type=1,
+            )
+
             if signal.ndim == 1:
                 signals_to_write.append(
                     Signal(
