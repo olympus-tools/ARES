@@ -33,7 +33,6 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
 import re
 from enum import StrEnum
 from pathlib import Path
@@ -198,8 +197,11 @@ class BaseElement(BaseModel):
             return self
         base_dir: Path = info.context["base_dir"]
         path_eval_pattern = r"\.[a-zA-Z0-9]+$"
+        skip_fields = {"plugin_path"}
 
         for field_name, field_value in self.__dict__.items():
+            if field_name in skip_fields:
+                continue
             if isinstance(field_value, Path):
                 resolved_path = self._resolve_single_path(
                     base_dir=base_dir,
@@ -362,12 +364,7 @@ class SimUnitElement(PluginElement):
     model_config = ConfigDict(extra="forbid")
     type: Literal["sim_unit"] = "sim_unit"
     plugin_path: Path = Field(
-        default_factory=lambda: Path(
-            os.path.relpath(
-                Path(__file__).parent.parent / "plugins" / "simunit.py",
-                Path(__file__).parent,
-            )
-        )
+        default_factory=lambda: Path(__file__).parent.parent / "plugins" / "simunit.py"
     )
     file_path: Path
     stepsize: int
@@ -402,12 +399,7 @@ class MergeElement(PluginElement):
     model_config = ConfigDict(extra="forbid")
     type: Literal["merge"] = "merge"
     plugin_path: Path = Field(
-        default_factory=lambda: Path(
-            os.path.relpath(
-                Path(__file__).parent.parent / "plugins" / "merge.py",
-                Path(__file__).parent,
-            )
-        )
+        default_factory=lambda: Path(__file__).parent.parent / "plugins" / "merge.py"
     )
     data: list[str] | None = []
     parameter: list[str] | None = []
