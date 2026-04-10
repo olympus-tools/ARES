@@ -476,6 +476,9 @@ class AresDataInterface(ABC):
                                 label=signal_name,
                                 timestamps=reference_signal.timestamps,
                                 value=stacked_array,
+                                description=f"Stacked signal from {[signal.label for signal in signal_matches]}",
+                                source=reference_signal.source,
+                                unit=reference_signal.unit,
                             )
                         )
                         continue
@@ -488,6 +491,9 @@ class AresDataInterface(ABC):
                             value=np.vstack(
                                 [signal.value for signal in signal_matches]
                             ).T,
+                            description=f"Stacked signal from {[signal.label for signal in signal_matches]}",
+                            source=reference_signal.source,
+                            unit=reference_signal.unit,
                         )
                     )
 
@@ -541,6 +547,9 @@ class AresDataInterface(ABC):
                             label=signal_name,
                             timestamps=reference_signal.timestamps,
                             value=stacked_matrix.transpose(2, 1, 0),
+                            description=f"Stacked signal from {[signal.label for signal in signal_matches]}",
+                            source=reference_signal.source,
+                            unit=reference_signal.unit,
                         )
                     )
 

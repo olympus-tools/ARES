@@ -175,6 +175,7 @@ class JSONParamHandler(AresParamInterface):
                 value=parameter_value.get("value", 0.0),
                 name_breakpoints_1=parameter_value.get("name_breakpoints_1", None),
                 name_breakpoints_2=parameter_value.get("name_breakpoints_2", None),
+                source="ARES_DEFAULT_SOURCE",
                 description=parameter_value.get("description", None),
                 unit=parameter_value.get("unit", None),
             )
@@ -208,6 +209,7 @@ class JSONParamHandler(AresParamInterface):
                 "description": param.description,
                 "name_breakpoints_1": param.name_breakpoints_1,
                 "name_breakpoints_2": param.name_breakpoints_2,
+                "source": "ARES_DEFAULT_SOURCE",
                 "unit": param.unit,
                 "value": param.value.tolist(),
             }

@@ -126,7 +126,6 @@ def ares_plugin(plugin_input: MergeElement):
         AresDataInterface.create(
             data=merge_data,
             dependencies=data_dependency_list,
-            source_name=plugin_input.name,
             stepsize=plugin_input.stepsize,
             label_filter=plugin_input.label_filter_data,
             vstack_pattern=plugin_input.vstack_pattern_data,
