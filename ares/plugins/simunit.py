@@ -552,7 +552,7 @@ class SimUnit:
                         description=f"Static value as alternative: {default_value}",
                     )
                     logger.warning(
-                        f"Data dictionary signal '{dd_element_name}' has been mapped to default constant value 0.",
+                        f"Data dictionary signal '{dd_element_name}' could not be mapped. Default constant value 0 has been assigned.",
                     )
 
             except Exception as e:
@@ -649,7 +649,7 @@ class SimUnit:
                         description="Default value: 0",
                     )
                     logger.warning(
-                        f"Data dictionary parameter '{dd_element_name}' has been mapped to default constant value 0.",
+                        f"Data dictionary parameter '{dd_element_name}' could not be mapped. Default constant value 0 has been assigned.",
                     )
 
             except Exception as e:
