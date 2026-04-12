@@ -309,8 +309,9 @@ class SimUnit:
         """
         logger.info("Starting ares simulation...")
 
-        sim_result: dict[str, np.ndarray] = {}
+        sim_result: dict[str, AresSignal] = {}
         time_steps = len(data[0].timestamps) if data else 1
+        timestamps = np.empty((time_steps,), dtype=np.float32)
 
         # mapping and casting of signal list
         data_dict = self._list_to_dict(data if data else [])
@@ -320,7 +321,9 @@ class SimUnit:
         mapped_data_dict = self._input_typecast(
             sim_input=mapped_data_dict, dd_element_dict=self._dd.signals or {}
         )
-
+        self._interface_consistency_check(
+            interface_dict=mapped_data_dict, direction="Input"
+        )
         # mapping and casting of parameter list
         parameter_dict = self._list_to_dict(parameters if parameters else [])
         mapped_parameter_dict = self._map_sim_input_parameters(
@@ -328,6 +331,9 @@ class SimUnit:
         )
         mapped_parameter_dict = self._input_typecast(
             sim_input=mapped_parameter_dict, dd_element_dict=self._dd.parameters or {}
+        )
+        self._interface_consistency_check(
+            interface_dict=mapped_parameter_dict, direction="Input"
         )
 
         if data:
@@ -345,6 +351,11 @@ class SimUnit:
             base_element_dict=mapped_parameter_dict, dd_scope=self._dd.parameters or {}
         )
 
+        if data:
+            timestamps[:] = data[0].timestamps
+        else:
+            timestamps[:] = 0.0
+
         output_signals = [
             k for k, v in (self._dd.signals or {}).items() if v.type in ["out", "inout"]
         ]
@@ -352,14 +363,21 @@ class SimUnit:
             size = self._dd.signals[signal].size
             np_dtype = self.DATATYPES[self._dd.signals[signal].datatype][1]
             if len(size) == 0:
-                sim_result[signal] = np.empty((time_steps,), dtype=np_dtype)
+                value = np.empty((time_steps,), dtype=np_dtype)
             elif len(size) == 1:
-                sim_result[signal] = np.empty((time_steps, size[0]), dtype=np_dtype)
+                value = np.empty((time_steps, size[0]), dtype=np_dtype)
             elif len(size) == 2:
-                sim_result[signal] = np.empty(
-                    (time_steps, size[0], size[1]), dtype=np_dtype
-                )
-        sim_result["timestamps"] = np.empty((time_steps,), dtype=np.float32)
+                value = np.empty((time_steps, size[0], size[1]), dtype=np_dtype)
+            else:
+                continue
+            sim_result[signal] = AresSignal(
+                label=signal,
+                timestamps=timestamps,
+                value=value,
+                description=self._dd.signals[signal].description,
+                source=self.source_name,
+                unit=self._dd.signals[signal].unit,
+            )
 
         # running initialization function
         if self._sim_functions_init:
@@ -384,13 +402,7 @@ class SimUnit:
                     sim_function()
                 step_result = self._read_dll_interface()
                 for signal in output_signals:
-                    sim_result[signal][time_step_idx] = step_result[signal]
-                if data:
-                    sim_result["timestamps"][time_step_idx] = data[0].timestamps[
-                        time_step_idx
-                    ]
-                else:
-                    sim_result["timestamps"][time_step_idx] = 0.0
+                    sim_result[signal].value[time_step_idx] = step_result[signal]
 
                 if time_step_idx >= progress_indices[progress_step]:
                     time_real_elapsed = time.perf_counter() - time_real_start
@@ -414,18 +426,7 @@ class SimUnit:
                     )
 
         logger.info("ares simulation successfully finished.")
-        return [
-            AresSignal(
-                label=signal_name,
-                timestamps=sim_result["timestamps"],
-                value=signal_value,
-                description=self._dd.signals[signal_name].description,
-                source=self.source_name,
-                unit=self._dd.signals[signal_name].unit,
-            )
-            for signal_name, signal_value in sim_result.items()
-            if signal_name != "timestamps"
-        ]
+        return list(sim_result.values())
 
     @typechecked
     def _list_to_dict(self, items: list[AresBaseType]) -> dict[str, AresBaseType]:
@@ -901,6 +902,42 @@ class SimUnit:
                             dd_element_keys.append(alternative)
 
         return dd_element_keys
+
+    @typechecked
+    def _interface_consistency_check(
+        self,
+        interface_dict: Mapping[str, AresSignal | AresParameter],
+        direction: Literal["Input", "Output"],
+    ):
+        """Checks all values in the interface dictionary for NaN or Inf and logs warnings.
+
+        Iterates over each entry in the interface dictionary. For floating-point
+        dtypes, checks whether any element contains NaN or Inf. Integer and boolean
+        dtypes are skipped as they cannot represent these special values.
+
+        Args:
+            interface_dict (dict[str, AresSignal | AresParameter]): Dictionary of
+                AresSignal or AresParameter objects to validate.
+            direction (Literal["Input", "Output"]): Direction context used in warning
+                messages to indicate whether the affected variable is an input or output.
+        """
+        for label, element in interface_dict.items():
+            try:
+                value = element.value
+                if not np.issubdtype(value.dtype, np.floating):
+                    continue
+                if np.any(np.isnan(value)):
+                    logger.warning(
+                        f"{direction} variable '{label}' contains NaN values. Simulation may not run correctly."
+                    )
+                if np.any(np.isinf(value)):
+                    logger.warning(
+                        f"{direction} variable '{label}' contains Inf values. Simulation may not run correctly."
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"Could not check {direction} variable '{label}' for NaN/Inf: {e}"
+                )
 
 
 def ares_plugin(plugin_input: SimUnitElement):
