@@ -425,6 +425,8 @@ class SimUnit:
                         float(data[0].timestamps[time_step_idx]) if data else 0.0
                     )
 
+        self._interface_consistency_check(interface_dict=sim_result, direction="Output")
+
         logger.info("ares simulation successfully finished.")
         return list(sim_result.values())
 
@@ -722,16 +724,8 @@ class SimUnit:
         """
         if len(size) == 0:
             self._dll_interface[dd_element_name].value = input_value.item()
-        elif len(size) == 1:
-            self._dll_interface[dd_element_name][:] = input_value.tolist()
-        elif len(size) == 2:
-            for i in range(size[0]):
-                self._dll_interface[dd_element_name][i][:] = input_value[i].tolist()
         else:
-            logger.warning(
-                f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
-            )
-            raise
+            np.ctypeslib.as_array(self._dll_interface[dd_element_name])[:] = input_value
 
     @typechecked
     def _write_base_elements_to_dll(
@@ -835,23 +829,8 @@ class SimUnit:
                     step_result[dd_element_name] = np.array(
                         sim_var.value, dtype=np_dtype
                     )
-                elif len(size) == 1:
-                    step_result[dd_element_name] = np.array(
-                        list(sim_var), dtype=np_dtype
-                    )
-                elif len(size) == 2:
-                    step_result[dd_element_name] = np.zeros(
-                        (size[0], size[1]), dtype=np_dtype
-                    )
-                    for i in range(size[0]):
-                        step_result[dd_element_name][i, :] = np.array(
-                            list(sim_var[i]), dtype=np_dtype
-                        )
                 else:
-                    logger.warning(
-                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
-                    )
-                    continue
+                    step_result[dd_element_name] = np.ctypeslib.as_array(sim_var)
 
             except Exception as e:
                 logger.warning(
