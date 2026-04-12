@@ -19,7 +19,7 @@ Apache Software License License:
   * readme_renderer 44.0
     URL: UNKNOWN
 
-  * requests 2.33.0
+  * requests 2.33.1
     URL: https://github.com/psf/requests
 
   * requests-toolbelt 1.0.0
@@ -37,7 +37,7 @@ Apache Software License; BSD License License:
 
 Apache Software License; GNU General Public License v2 (GPLv2) License:
 ------------------------------------------------------------------------------
-  * pyinstaller-hooks-contrib 2026.3
+  * pyinstaller-hooks-contrib 2026.4
     URL: https://github.com/pyinstaller/pyinstaller-hooks-contrib
 
 
@@ -58,7 +58,7 @@ Apache-2.0 OR BSD-2-Clause License:
 
 Apache-2.0 OR BSD-3-Clause License:
 ------------------------------------------------------------------------------
-  * cryptography 46.0.6
+  * cryptography 46.0.7
     URL: https://github.com/pyca/cryptography
 
 
@@ -76,7 +76,7 @@ BSD License License:
   * numpy 2.2.4
     URL: https://numpy.org
 
-  * pandas 3.0.1
+  * pandas 3.0.2
     URL: https://pandas.pydata.org
 
   * smmap 5.0.3
@@ -109,7 +109,7 @@ BSD-3-Clause License:
   * idna 3.11
     URL: https://github.com/kjd/idna
 
-  * lxml 6.0.2
+  * lxml 6.0.4
     URL: https://lxml.de/
 
   * pycparser 3.0
@@ -139,7 +139,7 @@ MIT License:
   * cffi 2.0.0
     URL: https://cffi.readthedocs.io/en/latest/whatsnew.html
 
-  * charset-normalizer 3.4.6
+  * charset-normalizer 3.4.7
     URL: https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
 
   * iniconfig 2.3.0
@@ -163,7 +163,7 @@ MIT License:
   * keyring 25.7.0
     URL: https://github.com/jaraco/keyring
 
-  * more-itertools 10.8.0
+  * more-itertools 11.0.2
     URL: https://github.com/more-itertools/more-itertools
 
   * nh3 0.3.4
@@ -229,7 +229,7 @@ MIT License License:
   * pytest-cov 6.0.0
     URL: https://github.com/pytest-dev/pytest-cov
 
-  * rich 14.3.3
+  * rich 15.0.0
     URL: https://github.com/Textualize/rich
 
   * ruff 0.12.11
