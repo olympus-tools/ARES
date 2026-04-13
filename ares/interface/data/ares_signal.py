@@ -120,22 +120,28 @@ class AresSignal:
         instance_el=["label"],
     )
     @typechecked
-    def resample(self, timestamps_resampled: npt.NDArray[np.float32]) -> None:
+    def resample(self, timestamps_resampled: npt.NDArray[np.float32]):
         """Resample the signal to new timestamps using linear interpolation.
 
         Handles scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
         Interpolation is performed independently for each array element.
 
-        Args:
-            timestamps_resampled (npt.NDArray[np.float32]): New timestamp values
-                for resampling. Must be a 1D numpy array with floating point dtype.
+        ``self.timestamps`` is normalized to start at 0 before interpolation to align
+        with ``timestamps_resampled``, which is expected to be relative (starting at 0).
+        Without this, signals with an absolute time offset would be interpolated incorrectly.
 
-        Returns:
-            None: Modifies the signal in-place, updating timestamps and value.
+        Args:
+            timestamps_resampled (npt.NDArray[np.float32]): New relative timestamp values
+                starting at 0, with floating point dtype.
+
         """
+        timestamps_normalized = self.timestamps - self.timestamps[0]
+
         if self.ndim == 1:
             self.value = np.interp(
-                timestamps_resampled, self.timestamps, self.value.astype(np.float32)
+                timestamps_resampled,
+                timestamps_normalized,
+                self.value.astype(np.float32),
             ).astype(self.dtype)
 
         elif self.ndim == 2:
@@ -145,7 +151,7 @@ class AresSignal:
             )
             for i in range(array_size):
                 resampled[:, i] = np.interp(
-                    timestamps_resampled, self.timestamps, self.value[:, i]
+                    timestamps_resampled, timestamps_normalized, self.value[:, i]
                 )
             self.value = resampled.astype(self.dtype)
 
@@ -157,7 +163,7 @@ class AresSignal:
             for i in range(rows):
                 for j in range(cols):
                     resampled[:, i, j] = np.interp(
-                        timestamps_resampled, self.timestamps, self.value[:, i, j]
+                        timestamps_resampled, timestamps_normalized, self.value[:, i, j]
                     )
             self.value = resampled.astype(self.dtype)
 

@@ -182,7 +182,7 @@ class MF4Handler(MDF, AresDataInterface):
             else (self._label_filter or []) + label_filter
         )
 
-        stepsize = self._stepsize if stepsize is None else stepsize
+        stepsize = self.stepsize if stepsize is None else stepsize
 
         tmp_data = (
             self._get_signals(label_filter=self._available_signals, **kwargs)

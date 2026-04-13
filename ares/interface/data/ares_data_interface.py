@@ -141,7 +141,7 @@ class AresDataInterface(ABC):
         object.__setattr__(
             self, "dependencies", dependencies if dependencies is not None else []
         )
-        object.__setattr__(self, "_stepsize", stepsize)
+        object.__setattr__(self, "stepsize", stepsize)
         object.__setattr__(self, "_label_filter", label_filter)
         object.__setattr__(self, "_vstack_pattern", vstack_pattern)
 
