@@ -353,8 +353,8 @@ class AresDataInterface(ABC):
                 earliest_end_time = np.minimum(earliest_end_time, signal.timestamps[-1])
 
         timestamps_resample = np.arange(
-            0,
-            (earliest_end_time - latest_start_time) + (stepsize / 1000.0),
+            latest_start_time,
+            earliest_end_time + (stepsize / 1000.0),
             stepsize / 1000.0,
             dtype=np.float32,
         )
