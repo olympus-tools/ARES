@@ -310,8 +310,13 @@ class SimUnit:
         logger.info("Starting ares simulation...")
 
         sim_result: dict[str, AresSignal] = {}
-        time_steps = len(data[0].timestamps) if data else 1
-        timestamps = np.empty((time_steps,), dtype=np.float32)
+        if data:
+            timestamps = np.empty((len(data[0].timestamps),), dtype=np.float32)
+            timestamps[:] = data[0].timestamps
+        else:
+            timestamps = np.empty((1,), dtype=np.float32)
+            timestamps[:] = 0.0
+        time_steps = len(timestamps) if data else 1
 
         # mapping and casting of signal list
         data_dict = self._list_to_dict(data if data else [])
@@ -338,9 +343,9 @@ class SimUnit:
 
         if data:
             logger.info(
-                f"The simulation starts at timestamps {min(data[0].timestamps):.3f} seconds "
-                f"and ends at timestamps {max(data[0].timestamps):.3f} seconds - duration: "
-                f"{max(data[0].timestamps) - min(data[0].timestamps):.3f} seconds",
+                f"The simulation starts at timestamps {min(timestamps):.3f} seconds "
+                f"and ends at timestamps {max(timestamps):.3f} seconds - duration: "
+                f"{max(timestamps) - min(timestamps):.3f} seconds",
             )
         else:
             logger.info(
@@ -350,11 +355,6 @@ class SimUnit:
         self._write_base_elements_to_dll(
             base_element_dict=mapped_parameter_dict, dd_scope=self._dd.parameters or {}
         )
-
-        if data:
-            timestamps[:] = data[0].timestamps
-        else:
-            timestamps[:] = 0.0
 
         output_signals = [
             k for k, v in (self._dd.signals or {}).items() if v.type in ["out", "inout"]
@@ -391,7 +391,7 @@ class SimUnit:
             progress_indices = [round(i * (time_steps - 1) / 10) for i in range(11)]
             progress_step = 0
             time_real_start = time.perf_counter()
-            time_sim_start = float(data[0].timestamps[0]) if data else 0.0
+            time_sim_start = float(timestamps[0]) if data else 0.0
             for time_step_idx in range(time_steps):
                 self._write_base_elements_to_dll(
                     base_element_dict=mapped_data_dict,
@@ -407,7 +407,7 @@ class SimUnit:
                 if time_step_idx >= progress_indices[progress_step]:
                     time_real_elapsed = time.perf_counter() - time_real_start
                     time_sim_elapsed = (
-                        float(data[0].timestamps[time_step_idx]) - time_sim_start
+                        float(timestamps[time_step_idx]) - time_sim_start
                         if data
                         else 0.0
                     )
@@ -421,9 +421,7 @@ class SimUnit:
                     )
                     progress_step += 1
                     time_real_start = time.perf_counter()
-                    time_sim_start = (
-                        float(data[0].timestamps[time_step_idx]) if data else 0.0
-                    )
+                    time_sim_start = float(timestamps[time_step_idx]) if data else 0.0
 
         self._interface_consistency_check(interface_dict=sim_result, direction="Output")
 
@@ -971,5 +969,7 @@ def ares_plugin(plugin_input: SimUnitElement):
 
                     if sim_result is not None:
                         AresDataInterface.create(
-                            data=sim_result, dependencies=dependencies
+                            data=sim_result,
+                            dependencies=dependencies,
+                            stepsize=plugin_input.stepsize,
                         )
