@@ -126,21 +126,20 @@ class AresSignal:
         Handles scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
         Interpolation is performed independently for each array element.
 
-        ``self.timestamps`` is normalized to start at 0 before interpolation to align
-        with ``timestamps_resampled``, which is expected to be relative (starting at 0).
-        Without this, signals with an absolute time offset would be interpolated incorrectly.
+        ``timestamps_resampled`` is expected to be an absolute time vector fully contained
+        within ``[self.timestamps[0], self.timestamps[-1]]``. No normalization is applied,
+        so both the signal timestamps and the resample vector must share the same absolute
+        time reference.
 
         Args:
-            timestamps_resampled (npt.NDArray[np.float32]): New relative timestamp values
-                starting at 0, with floating point dtype.
+            timestamps_resampled (npt.NDArray[np.float32]): New absolute timestamp values
+                within the signal's time range, with floating point dtype.
 
         """
-        timestamps_normalized = self.timestamps - self.timestamps[0]
-
         if self.ndim == 1:
             self.value = np.interp(
                 timestamps_resampled,
-                timestamps_normalized,
+                self.timestamps,
                 self.value.astype(np.float32),
             ).astype(self.dtype)
 
@@ -151,7 +150,7 @@ class AresSignal:
             )
             for i in range(array_size):
                 resampled[:, i] = np.interp(
-                    timestamps_resampled, timestamps_normalized, self.value[:, i]
+                    timestamps_resampled, self.timestamps, self.value[:, i]
                 )
             self.value = resampled.astype(self.dtype)
 
@@ -163,7 +162,7 @@ class AresSignal:
             for i in range(rows):
                 for j in range(cols):
                     resampled[:, i, j] = np.interp(
-                        timestamps_resampled, timestamps_normalized, self.value[:, i, j]
+                        timestamps_resampled, self.timestamps, self.value[:, i, j]
                     )
             self.value = resampled.astype(self.dtype)
 
