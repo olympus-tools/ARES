@@ -114,9 +114,19 @@ def ares_plugin(plugin_input: MergeElement):
         )  # TODO: offering a better log message
 
         merge_data: list[AresSignal] = []
+
+        # this loop is necessary to ensure that the merged data has a unified time array
+        stepsize: int = 1 if plugin_input.stepsize is None else plugin_input.stepsize
+        for data_hash in data_dependency_list:
+            if (
+                AresDataInterface.cache[data_hash].stepsize is not None
+                and AresDataInterface.cache[data_hash].stepsize < stepsize
+            ):
+                stepsize = AresDataInterface.cache[data_hash].stepsize
+
         for data_hash in data_dependency_list:
             data = AresDataInterface.cache[data_hash].get(
-                stepsize=plugin_input.stepsize,
+                stepsize=stepsize,
                 label_filter=plugin_input.label_filter_data,
                 vstack_pattern=plugin_input.vstack_pattern_data,
             )
@@ -126,7 +136,7 @@ def ares_plugin(plugin_input: MergeElement):
         AresDataInterface.create(
             data=merge_data,
             dependencies=data_dependency_list,
-            stepsize=plugin_input.stepsize,
+            stepsize=stepsize,
             label_filter=plugin_input.label_filter_data,
             vstack_pattern=plugin_input.vstack_pattern_data,
         )
