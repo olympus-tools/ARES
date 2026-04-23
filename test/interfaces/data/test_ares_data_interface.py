@@ -124,7 +124,7 @@ class TestAresDataInterfaceInit:
         instance = ConcreteDataInterface()
         assert instance._file_path is None
         assert instance.dependencies == []
-        assert instance._stepsize is None
+        assert instance.stepsize is None
         assert instance._label_filter is None
         assert instance._vstack_pattern is None
 
@@ -142,7 +142,7 @@ class TestAresDataInterfaceInit:
         )
         assert instance._file_path == test_file
         assert instance.dependencies == deps
-        assert instance._stepsize == 100
+        assert instance.stepsize == 100
         assert instance._label_filter == ["signal1"]
         assert instance._vstack_pattern == vstack
 
@@ -535,7 +535,7 @@ class TestAresDataInterfaceIntegration:
         assert len(result) == 1
         assert result[0].label == "sig1"
 
-    def test_get_with_stepsize(self):
+    def test_get_withstepsize(self):
         signals = [
             AresSignal(
                 label="sig1",
