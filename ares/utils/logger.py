@@ -64,23 +64,32 @@ class AresContextFilter(logging.Filter):
         return True
 
 
-def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
+def create_logger(
+    name: str | None = None,
+    logdir: Path | None = None,
+    level: int = logging.INFO,
+) -> logging.Logger:
     """
     Creates and configures a logger that outputs logs in JSON format.
     Usage should be to call just: "logger = create_logger()"
 
     Args:
-        name (str), default = 'ares_root': The name for the logger, typically __name__.
+        name (str | None), default = None: The name for the logger, typically __name__. None creates the root logger.
+        logdir (Path | None): Directory for log files. Defaults to <package>/logs.
         level (int), default = logging.INFO: The logging level, e.g., logging.INFO.
 
     Returns:
         logging.Logger: A configured logger instance for ARES.
     """
-    logdir = Path(__file__).parent / "../../logs"
+    if logdir is None:
+        logdir = Path(__file__).parent / "../../logs"
+    else:
+        logdir = Path(logdir) / "ares_log"
+
     logdir.mkdir(parents=True, exist_ok=True)
 
     # create logger -> root or "name"
-    if name == "":
+    if name is None:
         logger = logging.getLogger()
         logfile = Path(logdir, "ares_root.log")
         logger.setLevel(level)
@@ -96,9 +105,11 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     # Use a StreamHandler to output to stdout --> parallel to streaming to file
     # default: sys.stderr
     stdout_handler = colorlog.StreamHandler(stream=sys.stdout)
+    stdout_handler.setLevel(level)
     # Use RotatingFileHandler with Count=4 and 4MB size -> 4 is just a good number + always use logger.INFO
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
+    file_handler.setLevel(level)
 
     fmt_plain = "%(levelname)-8s | %(asctime)s | %(workflow_element)s | %(filename)s:%(lineno)s >> %(message)s"
     fmt_color = "%(log_color)s" + fmt_plain
@@ -129,7 +140,7 @@ def create_logger(name: str = "", level: int = logging.INFO) -> logging.Logger:
     stdout_handler.setFormatter(color_formatter)
     file_handler.setFormatter(file_formatter)
     # set handler differentiating between root/no root
-    if name == "":
+    if name is None:
         logger.addHandler(stdout_handler)
 
     logger.addHandler(file_handler)
