@@ -88,7 +88,6 @@ def create_logger(
 
     logdir.mkdir(parents=True, exist_ok=True)
 
-    # create logger -> root or "name"
     if name is None:
         logger = logging.getLogger()
         logfile = Path(logdir, "ares_root.log")
@@ -115,7 +114,6 @@ def create_logger(
     fmt_color = "%(log_color)s" + fmt_plain
     datefmt = "%d.%m.%Y %H:%M:%S"
 
-    # set color formatter for stdout/stderr
     color_formatter = colorlog.ColoredFormatter(
         fmt=fmt_color,
         datefmt=datefmt,
@@ -131,7 +129,6 @@ def create_logger(
         style="%",
     )
 
-    # formatter for files (no color)
     file_formatter = logging.Formatter(
         fmt=fmt_plain,
         datefmt=datefmt,
@@ -139,7 +136,7 @@ def create_logger(
 
     stdout_handler.setFormatter(color_formatter)
     file_handler.setFormatter(file_formatter)
-    # set handler differentiating between root/no root
+
     if name is None:
         logger.addHandler(stdout_handler)
 

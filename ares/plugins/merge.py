@@ -42,7 +42,7 @@ from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.workflow_model import MergeElement
 from ares.utils.logger import create_logger
 
-logger = create_logger(__name__)
+logger = create_logger(name=__name__)
 
 
 def get_hash_combinations(
