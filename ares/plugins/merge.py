@@ -80,12 +80,12 @@ def ares_plugin(plugin_input: MergeElement):
         None
     """
 
-    parameter_hash_lists: list[list[str]] = plugin_input.parameter_hash_lists
-    data_hash_lists: list[list[str]] = plugin_input.data_hash_lists
+    hash_lists_parameter: list[list[str]] = plugin_input.hash_lists_parameter
+    hash_lists_data: list[list[str]] = plugin_input.hash_lists_data
 
     # generate all hash combinations using cartesian product
-    parameter_dependency_lists = get_hash_combinations(parameter_hash_lists)
-    data_dependency_lists = get_hash_combinations(data_hash_lists)
+    parameter_dependency_lists = get_hash_combinations(hash_lists_parameter)
+    data_dependency_lists = get_hash_combinations(hash_lists_data)
 
     # create merged parameters and data for each hash combination
     for parameter_dependency_list in parameter_dependency_lists:
@@ -97,6 +97,7 @@ def ares_plugin(plugin_input: MergeElement):
         for parameter_hash in parameter_dependency_list:
             params = AresParamInterface.cache[parameter_hash].get(
                 label_filter=plugin_input.label_filter_parameter,
+                transpose_mode=plugin_input.transpose_mode_parameter,
             )
             if params is not None:
                 merge_parameters.extend(params)
@@ -105,6 +106,7 @@ def ares_plugin(plugin_input: MergeElement):
             parameters=merge_parameters,
             dependencies=parameter_dependency_list,
             label_filter=plugin_input.label_filter_parameter,
+            transpose_mode=plugin_input.transpose_mode_parameter,
         )
 
     # create merged data for each hash combination
