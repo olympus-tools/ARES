@@ -58,7 +58,7 @@ from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
-logger = create_logger(__name__)
+logger = create_logger(name=__name__)
 
 AresBaseType = TypeVar("AresBaseType", AresSignal, AresParameter)
 

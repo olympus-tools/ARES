@@ -45,7 +45,7 @@ from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 from ares.utils.resolve_label_filter import resolve_label_filter
 
-logger = create_logger(__name__)
+logger = create_logger(name=__name__)
 
 
 class DCMHandler(DCMI, AresParamInterface):

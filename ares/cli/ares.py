@@ -81,6 +81,12 @@ def cli():
     help="Absolute path to the output directory.",
 )
 @click.option(
+    "--log-dir",
+    default=None,
+    type=click.Path(file_okay=False, path_type=Path),
+    help="Directory where log files will be written. Defaults to <package>/logs.",
+)
+@click.option(
     "--log-level",
     default=logging.INFO,
     help="""\b
@@ -92,7 +98,8 @@ def cli():
     50 = CRITICAL
     """,
 )
-def pipeline_command(workflow, output, log_level):
-    ares_logger = create_logger(level=log_level)
+def pipeline_command(workflow, output, log_dir, log_level):
+    create_logger(logdir=log_dir, level=log_level)
+    logging.getLogger().setLevel(log_level)
 
     pipeline(wf_path=workflow, output_dir=output, meta_data=meta_data)

@@ -46,7 +46,7 @@ from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import str_based_hash
 from ares.utils.logger import create_logger
 
-logger = create_logger(__name__)
+logger = create_logger(name=__name__)
 
 
 class AresParamInterface(ABC):

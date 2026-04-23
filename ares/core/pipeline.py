@@ -48,7 +48,7 @@ from ares.pydantic_models.workflow_model import (
 from ares.utils.decorators import error_msg
 from ares.utils.logger import create_logger, logger_workflow_element
 
-logger = create_logger(__name__)
+logger = create_logger(name=__name__)
 
 
 @error_msg(
