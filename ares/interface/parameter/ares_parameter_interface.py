@@ -36,7 +36,7 @@ limitations under the License:
 import json
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import ClassVar
+from typing import ClassVar, Literal
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.pydantic_models.workflow_model import ParameterElement
@@ -118,6 +118,7 @@ class AresParamInterface(ABC):
         file_path: Path | None,
         dependencies: list[str] | None = None,
         label_filter: list[str] | None = None,
+        transpose_mode: Literal[1, 2] | None = None,
     ):
         """Initialize base attributes for all parameter handlers.
 
@@ -127,6 +128,7 @@ class AresParamInterface(ABC):
             file_path (Path | None): Path to the parameter file to load
             dependencies (list[str] | None): Optional list of parameter labels that this instance depends on
             label_filter (list[str] | None): Optional list of parameter names or patterns to filter
+            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
             **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
@@ -134,6 +136,7 @@ class AresParamInterface(ABC):
             self, "dependencies", dependencies if dependencies is not None else []
         )
         object.__setattr__(self, "_label_filter", label_filter)
+        object.__setattr__(self, "_transpose_mode", transpose_mode)
 
     @classmethod
     @typechecked
@@ -183,6 +186,7 @@ class AresParamInterface(ABC):
                     cls.create(
                         file_path=file_path,
                         label_filter=wf_element_value.label_filter,
+                        transpose_mode=wf_element_value.transpose_mode,
                         **kwargs,
                     )
 
@@ -199,7 +203,9 @@ class AresParamInterface(ABC):
                             source_instance = cls.cache.get(output_hash)
 
                             parameters = source_instance.get(
-                                label_filter=wf_element_value.label_filter, **kwargs
+                                label_filter=wf_element_value.label_filter,
+                                transpose_mode=wf_element_value.transpose_mode,
+                                **kwargs,
                             )
 
                             target_instance = target_handler_class.__new__(
