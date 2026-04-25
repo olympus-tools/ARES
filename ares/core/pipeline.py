@@ -130,14 +130,14 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     [param_storage[hash] for hash in hash_list if hash in param_storage]
                     for hash_list in tmp_param_hash_list
                 ]
-                plugin_input.parameter_hash_lists = tmp_param_hash_list
+                plugin_input.hash_lists_parameter = tmp_param_hash_list
 
                 # filtering relevant data for plugin element
                 plugin_input.data_obj = [
                     [data_storage[hash] for hash in hash_list if hash in data_storage]
                     for hash_list in tmp_data_hash_list
                 ]
-                plugin_input.data_hash_lists = tmp_data_hash_list
+                plugin_input.hash_lists_data = tmp_data_hash_list
 
                 AresPluginInterface(
                     plugin_input=plugin_input,

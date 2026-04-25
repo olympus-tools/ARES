@@ -38,14 +38,13 @@ from pathlib import Path
 from typing import ClassVar, override
 
 import numpy as np
-from asammdf import MDF, Signal, Source
-
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.pydantic_models.workflow_model import VStackPatternElement
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from asammdf import MDF, Signal, Source
 
 logger = create_logger(name=__name__)
 
@@ -295,7 +294,7 @@ class MF4Handler(MDF, AresDataInterface):
             ares_signals.append(
                 AresSignal(
                     label=signal.name,
-                    timestamps=signal.timestamps,
+                    timestamps=signal.timestamps.astype(np.float32),
                     value=value,
                     unit=signal.unit if hasattr(signal, "unit") else None,
                     description=signal.comment if hasattr(signal, "comment") else None,

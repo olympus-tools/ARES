@@ -33,11 +33,11 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
 import numpy.typing as npt
-
 from ares.utils.decorators import safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -69,20 +69,6 @@ class AresSignal:
     description: str | None = None
     source: str | None = None
     unit: str | None = None
-
-    def __post_init__(self):
-        """
-        Validate the data types after initialization.
-        """
-
-        if not np.issubdtype(self.timestamps.dtype, np.floating):
-            raise TypeError("The 'timestamps' array must have a float datatype.")
-        if self.timestamps.ndim != 1 or (
-            self.value.ndim >= 0 and self.timestamps.shape[0] != self.value.shape[0]
-        ):
-            raise ValueError(
-                "Both 'timestamps' and 'data' arrays must be at least 1-dimensional."
-            )
 
     @property
     def dtype(self) -> np.dtype:
@@ -172,6 +158,26 @@ class AresSignal:
             )
 
         self.timestamps = timestamps_resampled
+
+    def timestamps_uniform(self):
+        """Regularise the signal's timestamp vector to be uniformly spaced.
+
+        Builds a uniform grid from the signal's own first/last timestamp using
+        the estimated mean step size, keeping the original sample count.
+        """
+        stepsize = float(np.mean(np.diff(self.timestamps)))
+        stepsize = round(stepsize, -int(math.floor(math.log10(abs(stepsize)))) + 1)
+        logger.debug(
+            f"Unifying timestamps of '{self.label}' with estimated stepsize {stepsize} seconds."
+        )
+
+        # TODO: stepsize has to be used for timestamps (same as for resampleing...otherwise minimum resampling is attached)
+        self.timestamps = np.linspace(
+            float(self.timestamps[0]),
+            float(self.timestamps[-1]),
+            len(self.timestamps),
+            dtype=np.float32,
+        )
 
     @safely_run(
         default_return=None,

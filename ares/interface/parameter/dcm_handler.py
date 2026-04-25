@@ -34,8 +34,9 @@ limitations under the License:
 """
 
 from pathlib import Path
-from typing import override
+from typing import Literal, override
 
+import numpy as np
 from dcmi.core.dcmi import DCMI
 
 from ares.interface.parameter.ares_parameter import AresParameter
@@ -64,6 +65,7 @@ class DCMHandler(DCMI, AresParamInterface):
         self,
         file_path: Path | None = None,
         label_filter: list[str] | None = None,
+        transpose_mode: Literal[1, 2] | None = None,
         **kwargs,
     ):
         """Initialize DCMHandler and optionally load a dcm file.
@@ -71,6 +73,7 @@ class DCMHandler(DCMI, AresParamInterface):
         Args:
             file_path (Path | None): Optional absolute path to the dcm file to load
             label_filter (list[str] | None): Optional list of parameter names or patterns to filter
+            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
             **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
         """
         AresParamInterface.__init__(
@@ -78,6 +81,7 @@ class DCMHandler(DCMI, AresParamInterface):
             file_path=file_path,
             dependencies=kwargs.pop("dependencies", None),
             label_filter=label_filter,
+            transpose_mode=transpose_mode,
         )
         DCMI.__init__(self, file_path=file_path)
 
@@ -103,11 +107,14 @@ class DCMHandler(DCMI, AresParamInterface):
     @error_msg(
         exception_msg="Error in dcm-handler get function.",
         log=logger,
-        include_args=["label_filter"],
+        include_args=["label_filter", "transpose_mode"],
     )
     @typechecked
     def get(
-        self, label_filter: list[str] | None = None, **kwargs
+        self,
+        label_filter: list[str] | None = None,
+        transpose_mode: Literal[1, 2] | None = None,
+        **kwargs,
     ) -> list[AresParameter] | None:
         """Get parameters from the dcm interface.
 
@@ -117,6 +124,7 @@ class DCMHandler(DCMI, AresParamInterface):
         Args:
             label_filter (list[str] | None): List of parameter names or pattern to retrieve
             from the interface. If None, all parameters are returned. Defaults to None.
+            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
             **kwargs: Additional format-specific arguments
 
         Returns:
@@ -144,18 +152,36 @@ class DCMHandler(DCMI, AresParamInterface):
         else:
             parameter_tmp = self.parameter
 
-        result = [
-            AresParameter(
-                label=parameter_name,
-                value=parameter_value.get("value", 0.0),
-                name_breakpoints_1=parameter_value.get("name_breakpoints_1", None),
-                name_breakpoints_2=parameter_value.get("name_breakpoints_2", None),
-                source="ARES_DEFAULT_SOURCE",
-                description=parameter_value.get("description", None),
-                unit=parameter_value.get("unit", None),
-            )
-            for parameter_name, parameter_value in parameter_tmp.items()
-        ]
+        transpose_mode = (
+            self._transpose_mode if transpose_mode is None else transpose_mode
+        )
+
+        if transpose_mode is None or transpose_mode == 1:
+            result = [
+                AresParameter(
+                    label=parameter_name,
+                    value=parameter_value.get("value", 0.0),
+                    name_breakpoints_1=parameter_value.get("name_breakpoints_1", None),
+                    name_breakpoints_2=parameter_value.get("name_breakpoints_2", None),
+                    source="ARES_DEFAULT_SOURCE",
+                    description=parameter_value.get("description", None),
+                    unit=parameter_value.get("unit", None),
+                )
+                for parameter_name, parameter_value in parameter_tmp.items()
+            ]
+        elif transpose_mode == 2:
+            result = [
+                AresParameter(
+                    label=parameter_name,
+                    value=np.array(parameter_value.get("value", 0.0)).T,
+                    name_breakpoints_1=parameter_value.get("name_breakpoints_2", None),
+                    name_breakpoints_2=parameter_value.get("name_breakpoints_1", None),
+                    source="ARES_DEFAULT_SOURCE",
+                    description=parameter_value.get("description", None),
+                    unit=parameter_value.get("unit", None),
+                )
+                for parameter_name, parameter_value in parameter_tmp.items()
+            ]
 
         return result if result else None
 

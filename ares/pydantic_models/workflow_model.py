@@ -318,6 +318,7 @@ class ParameterElement(BaseElement):
     file_path: list[Path] | None = []
     parameter: list[str] | None = []
     label_filter: list[str] | None = None
+    transpose_mode: Literal[1, 2] | None = None
     output_format: ParameterFormat | None = None
 
     @model_validator(mode="after")
@@ -348,8 +349,8 @@ class PluginElement(BaseElement):
     plugin_name: str | None = None
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
-    parameter_hash_lists: list[list[str]] = []
-    data_hash_lists: list[list[str]] = []
+    hash_lists_parameter: list[list[str]] = []
+    hash_lists_data: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -374,10 +375,11 @@ class SimUnitElement(PluginElement):
     init: list[str] | None = []
     cancel_condition: str | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
+    transpose_mode_parameter: Literal[1, 2] | None = None
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
-    parameter_hash_lists: list[list[str]] = []
-    data_hash_lists: list[list[str]] = []
+    hash_lists_parameter: list[list[str]] = []
+    hash_lists_data: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -406,12 +408,12 @@ class MergeElement(PluginElement):
     label_filter_data: list[str] | None = None
     label_filter_parameter: list[str] | None = None
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
-    vstack_pattern_parameter: list[VStackPatternElement] | list[str] | None = None
+    transpose_mode_parameter: Literal[1, 2] | None = None
     stepsize: int | None = None
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
-    parameter_hash_lists: list[list[str]] = []
-    data_hash_lists: list[list[str]] = []
+    hash_lists_parameter: list[list[str]] = []
+    hash_lists_data: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):

@@ -33,6 +33,7 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+import copy
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -41,7 +42,6 @@ from pathlib import Path
 from typing import ClassVar
 
 import numpy as np
-
 from ares.interface.data.ares_signal import AresSignal
 from ares.pydantic_models.workflow_model import DataElement, VStackPatternElement
 from ares.utils.decorators import error_msg
@@ -328,6 +328,78 @@ class AresDataInterface(ABC):
         return list(data_filtered.values())
 
     @staticmethod
+    @typechecked
+    def _resample_accuracy(
+        data_original: list[AresSignal],
+        data_resampled: list[AresSignal],
+        stepsize: int,
+    ) -> None:
+        """Log hub-normalised resampling accuracy for all signals.
+
+        For each signal pair (original / resampled), the resampled signal is
+        back-interpolated onto the original timestamps. Absolute deviations are
+        normalised by the signal hub (``max - min``) to yield a dimensionless
+        percentage. Per-signal mean and max errors, as well as an overall summary,
+        are emitted at DEBUG log level.
+
+        Args:
+            data_original (list[AresSignal]): Signals before resampling.
+            data_resampled (list[AresSignal]): Corresponding signals after resampling.
+            stepsize (int): Resampling step size in milliseconds (used for log output only).
+        """
+        value_accuracy: list[tuple[str, float, float]] = []
+        for signal in data_original:
+            signal_resampled = next(
+                s for s in data_resampled if s.label == signal.label
+            )
+
+            mask = (signal.timestamps >= signal_resampled.timestamps[0]) & (
+                signal.timestamps <= signal_resampled.timestamps[-1]
+            )
+            timestamps_original_masked = signal.timestamps[mask]
+            values_original = signal.value[mask].astype(np.float32)
+
+            signal_resampled_copy = copy.deepcopy(signal_resampled)
+            signal_resampled_copy.resample(
+                timestamps_resampled=timestamps_original_masked
+            )
+            if signal_resampled_copy.value is None:
+                continue
+            values_back_resampled = signal_resampled_copy.value.astype(np.float32)
+            abs_errors = np.abs(values_original - values_back_resampled)
+
+            hub = float(np.max(values_original) - np.min(values_original))
+            if hub == 0.0:
+                value_accuracy.append((signal.label, 0.0, 0.0))
+                continue
+
+            mean_err_pct = float(np.mean(abs_errors) / hub * 100.0)
+            max_err_pct = float(np.max(abs_errors) / hub * 100.0)
+            value_accuracy.append((signal.label, mean_err_pct, max_err_pct))
+
+        label_worst, mean_worst, max_worst = max(value_accuracy, key=lambda x: x[1])
+
+        col_label = 70
+        col_num = 6
+
+        rows = "\n".join(
+            f"  {label:<{col_label}}  mean error: {mean:>{col_num}.2f} %  max. error: {max_e:>{col_num}.2f} %"
+            for label, mean, max_e in value_accuracy
+        )
+        if mean_worst == 0.0:
+            overall_line = f"  {'overall error':<{col_label}}  no deviation detected"
+        else:
+            overall_line = (
+                f"  {'overall error':<{col_label}}  max. mean error: {mean_worst:>{col_num}.2f} %"
+                f"  max. error: {max_worst:>{col_num}.2f} % (signal='{label_worst}')"
+            )
+        logger.debug(
+            f"Resampling accuracy (stepsize={stepsize} ms, n={len(value_accuracy)} signals, method: hub-normalised):\n"
+            f"{overall_line}\n"
+            f"  {'-' * (col_label + col_num * 2 + 50)}\n" + rows
+        )
+
+    @staticmethod
     @error_msg(
         exception_msg="Error in ares-data-interface resample function.",
         log=logger,
@@ -336,6 +408,13 @@ class AresDataInterface(ABC):
     def _resample(data: list[AresSignal], stepsize: int) -> list[AresSignal]:
         """Resample all signals to a common time vector using linear interpolation.
 
+        After resampling, a hub-normalised accuracy metric is computed by
+        back-interpolating each resampled signal onto the original timestamps.
+        This quantifies amplitude errors caused by peaks that are missed because
+        original samples fall between two resample grid points. Per-signal mean
+        and max errors are reported, along with the overall mean error and the
+        signal with the highest mean error. The result is emitted at DEBUG log level.
+
         Args:
             data (list[AresSignal]): List of AresSignal objects to resample
             stepsize (int): Resampling step size in milliseconds
@@ -343,25 +422,41 @@ class AresDataInterface(ABC):
         Returns:
             list[AresSignal]: List of resampled AresSignal objects with common time vector
         """
+
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
 
-        # get timevector
         for signal in data:
-            if len(signal.timestamps) > 0:
+            if signal.shape[0] > 0:
                 latest_start_time = np.maximum(latest_start_time, signal.timestamps[0])
                 earliest_end_time = np.minimum(earliest_end_time, signal.timestamps[-1])
 
-        timestamps_resample = np.arange(
-            latest_start_time,
-            earliest_end_time + (stepsize / 1000.0),
-            stepsize / 1000.0,
-            dtype=np.float32,
+        n_timestamps = (
+            int((earliest_end_time - latest_start_time) / (stepsize / 1000.0)) + 1
+        )
+        timestamps_resampled = np.linspace(
+            latest_start_time, earliest_end_time, n_timestamps, dtype=np.float32
         )
 
-        # resampling of each element based on resample function of signal
-        [signal.resample(timestamps_resample) for signal in data]
-        return data
+        data_resampled: list[AresSignal] = copy.deepcopy(data)
+
+        for signal in data_resampled:
+            # force new time vector: unifying a time vector with unevenly distributed samples
+            # and reset it hard to float32
+            if True:  # TODO: add flag to workflow
+                signal.timestamps_uniform()
+
+            signal.resample(timestamps_resampled=timestamps_resampled)
+
+        # calculation of resample accuracy only in logger mode 10 ("debug")
+        if logger.isEnabledFor(10):
+            AresDataInterface._resample_accuracy(
+                data_original=data,
+                data_resampled=data_resampled,
+                stepsize=stepsize,
+            )
+
+        return data_resampled
 
     @staticmethod
     @typechecked
