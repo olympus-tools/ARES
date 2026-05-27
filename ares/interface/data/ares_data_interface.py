@@ -391,7 +391,7 @@ class AresDataInterface(ABC):
 
             # check pattern for groups - at least 1 group necessary for stacking
             if pattern.groups == 0:
-                logger.debug(
+                logger.warning(
                     f"Vertical stacking for pattern '{vstack_element.pattern}' is skipped."
                     f"Pattern includes no group."
                 )
@@ -434,7 +434,7 @@ class AresDataInterface(ABC):
                         for signal in signal_matches
                     ]
                 ):
-                    logger.debug(
+                    logger.warning(
                         f"Vertical stacking could not be applied. Dimension missmatch in stack: {[signal.label for signal in signal_matches]}."
                     )
                     continue
