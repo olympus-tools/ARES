@@ -109,23 +109,53 @@ def test_ares_signal_resample():
         timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
         value=np.array([0, 1, 2, 3], dtype=np.float32),
     )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
     resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
-    test_signal.resample(resampled_timestamps)
+    signal_resampled = test_signal.resample(resampled_timestamps)
+
+    assert signal_resampled is not None
+    assert signal_resampled is not test_signal
+
     expected_data = np.array([0.5, 1.5, 2.5], dtype=np.float32)
-    assert np.array_equal(test_signal.timestamps, resampled_timestamps)
-    assert np.array_equal(test_signal.value, expected_data)
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+    assert np.array_equal(signal_resampled.value, expected_data)
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_cubic():
+    """
+    Test cubic resampling method of the ares signal.
+    """
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+
+    signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
+
+    assert signal_resampled is not None
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+    assert np.allclose(signal_resampled.value, np.array([0.5, 1.5, 2.5]))
 
 
 def test_ares_signal_wrong_timestamps_type():
     """
-    Test if TypeError is raised for wrong timestamps type.
+    Test if integer timestamps are cast and accepted.
     """
-    with pytest.raises(TypeError):
-        AresSignal(
-            label="test_signal",
-            timestamps=np.array([1, 2, 3, 4], dtype=int),
-            value=np.array([1, 2, 3, 4], dtype=np.float32),
-        )
+    signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([1, 2, 3, 4], dtype=int),
+        value=np.array([1, 2, 3, 4], dtype=np.float32),
+    )
+
+    assert np.issubdtype(signal.timestamps.dtype, np.float32)
+    assert np.array_equal(signal.timestamps, np.array([1, 2, 3, 4], dtype=np.float32))
 
 
 def test_ares_signal_wrong_dimension():
