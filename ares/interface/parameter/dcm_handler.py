@@ -124,7 +124,6 @@ class DCMHandler(DCMI, AresParamInterface):
                 parameters were found
         """
 
-
         label_filter = self._label_filter if label_filter is None else label_filter
 
         if label_filter:
