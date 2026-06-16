@@ -149,11 +149,7 @@ class JSONParamHandler(AresParamInterface):
             list[AresParameter] | None: List of AresParameter objects, or None if no parameters were found
         """
 
-        label_filter = (
-            self._label_filter
-            if label_filter is None
-            else (self._label_filter or []) + label_filter
-        )
+        label_filter = self._label_filter if label_filter is None else label_filter
 
         if label_filter:
             label_filter = resolve_label_filter(
