@@ -90,6 +90,7 @@ class AresDataInterface(ABC):
         """
         # neither file_path nor signals provided - create uncached instance
         if file_path is None and data is None:
+            cls.cache.pop("empty_instance_no_hash", None)
             empty_instance = super().__new__(cls)
             object.__setattr__(empty_instance, "hash", "empty_instance_no_hash")
             cls.cache["empty_instance_no_hash"] = empty_instance
@@ -222,7 +223,11 @@ class AresDataInterface(ABC):
                             )
 
                             if data is not None:
-                                target_instance.add(data, **kwargs)
+                                target_instance.add(
+                                    data=data,
+                                    stepsize=wf_element_value.stepsize,
+                                    **kwargs,
+                                )
 
                             output_path = eval_output_path(
                                 output_hash=output_hash,
@@ -352,16 +357,28 @@ class AresDataInterface(ABC):
                 latest_start_time = np.maximum(latest_start_time, signal.timestamps[0])
                 earliest_end_time = np.minimum(earliest_end_time, signal.timestamps[-1])
 
-        timestamps_resample = np.arange(
+        num_samples = (
+            int(np.round((earliest_end_time - latest_start_time) / (stepsize / 1000.0)))
+            + 1
+        )
+        timestamps_resample = np.linspace(
             latest_start_time,
-            earliest_end_time + (stepsize / 1000.0),
-            stepsize / 1000.0,
+            earliest_end_time,
+            num_samples,
             dtype=np.float32,
         )
 
-        # resampling of each element based on resample function of signal
-        [signal.resample(timestamps_resample) for signal in data]
-        return data
+        resampled_data: list[AresSignal] = []
+        for signal in data:
+            signal_resampled = signal.resample(timestamps_resampled=timestamps_resample)
+            if signal_resampled is None:
+                logger.debug(
+                    f"Signal '{signal.label}' is not attached to resampled data since resampling was not possible."
+                )
+                continue
+            resampled_data.append(signal_resampled)
+
+        return resampled_data
 
     @staticmethod
     @typechecked

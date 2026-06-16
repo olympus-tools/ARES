@@ -176,11 +176,7 @@ class MF4Handler(MDF, AresDataInterface):
             else (self._vstack_pattern or []) + vstack_pattern
         )
 
-        label_filter = (
-            self._label_filter
-            if label_filter is None
-            else (self._label_filter or []) + label_filter
-        )
+        label_filter = self._label_filter if label_filter is None else label_filter
 
         stepsize = self.stepsize if stepsize is None else stepsize
 
@@ -324,11 +320,20 @@ class MF4Handler(MDF, AresDataInterface):
 
         Args:
             data (list[AresSignal]): List of AresSignal objects to append to mf4 file.
+                All signals in the list must share the exact same time axis (identical
+                timestamps array), as asammdf's append() is called with common_timebase=True.
                 - ndim == 1: Scalar value per time step
                 - ndim == 2: 1D array per time step (shape: cycles, array_size)
                 - ndim == 3: 2D array per time step (shape: cycles, rows, cols)
+            **kwargs (Any): Additional arguments passed to asammdf's append() method.
         """
         data = AresDataInterface._filter_deduplicates(data=data)
+
+        stepsize = kwargs.pop("stepsize", None)
+        if stepsize is not None:
+            comment = f"{stepsize}ms ares"
+        else:
+            comment = "ares"
 
         signals_to_write = []
         for signal in data:
@@ -385,5 +390,6 @@ class MF4Handler(MDF, AresDataInterface):
                     f"Unsupported signal dimension: {signal.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
                 )
 
-        self.append(signals_to_write)
+        # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
+        self.append(signals_to_write, comment=comment, common_timebase=True)
         [self._available_signals.append(signal.label) for signal in data]
