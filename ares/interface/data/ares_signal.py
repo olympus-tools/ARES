@@ -259,11 +259,13 @@ class AresSignal:
 
         for i in range(signal_dim_flat.shape[1]):
             for j in range(len(timestamps_resampled)):
-                t_current: float = timestamps_resampled[j]
-                original_time_idx: float = (t_current - self.timestamps[0]) * self.fs
-                t_original: int = int(np.floor(original_time_idx))
-                alpha: float = original_time_idx - t_original
-                signal_resampled_val: float = 0.0
+                t_current: np.float32 = timestamps_resampled[j]
+                original_time_idx: np.float32 = (
+                    t_current - self.timestamps[0]
+                ) * self.fs
+                t_original = np.int32(np.floor(original_time_idx))
+                alpha: np.float32 = original_time_idx - np.float32(t_original)
+                signal_resampled_val: np.float32 = np.float32(0.0)
 
                 for k in range(-(radius - 1), radius + 1):
                     window_idx = t_original - k
@@ -278,13 +280,15 @@ class AresSignal:
                                 + 0.5 * np.cos(np.pi * (sample_distance / radius))
                                 + 0.08
                                 * np.cos(2.0 * np.pi * (sample_distance / radius))
-                            )  # w(n) = 0.42 - 0.5cos(2pi*n/M) + 0.08cos(4pi*n/M), with n = u - radius  and M = 2*radius --> zero centered cooridnates
+                            )
                             signal_resampled_val += signal_dim_flat[window_idx, i] * (
                                 sinc_val * blackman_window_val
                             )
                 signal_resampled[j, i] = signal_resampled_val
 
-        return self.value
+        return signal_resampled.reshape(
+            (len(timestamps_resampled),) + self.shape[1:]
+        ).astype(self.dtype)
 
     @safely_run(
         default_return=None,
@@ -296,7 +300,7 @@ class AresSignal:
     def resample(
         self,
         timestamps_resampled: npt.NDArray[np.float32],
-        method: str = "linear",
+        method: str = "windowedsinc",
     ) -> "AresSignal | None":
         """Create a resampled copy of the signal with selectable interpolation method.
 

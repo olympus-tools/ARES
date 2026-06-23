@@ -64,6 +64,19 @@ def test_ares_signal_init():
     assert len(test_signal.value) == 4, "Ops, data length is false."
 
 
+def test_ares_signal_fs():
+    """
+    Test the fs property of the ares signal.
+    """
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+    assert isinstance(test_signal.fs, int)
+    assert test_signal.fs == 1
+
+
 @pytest.mark.parametrize(
     "label, timestamps, data",
     [
@@ -100,9 +113,9 @@ def test_ares_ares_signal(label, timestamps, data):
     assert len(test_signal.value) == data_length, "Ops, data length is false."
 
 
-def test_ares_signal_resample():
+def test_ares_signal_resample_default():
     """
-    Test the resample method of the ares signal.
+    Test the resample method in general.
     """
     test_signal = AresSignal(
         label="test_signal",
@@ -117,6 +130,30 @@ def test_ares_signal_resample():
 
     assert signal_resampled is not None
     assert signal_resampled is not test_signal
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+    assert signal_resampled.value.shape == resampled_timestamps.shape
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_linear():
+    """
+    Test linear resampling of the ares signal.
+    """
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="linear")
+
+    assert signal_resampled is not None
+    assert signal_resampled is not test_signal
 
     expected_data = np.array([0.5, 1.5, 2.5], dtype=np.float32)
     assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
@@ -124,6 +161,52 @@ def test_ares_signal_resample():
 
     assert np.array_equal(test_signal.timestamps, original_timestamps)
     assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_windowedsinc():
+    """
+    Test windowed-sinc resampling of the ares signal.
+    """
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="windowedsinc")
+
+    assert signal_resampled is not None
+    assert signal_resampled is not test_signal
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_windowedsinc_sine():
+    """
+    Test windowed-sinc resampling with a sine wave (bandlimited signal).
+    """
+    fs = 100.0
+    t = np.arange(0, 5, 1 / fs, dtype=np.float32)
+    freq = 5.0
+    sine = np.sin(2 * np.pi * freq * t).astype(np.float32)
+
+    test_signal = AresSignal(
+        label="sine",
+        timestamps=t,
+        value=sine,
+    )
+
+    resampled_t = np.arange(0.0, 5, 1 / (fs * 2), dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_t, method="windowedsinc")
+
+    assert signal_resampled is not None
+    expected = np.sin(2 * np.pi * freq * resampled_t).astype(np.float32)
+    assert np.allclose(signal_resampled.value, expected, atol=1e-1)
 
 
 def test_ares_signal_resample_cubic():
@@ -135,13 +218,19 @@ def test_ares_signal_resample_cubic():
         timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
         value=np.array([0, 1, 2, 3], dtype=np.float32),
     )
-    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
 
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
     signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
 
     assert signal_resampled is not None
+    assert signal_resampled is not test_signal
     assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
     assert np.allclose(signal_resampled.value, np.array([0.5, 1.5, 2.5]))
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
 
 
 def test_ares_signal_wrong_timestamps_type():
@@ -177,4 +266,5 @@ def test_ares_signal_wrong_dimension():
 
 
 if __name__ == "__main__":
-    test_ares_signal_resample()
+    # test_ares_signal_resample()
+    test_ares_signal_resample_windowedsinc_sine()
