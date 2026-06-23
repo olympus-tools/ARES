@@ -164,45 +164,98 @@ class AresSignal:
     @typechecked
     def _resample_linear(
         self,
-        values_1d: npt.NDArray,
         timestamps_resampled: npt.NDArray[np.float32],
     ) -> npt.NDArray:
-        """Resample a one-dimensional signal vector using linear interpolation.
+        """Resample using linear interpolation. Supports 1D, 2D, and 3D signals."""
 
-        Args:
-            values_1d (npt.NDArray): One-dimensional source values.
-            timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
+        signal_dim_flat = self.value.reshape(self.shape[0], -1).astype(np.float32)
+        signal_resampled = np.empty(
+            (len(timestamps_resampled), signal_dim_flat.shape[1]), dtype=np.float32
+        )
+        for i in range(signal_dim_flat.shape[1]):
+            signal_resampled[:, i] = np.interp(
+                timestamps_resampled, self.timestamps, signal_dim_flat[:, i]
+            )
 
-        Returns:
-            npt.NDArray: Resampled values with the original signal dtype.
-        """
-        values_float = values_1d.astype(np.float32)
-        resampled = np.interp(timestamps_resampled, self.timestamps, values_float)
+        signal_resampled = signal_resampled.reshape(
+            (len(timestamps_resampled),) + self.shape[1:]
+        )
         if np.issubdtype(self.dtype, np.bool_):
-            return (resampled >= 0.5).astype(self.dtype)
-        return resampled.astype(self.dtype)
+            return (signal_resampled >= 0.5).astype(self.dtype)
+        return signal_resampled.astype(self.dtype)
 
     @typechecked
     def _resample_cubic(
         self,
-        values_1d: npt.NDArray,
         timestamps_resampled: npt.NDArray[np.float32],
     ) -> npt.NDArray:
-        """Resample a one-dimensional signal vector using cubic spline interpolation.
+        """Resample using cubic spline interpolation. Supports 1D, 2D, and 3D signals."""
 
-        Args:
-            values_1d (npt.NDArray): One-dimensional source values.
-            timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
-
-        Returns:
-            npt.NDArray: Resampled values with the original signal dtype.
-        """
-        values_float = values_1d.astype(np.float32)
         if np.issubdtype(self.dtype, np.bool_):
-            return self._resample_linear(values_1d, timestamps_resampled)
+            return self._resample_linear(timestamps_resampled)
 
-        cs = CubicSpline(self.timestamps, values_float)
-        return cs(timestamps_resampled).astype(self.dtype)
+        signal_dim_flat = self.value.reshape(self.shape[0], -1).astype(np.float32)
+        signal_resampled = np.empty(
+            (len(timestamps_resampled), signal_dim_flat.shape[1]), dtype=np.float32
+        )
+        for i in range(signal_dim_flat.shape[1]):
+            cs = CubicSpline(self.timestamps, signal_dim_flat[:, i])
+            signal_resampled[:, i] = cs(timestamps_resampled)
+
+        return signal_resampled.reshape(
+            (len(timestamps_resampled),) + self.shape[1:]
+        ).astype(self.dtype)
+
+    @typechecked
+    def _resample_windowedsinc(
+        self,
+        timestamps_resampled: npt.NDArray[np.float32],
+    ) -> npt.NDArray:
+        """Resample using windowed-sinc interpolation (sinc * Blackman-Nuttall).
+
+        Uses bandlimited interpolation with a truncated sinc kernel windowed by
+        a Blackman-Nuttall window. Supports 1D, 2D, and 3D signals.
+
+        Reference: https://ccrma.stanford.edu/~jos/resample/What_Bandlimited_Interpolation.html
+        """
+        if np.issubdtype(self.dtype, np.bool_):
+            return self._resample_linear(timestamps_resampled)
+
+        dt = self.timestamps[1] - self.timestamps[0]
+        t_start = self.timestamps[0]
+        n_in = self.shape[0]
+        half_len = 7
+        n_out = len(timestamps_resampled)
+
+        flat = self.value.reshape(n_in, -1).astype(np.float32)
+        n_channels = flat.shape[1]
+        out_flat = np.zeros((n_out, n_channels), dtype=np.float32)
+
+        for ch in range(n_channels):
+            for i in range(n_out):
+                t_cont = (timestamps_resampled[i] - t_start) / dt
+                center = int(np.round(t_cont))
+                val = 0.0
+                for k in range(-half_len, half_len + 1):
+                    idx = center + k
+                    if 0 <= idx < n_in:
+                        frac = t_cont - idx
+                        if frac == 0.0:
+                            w = 1.0
+                        else:
+                            sinc = np.sin(np.pi * frac) / (np.pi * frac)
+                            y = frac / half_len
+                            bnw = (
+                                0.3635819
+                                - 0.4891775 * np.cos(np.pi * (y - 1))
+                                + 0.1365995 * np.cos(2 * np.pi * (y - 1))
+                                - 0.0106411 * np.cos(3 * np.pi * (y - 1))
+                            )
+                            w = sinc * bnw
+                        val += flat[idx, ch] * w
+                out_flat[i, ch] = val
+
+        return out_flat.reshape((n_out,) + self.shape[1:]).astype(self.dtype)
 
     @safely_run(
         default_return=None,
@@ -231,7 +284,7 @@ class AresSignal:
             timestamps_resampled (npt.NDArray[np.float32]): New absolute timestamp values
                 within the signal's time range, with floating point dtype.
             method (str): Resampling method. Supported values are
-                ``"linear"`` (default) and ``"cubic"``.
+                ``"linear"`` (default), ``"windowedsinc"`` and ``"cubic"``.
 
         Returns:
             AresSignal: A new signal instance with resampled timestamps and values.
@@ -241,9 +294,11 @@ class AresSignal:
         is_boolean_dtype = np.issubdtype(self.dtype, np.bool_)
 
         if method == "linear":
-            resample_1d = self._resample_linear
+            resample_method_func = self._resample_linear
         elif method == "cubic":
-            resample_1d = self._resample_cubic
+            resample_method_func = self._resample_cubic
+        elif method == "windowedsinc":
+            resample_method_func = self._resample_windowedsinc
         else:
             logger.warning(
                 f"Unsupported resample method: '{method}'. Supported: linear, cubic"
@@ -256,35 +311,7 @@ class AresSignal:
             )
             return None
 
-        if self.ndim == 1:
-            resampled_value = resample_1d(self.value, timestamps_resampled)
-
-        elif self.ndim == 2:
-            array_size = self.shape[1]
-            resampled_value = np.zeros(
-                (len(timestamps_resampled), array_size), dtype=self.dtype
-            )
-            for i in range(array_size):
-                resampled_value[:, i] = resample_1d(
-                    self.value[:, i], timestamps_resampled
-                )
-
-        elif self.ndim == 3:
-            rows, cols = self.shape[1], self.shape[2]
-            resampled_value = np.zeros(
-                (len(timestamps_resampled), rows, cols), dtype=self.dtype
-            )
-            for i in range(rows):
-                for j in range(cols):
-                    resampled_value[:, i, j] = resample_1d(
-                        self.value[:, i, j], timestamps_resampled
-                    )
-
-        else:
-            logger.warning(
-                f"Unsupported signal dimension: {self.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)"
-            )
-            return None
+        resampled_value = resample_method_func(timestamps_resampled)
 
         return AresSignal(
             label=self.label,
