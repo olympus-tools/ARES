@@ -293,9 +293,7 @@ def test_ares_signal_resample_windowedsinc_multidim():
     test_signal = _make_multidim_signal(10, 3)
 
     resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
-    signal_resampled = test_signal.resample(
-        resampled_timestamps, method="windowedsinc"
-    )
+    signal_resampled = test_signal.resample(resampled_timestamps, method="windowedsinc")
 
     assert signal_resampled is not None
     expected_shape = (len(resampled_timestamps), 3)
