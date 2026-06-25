@@ -51,6 +51,7 @@ dependencies = [
     "click==8.2.1",
     "colorlog==6.9.0",
     "dcmi @ file:submodules/dcmi",
+    "numba==0.65.1",
 ]
 dynamic = ["version"]
 
