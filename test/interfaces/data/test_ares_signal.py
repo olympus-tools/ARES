@@ -233,6 +233,98 @@ def test_ares_signal_resample_cubic():
     assert np.array_equal(test_signal.value, original_values)
 
 
+def _make_multidim_signal(n_timestamps=10, n_channels=3):
+    """Helper to create a multi-dimensional signal with known values."""
+    timestamps = np.arange(n_timestamps, dtype=np.float32)
+    values = np.arange(n_timestamps * n_channels, dtype=np.float32).reshape(
+        n_timestamps, n_channels
+    )
+    return AresSignal(label="multidim", timestamps=timestamps, value=values)
+
+
+def test_ares_signal_resample_linear_multidim():
+    """
+    Test linear resampling preserves shape for multi-dimensional signals.
+    """
+    test_signal = _make_multidim_signal(10, 3)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="linear")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape, (
+        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
+    )
+
+    expected = np.array(
+        [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
+        dtype=np.float32,
+    )
+    assert np.allclose(signal_resampled.value, expected)
+
+
+def test_ares_signal_resample_cubic_multidim():
+    """
+    Test cubic resampling preserves shape for multi-dimensional signals.
+    """
+    test_signal = _make_multidim_signal(10, 3)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape, (
+        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
+    )
+
+    expected = np.array(
+        [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
+        dtype=np.float32,
+    )
+    assert np.allclose(signal_resampled.value, expected)
+
+
+def test_ares_signal_resample_windowedsinc_multidim():
+    """
+    Test windowed-sinc resampling preserves shape for multi-dimensional signals.
+    """
+    test_signal = _make_multidim_signal(10, 3)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(
+        resampled_timestamps, method="windowedsinc"
+    )
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape, (
+        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
+    )
+
+
+def test_ares_signal_resample_3d():
+    """
+    Test resampling preserves shape for 3D signals.
+    """
+    n_timestamps = 10
+    timestamps = np.arange(n_timestamps, dtype=np.float32)
+    values = np.arange(n_timestamps * 2 * 3, dtype=np.float32).reshape(
+        n_timestamps, 2, 3
+    )
+    test_signal = AresSignal(label="3d", timestamps=timestamps, value=values)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="linear")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 2, 3)
+    assert signal_resampled.value.shape == expected_shape, (
+        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
+    )
+
+
 def test_ares_signal_wrong_timestamps_type():
     """
     Test if integer timestamps are cast and accepted.
