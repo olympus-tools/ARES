@@ -45,30 +45,14 @@ Using a virtual environment is recommended to avoid conflicts with system packag
     ```
 
 2.  **Create and configure the environment:**
+    Install `uv` system wide to manage virtual environment:
+    ```bash
+    pipx install uv
+    ```
     This command creates a `.venv` directory and installs dependencies:
     ```bash
     make setup-venv
     ```
-    To also install documentation dependencies (required for `make docs`), add the `VENV_RELEASE=true` flag:
-    ```bash
-    make setup-venv VENV_RELEASE=true
-    ```
-
-3.  **Activate the environment:**
-    ```bash
-    # Bash/Zsh
-    source .venv/bin/activate
-    
-    # Fish
-    source .venv/bin/activate.fish
-    
-    # Windows (CMD)
-    .venv\Scripts\activate.bat
-    
-    # Windows (PowerShell)
-    .venv\Scripts\Activate.ps1
-    ```
-
 #### Option B: Manual Setup
 
 If you prefer to configure the virtual environment manually:
@@ -95,7 +79,7 @@ If you prefer to configure the virtual environment manually:
 
 3.  **Install ARES:**
     ```bash
-    pip install .
+    pip install - e .
     ```
 
 ## 2. Usage
