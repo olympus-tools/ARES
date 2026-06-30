@@ -173,26 +173,54 @@ class AresSignal:
 
     @typechecked
     @staticmethod
-    def _resample_linear(
-        values_1d: npt.NDArray,
+    @njit
+    def _resample_nearest(
+        values_1d: npt.NDArray[np.integer | np.bool],
         timestamps_source: npt.NDArray[np.float32],
         timestamps_resampled: npt.NDArray[np.float32],
-    ) -> npt.NDArray:
-        """Resample a one-dimensional signal vector using linear interpolation.
+    ) -> npt.NDArray[np.integer | np.bool]:
+        """Resample a one-dimensional signal vector using the neirest neighbour method.
 
         Args:
-            values_1d (npt.NDArray): One-dimensional source values.
+            values_1d (npt.NDArray[npt.integer or np.bool]): One-dimensional source values.
             timestamps_source (npt.NDArray[np.float32]): Source timestamps.
             timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
 
         Returns:
             npt.NDArray: Resampled values with the original signal dtype.
         """
+        time_idx = np.searchsorted(timestamps_source, timestamps_resampled)
+        time_idx = np.clip(time_idx, 1, len(timestamps_source) - 1)
+
+        left_distance = timestamps_resampled - timestamps_source[time_idx - 1]
+        right_distance = timestamps_source[time_idx] - timestamps_resampled
+
+        nearest_idx = np.where(left_distance < right_distance, time_idx - 1, time_idx)
+        nearest_idx[timestamps_resampled < timestamps_source[0]] = 0
+
+        return values_1d[nearest_idx]
+
+    @typechecked
+    @staticmethod
+    def _resample_linear(
+        values_1d: npt.NDArray[np.float32],
+        timestamps_source: npt.NDArray[np.float32],
+        timestamps_resampled: npt.NDArray[np.float32],
+    ) -> npt.NDArray[np.float32]:
+        """Resample a one-dimensional signal vector using linear interpolation.
+
+        Args:
+            values_1d (npt.NDArray[np.float32]): One-dimensional source values.
+            timestamps_source (npt.NDArray[np.float32]): Source timestamps.
+            timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
+
+        Returns:
+            npt.NDArray[np.float32]: Resampled values with the original signal dtype.
+        """
         signal_resampled = np.interp(
             timestamps_resampled, timestamps_source, values_1d.astype(np.float32)
         )
-        if np.issubdtype(values_1d.dtype, np.bool_):
-            return (signal_resampled >= 0.5).astype(values_1d.dtype)
+
         return signal_resampled.astype(values_1d.dtype)
 
     @typechecked
@@ -201,16 +229,16 @@ class AresSignal:
         values_1d: npt.NDArray,
         timestamps_source: npt.NDArray[np.float32],
         timestamps_resampled: npt.NDArray[np.float32],
-    ) -> npt.NDArray:
+    ) -> npt.NDArray[np.float32]:
         """Resample a one-dimensional signal vector using cubic spline interpolation.
 
         Args:
-            values_1d (npt.NDArray): One-dimensional source values.
+            values_1d (npt.NDArray[np.float32]): One-dimensional source values.
             timestamps_source (npt.NDArray[np.float32]): Source timestamps.
             timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
 
         Returns:
-            npt.NDArray: Resampled values with the original signal dtype.
+            npt.NDArray[np.float32]: Resampled values with the original signal dtype.
         """
         cs = CubicSpline(timestamps_source, values_1d.astype(np.float32))
         return cs(timestamps_resampled).astype(values_1d.dtype)
@@ -219,12 +247,12 @@ class AresSignal:
     @staticmethod
     @njit
     def _resample_windowedsinc(
-        values_1d: npt.NDArray,
+        values_1d: npt.NDArray[np.float32],
         timestamps_source: npt.NDArray[np.float32],
         timestamps_resampled: npt.NDArray[np.float32],
         fs: int,
         radius: int = 4,
-    ) -> npt.NDArray:
+    ) -> npt.NDArray[np.float32]:
         """Resample using windowed-sinc interpolation (sinc * Blackman-Nuttall).
 
         Uses bandlimited interpolation with a truncated sinc kernel windowed by
@@ -234,14 +262,14 @@ class AresSignal:
                    https://www.analog.com/media/en/technical-documentation/dsp-book/dsp_book_Ch16.pdf
 
         Args:
-            values_1d (npt.NDArray): One-dimensional source values.
+            values_1d (npt.NDArray[np.float32]): One-dimensional source values.
             timestamps_source (npt.NDArray[np.float32]): Source timestamps.
             fs ( int ): Sample rate of the source signal.
             timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
             radius ( int ): Radius of Blackman window. Default: 4.
 
         Returns:
-            npt.NDArray: Resampled values with the original signal dtype.
+            npt.NDArray[np.float32]: Resampled values with the original signal dtype.
         """
         signal_resampled = np.empty((len(timestamps_resampled)), dtype=np.float32)
         for j in range(len(timestamps_resampled)):
@@ -305,6 +333,7 @@ class AresSignal:
 
         """
         is_numeric_dtype = np.issubdtype(self.dtype, np.number)
+        is_integer_dtype = np.issubdtype(self.dtype, np.integer)
         is_boolean_dtype = np.issubdtype(self.dtype, np.bool_)
 
         if not (is_numeric_dtype or is_boolean_dtype):
@@ -324,7 +353,11 @@ class AresSignal:
         for ch in range(n_channels):
             values_ch = signal_dim_flat if n_channels == 1 else signal_dim_flat[:, ch]
 
-            if method == "linear" or is_boolean_dtype:
+            if is_boolean_dtype or is_integer_dtype:
+                resampled_ch = AresSignal._resample_nearest(
+                    values_ch, self.timestamps, timestamps_resampled
+                )
+            elif method == "linear":
                 resampled_ch = AresSignal._resample_linear(
                     values_ch, self.timestamps, timestamps_resampled
                 )
