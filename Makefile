@@ -17,8 +17,6 @@
 #   - make release-upload
 #   - make release
 
-VENV_DIR := .venv
-
 # Platform detection for virtual environment binary path
 ifeq ($(OS),Windows_NT)
 	PLATFORM := windows

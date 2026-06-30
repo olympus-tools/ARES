@@ -21,7 +21,6 @@
 #   - make simunit_interface_std
 #   - make simunit_vstack
 
-VENV_DIR ?= ../.venv
 ARES ?= "uv run ares"
 
 .PHONY: all

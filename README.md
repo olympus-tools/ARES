@@ -79,7 +79,7 @@ If you prefer to configure the virtual environment manually:
 
 3.  **Install ARES:**
     ```bash
-    pip install - e .
+    pip install .
     ```
 
 ## 2. Usage
