@@ -96,8 +96,6 @@ def create_logger(
         logger = logging.getLogger(name)
         logfile = Path(logdir, f"{name}.log")
 
-    logger.addFilter(AresContextFilter())
-
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True
 
@@ -109,6 +107,11 @@ def create_logger(
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
     file_handler.setLevel(level)
+
+    # INFO: add contextfilter to custom loggers
+    ares_filter = AresContextFilter()
+    stdout_handler.addFilter(ares_filter)
+    file_handler.addFilter(ares_filter)
 
     fmt_plain = "%(levelname)-8s | %(asctime)s | %(workflow_element)s | %(filename)s:%(lineno)s >> %(message)s"
     fmt_color = "%(log_color)s" + fmt_plain
