@@ -82,17 +82,9 @@ class AresSignal:
         the first dimension of ``value``.
         """
 
-        if self.timestamps.shape[0] > 1:
-            self.timestamps = np.linspace(
-                self.timestamps[0],
-                self.timestamps[-1],
-                len(self.timestamps),
-                dtype=np.float32,
-            )
-        else:
-            self.timestamps = self._cast(
-                self.timestamps, np.float32, input_type="timestamps"
-            )
+        self.timestamps = self._cast(
+            self.timestamps, np.float32, input_type="timestamps"
+        )
 
         if not np.issubdtype(self.timestamps.dtype, np.floating):
             raise TypeError("The 'timestamps' array must have a float datatype.")
@@ -167,7 +159,7 @@ class AresSignal:
         """Returns sampling rate of signal.
 
         Returns:
-            int: The sampling rate of the signal calculated from given timestamp.
+            np.float32: The sampling rate of the signal calculated from given timestamp.
         """
         return np.float32(1 / (self.timestamps[1] - self.timestamps[0]))
 
@@ -396,6 +388,79 @@ class AresSignal:
             description=self.description,
             source=self.source,
             unit=self.unit,
+        )
+
+    @staticmethod
+    @typechecked
+    def _validate_resample_accuracy(
+        signal_original: "AresSignal",
+        signal_resampled: "AresSignal",
+        method: str = "windowedsinc",
+    ) -> None:
+        """Validate resampling accuracy via round-trip resampling.
+
+        Resamples the already-resampled signal back onto the original timestamps
+        and logs the mean percentage deviation and maximum absolute deviation
+        between the original values and the round-trip result.
+
+        This method is intended to be called only when DEBUG logging is active,
+        as it performs an additional resampling step solely for validation.
+
+        Args:
+            signal_original (AresSignal): The original signal before resampling.
+            signal_resampled (AresSignal): The signal after one resampling step.
+            method (str): Resampling method used for the round-trip. Defaults to "windowedsinc".
+        """
+
+        signal_roundtrip = signal_resampled.resample(
+            timestamps_resampled=signal_original.timestamps,
+            method=method,
+        )
+        if signal_roundtrip is None:
+            logger.debug(
+                f"Resample accuracy validation for '{signal_original.label}': "
+                f"round-trip resampling failed."
+            )
+            return
+
+        orig = signal_original.value.astype(np.float32).ravel()
+        rt = signal_roundtrip.value.astype(np.float32).ravel()
+
+        abs_diff = np.abs(orig - rt)
+
+        # avoid division by zero: fall back to absolute deviation where original is 0
+        with np.errstate(divide="ignore", invalid="ignore"):
+            pct_diff = np.where(
+                orig != 0.0,
+                (abs_diff / np.abs(orig)) * 100.0,
+                abs_diff,
+            )
+
+        mean_pct_deviation = float(np.nanmean(pct_diff))
+        max_abs_deviation = float(np.max(abs_diff))
+        max_abs_flat_index = int(np.argmax(abs_diff))
+
+        if len(signal_original.timestamps) > 0:
+            elements_per_sample = max(
+                1, int(orig.size / len(signal_original.timestamps))
+            )
+            max_abs_time_index = min(
+                max_abs_flat_index // elements_per_sample,
+                len(signal_original.timestamps) - 1,
+            )
+            max_abs_deviation_timestamp = float(
+                signal_original.timestamps[max_abs_time_index]
+            )
+        else:
+            max_abs_deviation_timestamp = float("nan")
+
+        logger.debug(
+            "Resample accuracy validation | "
+            f"label = {signal_original.label:<50} | "
+            f"dtype = {str(signal_original.dtype):<10} | "
+            f"mean_pct_deviation = {mean_pct_deviation:>10.4f} % | "
+            f"max_abs_deviation = {max_abs_deviation:>12.6f} | "
+            f"max_abs_timestamp = {max_abs_deviation_timestamp:>12.6f} s"
         )
 
     @safely_run(

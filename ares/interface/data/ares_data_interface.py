@@ -33,6 +33,7 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -376,6 +377,13 @@ class AresDataInterface(ABC):
                     f"Signal '{signal.label}' is not attached to resampled data since resampling was not possible."
                 )
                 continue
+
+            if logger.isEnabledFor(logging.DEBUG):
+                AresSignal._validate_resample_accuracy(
+                    signal_original=signal,
+                    signal_resampled=signal_resampled,
+                )
+
             resampled_data.append(signal_resampled)
 
         return resampled_data
