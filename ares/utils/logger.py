@@ -47,6 +47,9 @@ logger_workflow_element: contextvars.ContextVar[str] = contextvars.ContextVar(
     "workflow_element", default="N/A"
 )
 
+# Set log-level of used packages
+logging.getLogger("numba").setLevel(logging.WARNING)
+
 
 class AresContextFilter(logging.Filter):
     """
