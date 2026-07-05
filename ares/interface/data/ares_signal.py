@@ -163,13 +163,13 @@ class AresSignal:
         return self.value.ndim
 
     @property
-    def fs(self) -> int:
+    def fs(self) -> np.float32:
         """Returns sampling rate of signal.
 
         Returns:
             int: The sampling rate of the signal calculated from given timestamp.
         """
-        return int(1 / (self.timestamps[1] - self.timestamps[0]))
+        return np.float32(1 / (self.timestamps[1] - self.timestamps[0]))
 
     @typechecked
     @staticmethod
@@ -250,7 +250,7 @@ class AresSignal:
         values_1d: npt.NDArray[np.float32],
         timestamps_source: npt.NDArray[np.float32],
         timestamps_resampled: npt.NDArray[np.float32],
-        fs: int,
+        fs: np.float32,
         radius: int = 4,
     ) -> npt.NDArray[np.float32]:
         """Resample using windowed-sinc interpolation (sinc * Blackman-Nuttall).
@@ -264,7 +264,7 @@ class AresSignal:
         Args:
             values_1d (npt.NDArray[np.float32]): One-dimensional source values.
             timestamps_source (npt.NDArray[np.float32]): Source timestamps.
-            fs ( int ): Sample rate of the source signal.
+            fs ( np.float32 ): Sample rate of the source signal.
             timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
             radius ( int ): Radius of Blackman window. Default: 4.
 

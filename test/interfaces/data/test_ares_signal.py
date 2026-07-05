@@ -76,7 +76,7 @@ def test_ares_signal_fs():
         timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
         value=np.array([0, 1, 2, 3], dtype=np.float32),
     )
-    assert isinstance(test_signal.fs, int)
+    assert isinstance(test_signal.fs, np.float32)
     assert test_signal.fs == 1
 
 
