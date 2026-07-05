@@ -963,7 +963,8 @@ def ares_plugin(plugin_input: SimUnitElement):
                             vstack_pattern=plugin_input.vstack_pattern,
                         ),
                         parameters=parameter_obj.get(
-                            label_filter=label_filter_parameter
+                            label_filter=label_filter_parameter,
+                            transpose_mode=plugin_input.transpose_mode_parameter,
                         ),
                     )
 
