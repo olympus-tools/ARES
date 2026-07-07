@@ -258,7 +258,7 @@ class AresSignal:
             timestamps_source (npt.NDArray[np.float32]): Source timestamps.
             fs ( np.float32 ): Sample rate of the source signal.
             timestamps_resampled (npt.NDArray[np.float32]): Target timestamps.
-            radius ( int ): Radius of Blackman window. Default: 4.
+            radius ( int ): Radius of window used in sinc-resampling. Default: 4.
 
         Returns:
             npt.NDArray[np.float32]: Resampled values with the original signal dtype.
@@ -279,13 +279,36 @@ class AresSignal:
 
                     if abs(sample_distance) < radius:
                         sinc_val = np.sinc(sample_distance)
-                        blackman_window_val = (
-                            0.42
-                            + 0.5 * np.cos(np.pi * (sample_distance / radius))
-                            + 0.08 * np.cos(2.0 * np.pi * (sample_distance / radius))
+                        # blackman
+                        # window_val = (
+                        #     0.42
+                        #     + 0.5 * np.cos(np.pi * (sample_distance / radius))
+                        #     + 0.08 * np.cos(2.0 * np.pi * (sample_distance / radius))
+                        # )
+                        # blackman - nuttall
+                        # window_val = (
+                        #     0.3635819
+                        #     + 0.4891775 * np.cos(np.pi * (sample_distance / radius))
+                        #     + 0.1365995
+                        #     * np.cos(2.0 * np.pi * (sample_distance / radius))
+                        #     + 0.0106411
+                        #     * np.cos(3.0 * np.pi * (sample_distance / radius))
+                        # )
+                        # Hamming window calculation
+                        window_val = 0.54 + 0.46 * np.cos(
+                            np.pi * (sample_distance / radius)
                         )
+                        # kaiser
+                        # beta = 0.0  --> sharpest step, maximum ringing
+                        # bata > 10.0 --> increased smoothing, minimize ringing
+                        # beta = 6.0
+                        # r_ratio = sample_distance / radius
+                        # window_val = np.i0(
+                        #     beta * np.sqrt(np.maximum(0.0, 1.0 - r_ratio**2))
+                        # ) / np.i0(beta)
+
                         signal_resampled_val += values_1d[window_idx] * (
-                            sinc_val * blackman_window_val
+                            sinc_val * window_val
                         )
             signal_resampled[j] = signal_resampled_val
 
