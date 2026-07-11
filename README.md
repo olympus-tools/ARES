@@ -31,6 +31,7 @@ Before setting up ARES, ensure your system meets the following requirements:
 *   **Operating System**: Linux, Windows
 *   **Python**: Version equal 3.13.7 or higher and lower than 3.14
 *   **Build Tools**: `make` (only required for **Option A: Automated Setup**)
+*   **uv**: `uv` package manger alternative to pip, further information see [here](https://docs.astral.sh/uv/))
 
 ### 1.2. Installation in Virtual Environment (Recommended)
 
@@ -45,11 +46,7 @@ Using a virtual environment is recommended to avoid conflicts with system packag
     ```
 
 2.  **Create and configure the environment:**
-    Install `uv` system wide to manage virtual environment:
-    ```bash
-    pipx install uv
-    ```
-    This command creates a `.venv` directory and installs dependencies:
+    This command creates a `.venv` directory and installs dependencies using uv:
     ```bash
     make setup-venv
     ```
