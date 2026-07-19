@@ -47,9 +47,6 @@ logger_workflow_element: contextvars.ContextVar[str] = contextvars.ContextVar(
     "workflow_element", default="N/A"
 )
 
-# Set log-level of used packages
-logging.getLogger("numba").setLevel(logging.WARNING)
-
 
 class AresContextFilter(logging.Filter):
     """
@@ -111,9 +108,19 @@ def create_logger(
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
     file_handler.setLevel(level)
 
+    # Silence third-party DEBUG/INFO records (e.g. numba JIT logs) on all handlers.
+    # Filters on handlers intercept propagated records; root-logger filters do not.
+    class _ThirdPartyFilter(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            return record.name.startswith("ares") or record.levelno >= logging.WARNING
+
+    third_party_filter = _ThirdPartyFilter()
+
     # INFO: add contextfilter to custom loggers
     ares_filter = AresContextFilter()
+    stdout_handler.addFilter(third_party_filter)
     stdout_handler.addFilter(ares_filter)
+    file_handler.addFilter(third_party_filter)
     file_handler.addFilter(ares_filter)
 
     fmt_plain = "%(levelname)-8s | %(asctime)s | %(workflow_element)s | %(filename)s:%(lineno)s >> %(message)s"

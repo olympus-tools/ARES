@@ -162,7 +162,6 @@ class AresSignal:
         """
         return np.float32(1 / (self.timestamps[1] - self.timestamps[0]))
 
-    @typechecked
     @staticmethod
     @njit
     def _resample_nearest(
@@ -234,7 +233,6 @@ class AresSignal:
         cs = CubicSpline(timestamps_source, values_1d.astype(np.float32))
         return cs(timestamps_resampled).astype(values_1d.dtype)
 
-    @typechecked
     @staticmethod
     @njit
     def _resample_windowedsinc(
