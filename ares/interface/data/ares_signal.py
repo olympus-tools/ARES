@@ -79,8 +79,7 @@ class AresSignal:
         timestamps equidistant using ``np.linspace()`` while preserving length,
         minimum, and maximum values. Finally validates that ``timestamps`` has
         a floating-point dtype, is one-dimensional, and that its length matches
-        the first dimension of ``value``.
-        """
+        the first dimension of ``value`self.timestamps"""
 
         self.timestamps = self._cast(
             self.timestamps, np.float32, input_type="timestamps"
@@ -156,7 +155,7 @@ class AresSignal:
 
     @property
     def fs(self) -> np.float32:
-        """Returns sampling rate of signal.
+        """Returns sampling rate of signal, assuming equidistant time vector.
 
         Returns:
             np.float32: The sampling rate of the signal calculated from given timestamp.
@@ -243,7 +242,7 @@ class AresSignal:
         timestamps_source: npt.NDArray[np.float32],
         timestamps_resampled: npt.NDArray[np.float32],
         fs: np.float32,
-        radius: int = 4,
+        radius: int = 8,
     ) -> npt.NDArray[np.float32]:
         """Resample using windowed-sinc interpolation (sinc * Blackman-Nuttall).
 
@@ -263,54 +262,40 @@ class AresSignal:
         Returns:
             npt.NDArray[np.float32]: Resampled values with the original signal dtype.
         """
-        signal_resampled = np.empty((len(timestamps_resampled)), dtype=np.float32)
+        signal_resampled = np.empty(len(timestamps_resampled), dtype=np.float32)
+
         for j in range(len(timestamps_resampled)):
             t_current = timestamps_resampled[j]
-            original_time_idx = (t_current - timestamps_source[0]) * fs
-            t_original = np.int32(np.floor(original_time_idx))
-            alpha = original_time_idx - np.float32(t_original)
+
+            original_time_samples = t_current * fs
+            original_time_idx = np.int32(np.floor(original_time_samples))
+            alpha = np.float32(original_time_samples - original_time_idx)
+
             signal_resampled_val = np.float32(0.0)
+            total_weight = np.float32(0.0)
 
-            for k in range(-(radius - 1), radius + 1):
-                window_idx = t_original - k
+            for k in range(-radius + 1, radius + 1):
+                window_idx = original_time_idx + k
 
-                if 0 <= window_idx < len(timestamps_source):
-                    sample_distance = k + alpha
+                if 0 <= window_idx < len(values_1d):
+                    sample_distance = np.float32(k) - alpha
 
-                    if abs(sample_distance) < radius:
-                        sinc_val = np.sinc(sample_distance)
-                        # blackman
-                        # window_val = (
-                        #     0.42
-                        #     + 0.5 * np.cos(np.pi * (sample_distance / radius))
-                        #     + 0.08 * np.cos(2.0 * np.pi * (sample_distance / radius))
-                        # )
-                        # blackman - nuttall
-                        # window_val = (
-                        #     0.3635819
-                        #     + 0.4891775 * np.cos(np.pi * (sample_distance / radius))
-                        #     + 0.1365995
-                        #     * np.cos(2.0 * np.pi * (sample_distance / radius))
-                        #     + 0.0106411
-                        #     * np.cos(3.0 * np.pi * (sample_distance / radius))
-                        # )
-                        # Hamming window calculation
-                        window_val = 0.54 + 0.46 * np.cos(
-                            np.pi * (sample_distance / radius)
-                        )
-                        # kaiser
-                        # beta = 0.0  --> sharpest step, maximum ringing
-                        # bata > 10.0 --> increased smoothing, minimize ringing
-                        # beta = 6.0
-                        # r_ratio = sample_distance / radius
-                        # window_val = np.i0(
-                        #     beta * np.sqrt(np.maximum(0.0, 1.0 - r_ratio**2))
-                        # ) / np.i0(beta)
+                    sinc_val = np.sinc(sample_distance)
 
-                        signal_resampled_val += values_1d[window_idx] * (
-                            sinc_val * window_val
-                        )
-            signal_resampled[j] = signal_resampled_val
+                    # Hamming Window
+                    window_val = np.float32(0.54) + np.float32(0.46) * np.cos(
+                        np.pi * (sample_distance / radius)
+                    )
+
+                    weight = sinc_val * window_val
+
+                    signal_resampled_val += values_1d[window_idx] * weight
+                    total_weight += weight
+
+                if total_weight > 0.0:
+                    signal_resampled[j] = signal_resampled_val / total_weight
+                else:
+                    signal_resampled[j] = np.float32(0.0)
 
         return signal_resampled
 
@@ -324,7 +309,7 @@ class AresSignal:
     def resample(
         self,
         timestamps_resampled: npt.NDArray[np.float32],
-        method: str = "windowedsinc",
+        method: str = "linear",
     ) -> "AresSignal | None":
         """Create a resampled copy of the signal with selectable interpolation method.
 
@@ -347,7 +332,9 @@ class AresSignal:
             AresSignal: A new signal instance with resampled timestamps and values.
 
         """
-        is_numeric_dtype = np.issubdtype(self.dtype, np.number)
+        is_numeric_dtype = np.issubdtype(self.dtype, np.number) and not np.issubdtype(
+            self.dtype, np.complexfloating
+        )
         is_integer_dtype = np.issubdtype(self.dtype, np.integer)
         is_boolean_dtype = np.issubdtype(self.dtype, np.bool_)
 
@@ -357,11 +344,15 @@ class AresSignal:
             )
             return None
 
-        if self.value.ndim == 1:
-            signal_dim_flat = self.value
+        signal = AresSignal.cut(
+            self, timestamps_resampled.min(), timestamps_resampled.max()
+        )
+
+        if signal.value.ndim == 1:
+            signal_dim_flat = signal.value
             n_channels = 1
         else:
-            signal_dim_flat = self.value.reshape(self.shape[0], -1)
+            signal_dim_flat = signal.value.reshape(signal.shape[0], -1)
             n_channels = signal_dim_flat.shape[1]
 
         resampled_channels = []
@@ -370,22 +361,22 @@ class AresSignal:
 
             if is_boolean_dtype or is_integer_dtype:
                 resampled_ch = AresSignal._resample_nearest(
-                    values_ch, self.timestamps, timestamps_resampled
+                    values_ch, signal.timestamps, timestamps_resampled
                 )
             elif method == "linear":
                 resampled_ch = AresSignal._resample_linear(
-                    values_ch, self.timestamps, timestamps_resampled
+                    values_ch, signal.timestamps, timestamps_resampled
                 )
             elif method == "cubic":
                 resampled_ch = AresSignal._resample_cubic(
-                    values_ch, self.timestamps, timestamps_resampled
+                    values_ch, signal.timestamps, timestamps_resampled
                 )
             elif method == "windowedsinc":
                 resampled_ch = AresSignal._resample_windowedsinc(
                     values_ch,
-                    self.timestamps,
+                    signal.timestamps,
                     timestamps_resampled,
-                    self.fs,
+                    signal.fs,
                 )
             else:
                 logger.warning(
@@ -411,6 +402,25 @@ class AresSignal:
             description=self.description,
             source=self.source,
             unit=self.unit,
+        )
+
+    @typechecked
+    @staticmethod
+    def cut(signal: "AresSignal", t_min: np.float32, t_max: np.float32) -> "AresSignal":
+        """Cuts given AresSignal based on given t_min, t_max values.
+            Necessary to ensure "same" length before resampling for all signals.
+
+        Returns:
+            AresSignal: The manipulated AresSignal.
+        """
+        [i, j] = np.searchsorted(signal.timestamps, (t_min, t_max))
+        # signal.value = signal.value[i : j + 1]
+        # signal.timestamps = signal.timestamps[i : j + 1]
+        # return signal
+        return AresSignal(
+            label=signal.label,
+            value=signal.value[i : j + 1],
+            timestamps=signal.timestamps[i : j + 1],
         )
 
     @staticmethod

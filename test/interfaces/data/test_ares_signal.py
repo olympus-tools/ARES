@@ -33,13 +33,12 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
 from ares.interface.data.ares_signal import AresSignal
 
-DEBUG = True
+DEBUG = False
 
 
 def test_ares_signal_init():
@@ -53,18 +52,12 @@ def test_ares_signal_init():
     )
 
     assert test_signal.label == "test_signal"
-    assert isinstance(test_signal.timestamps, np.ndarray), (
-        "timestamps element of signal is no numpy array."
-    )
-    assert np.issubdtype(test_signal.timestamps.dtype, np.float32), (
-        "timetamps array of signal is not of type float32."
-    )
-    assert len(test_signal.timestamps) == 4, "Ops, timstamps length is false."
-    assert isinstance(test_signal.value, np.ndarray), (
-        "data element of signal no numpy array."
-    )
+    assert isinstance(test_signal.timestamps, np.ndarray)
+    assert np.issubdtype(test_signal.timestamps.dtype, np.float32)
+    assert len(test_signal.timestamps) == 4
+    assert isinstance(test_signal.value, np.ndarray)
     assert np.issubdtype(test_signal.value.dtype, np.int64)
-    assert len(test_signal.value) == 4, "Ops, data length is false."
+    assert len(test_signal.value) == 4
 
 
 def test_ares_signal_fs():
@@ -95,7 +88,7 @@ def test_ares_signal_fs():
         ),
     ],
 )
-def test_ares_ares_signal(label, timestamps, data):
+def test_ares_signal_init_parametrized(label, timestamps, data):
     """
     Tests different signal types and lengths.
     """
@@ -103,17 +96,11 @@ def test_ares_ares_signal(label, timestamps, data):
     data_length = len(timestamps)
 
     assert test_signal.label == label
-    assert isinstance(test_signal.timestamps, np.ndarray), (
-        "timestamps element of signal is no numpy array."
-    )
-    assert np.issubdtype(test_signal.timestamps.dtype, np.float32), (
-        "timetamps array of signal is not of type float32."
-    )
-    assert len(test_signal.timestamps) == data_length, "Ops, timstamps length is false."
-    assert isinstance(test_signal.value, np.ndarray), (
-        "data element of signal no numpy array."
-    )
-    assert len(test_signal.value) == data_length, "Ops, data length is false."
+    assert isinstance(test_signal.timestamps, np.ndarray)
+    assert np.issubdtype(test_signal.timestamps.dtype, np.float32)
+    assert len(test_signal.timestamps) == data_length
+    assert isinstance(test_signal.value, np.ndarray)
+    assert len(test_signal.value) == data_length
 
 
 def test_ares_signal_resample_default():
@@ -158,7 +145,7 @@ def test_ares_signal_resample_linear():
     assert signal_resampled is not None
     assert signal_resampled is not test_signal
 
-    expected_data = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    expected_data = np.array([1.0, 1.5, 2.5], dtype=np.float32)
     assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
     assert np.array_equal(signal_resampled.value, expected_data)
 
@@ -203,6 +190,8 @@ def test_ares_signal_resample_windowedsinc_sine():
         timestamps=t,
         value=sine,
     )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
 
     resampled_t = np.arange(0.0, 5, 1 / (fs * 1.88), dtype=np.float32)
     signal_resampled_up = test_signal.resample(resampled_t, method="windowedsinc")
@@ -210,6 +199,8 @@ def test_ares_signal_resample_windowedsinc_sine():
     signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
 
     if DEBUG:
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         axes1 = fig.add_subplot(111)
         axes1.plot(
@@ -243,7 +234,10 @@ def test_ares_signal_resample_windowedsinc_sine():
 
     assert signal_resampled is not None
     expected = np.sin(2 * np.pi * freq * resampled_t).astype(np.float32)
-    assert np.allclose(signal_resampled.value, expected, atol=1e-1)
+    assert np.allclose(signal_resampled_up.value, expected, atol=1e-1)
+    assert np.allclose(signal_resampled.value, test_signal.value, atol=1e-1)
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
 
 
 def test_ares_signal_resample_cubic():
@@ -290,12 +284,10 @@ def test_ares_signal_resample_linear_multidim():
 
     assert signal_resampled is not None
     expected_shape = (len(resampled_timestamps), 3)
-    assert signal_resampled.value.shape == expected_shape, (
-        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
-    )
+    assert signal_resampled.value.shape == expected_shape
 
     expected = np.array(
-        [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
+        [[3.0, 4.0, 5.0], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
         dtype=np.float32,
     )
     assert np.allclose(signal_resampled.value, expected)
@@ -312,9 +304,7 @@ def test_ares_signal_resample_cubic_multidim():
 
     assert signal_resampled is not None
     expected_shape = (len(resampled_timestamps), 3)
-    assert signal_resampled.value.shape == expected_shape, (
-        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
-    )
+    assert signal_resampled.value.shape == expected_shape
 
     expected = np.array(
         [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
@@ -334,9 +324,7 @@ def test_ares_signal_resample_windowedsinc_multidim():
 
     assert signal_resampled is not None
     expected_shape = (len(resampled_timestamps), 3)
-    assert signal_resampled.value.shape == expected_shape, (
-        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
-    )
+    assert signal_resampled.value.shape == expected_shape
 
 
 def test_ares_signal_resample_3d():
@@ -355,9 +343,7 @@ def test_ares_signal_resample_3d():
 
     assert signal_resampled is not None
     expected_shape = (len(resampled_timestamps), 2, 3)
-    assert signal_resampled.value.shape == expected_shape, (
-        f"Expected shape {expected_shape}, got {signal_resampled.value.shape}"
-    )
+    assert signal_resampled.value.shape == expected_shape
 
 
 def test_ares_signal_wrong_timestamps_type():
@@ -462,7 +448,7 @@ def test_ares_signal_resample_nearest_int_ramp():
     signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
 
     assert signal_resampled is not None
-    expected = np.array([0, 1, 1, 2, 2, 3, 3, 4], dtype=np.int32)
+    expected = np.array([1, 1, 1, 2, 2, 3, 3, 4], dtype=np.int32)
     assert np.array_equal(signal_resampled.value, expected)
 
 
@@ -544,6 +530,8 @@ def test_ares_signal_resample_nearest_bool_square_wave():
     signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
 
     if DEBUG:
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         axes1 = fig.add_subplot(111)
         axes1.step(
@@ -590,9 +578,11 @@ def test_ares_signal_resample_nearest_int_staircase():
     signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
 
     assert signal_resampled is not None
-    # assert np.issubdtype(signal_resampled.value.dtype, np.integer)
+    assert np.issubdtype(signal_resampled.value.dtype, np.integer)
 
     if DEBUG:
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         axes1 = fig.add_subplot(111)
         axes1.step(
@@ -639,6 +629,8 @@ def test_ares_signal_resample_whitenoise_uniform():
     signal_resampled_linear = test_signal.resample(resampled_t, method="linear")
 
     if DEBUG:
+        import matplotlib.pyplot as plt
+
         fig = plt.figure()
         axes1 = fig.add_subplot(311)
         axes1.step(
@@ -679,6 +671,8 @@ def test_ares_signal_resample_whitenoise_uniform():
         axes2.legend()
 
         axes3 = fig.add_subplot(313)
+        axes2.sharex(axes1)
+        axes3.sharex(axes1)
         axes3.step(
             test_signal.timestamps,
             test_signal.value,
@@ -700,7 +694,10 @@ def test_ares_signal_resample_whitenoise_uniform():
 
 
 if __name__ == "__main__":
-    # test_ares_signal_resample()
+    test_ares_signal_resample_linear()
+    test_ares_signal_resample_linear_multidim()
+    test_ares_signal_resample_cubic_multidim()
+    test_ares_signal_resample_non_numeric()
     test_ares_signal_resample_windowedsinc_sine()
     test_ares_signal_resample_nearest_bool_square_wave()
     test_ares_signal_resample_nearest_int_staircase()
