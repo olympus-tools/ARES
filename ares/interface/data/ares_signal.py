@@ -40,7 +40,7 @@ import numpy.typing as npt
 from numba import njit
 from scipy.interpolate import CubicSpline
 
-from ares.utils.decorators import safely_run
+from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
@@ -79,11 +79,20 @@ class AresSignal:
         timestamps equidistant using ``np.linspace()`` while preserving length,
         minimum, and maximum values. Finally validates that ``timestamps`` has
         a floating-point dtype, is one-dimensional, and that its length matches
-        the first dimension of ``value`self.timestamps"""
+        the first dimension of ``value``.
+        """
 
-        self.timestamps = self._cast(
-            self.timestamps, np.float32, input_type="timestamps"
-        )
+        if self.timestamps.shape[0] > 1:
+            self.timestamps = np.linspace(
+                self.timestamps[0],
+                self.timestamps[-1],
+                len(self.timestamps),
+                dtype=np.float32,
+            )
+        else:
+            self.timestamps = self._cast(
+                self.timestamps, np.float32, input_type="timestamps"
+            )
 
         if not np.issubdtype(self.timestamps.dtype, np.floating):
             raise TypeError("The 'timestamps' array must have a float datatype.")
@@ -155,12 +164,15 @@ class AresSignal:
 
     @property
     def fs(self) -> np.float32:
-        """Returns sampling rate of signal, assuming equidistant time vector.
+        """Returns the average sampling rate over the full timestamp range.
 
         Returns:
-            np.float32: The sampling rate of the signal calculated from given timestamp.
+            np.float32: The average sampling rate of the signal over the full timestamp range.
         """
-        return np.float32(1 / (self.timestamps[1] - self.timestamps[0]))
+
+        return np.float32(
+            (self.shape[0] - 1) / (self.timestamps[-1] - self.timestamps[0])
+        )
 
     @staticmethod
     @njit
@@ -240,7 +252,7 @@ class AresSignal:
         timestamps_source: npt.NDArray[np.float32],
         timestamps_resampled: npt.NDArray[np.float32],
         fs: np.float32,
-        radius: int = 8,
+        radius: int = 10,
     ) -> npt.NDArray[np.float32]:
         """Resample using windowed-sinc interpolation (sinc * Blackman-Nuttall).
 
@@ -307,7 +319,7 @@ class AresSignal:
     def resample(
         self,
         timestamps_resampled: npt.NDArray[np.float32],
-        method: str = "linear",
+        method: str | None = "linear",
     ) -> "AresSignal | None":
         """Create a resampled copy of the signal with selectable interpolation method.
 
@@ -336,21 +348,19 @@ class AresSignal:
         is_integer_dtype = np.issubdtype(self.dtype, np.integer)
         is_boolean_dtype = np.issubdtype(self.dtype, np.bool_)
 
+        method = "linear" if method is None else method
+
         if not (is_numeric_dtype or is_boolean_dtype):
             logger.warning(
                 f"Signal '{self.label}' cannot be resampled because dtype '{self.dtype}' is neither numeric nor boolean."
             )
             return None
 
-        signal = AresSignal.cut(
-            self, timestamps_resampled.min(), timestamps_resampled.max()
-        )
-
-        if signal.value.ndim == 1:
-            signal_dim_flat = signal.value
+        if self.value.ndim == 1:
+            signal_dim_flat = self.value
             n_channels = 1
         else:
-            signal_dim_flat = signal.value.reshape(signal.shape[0], -1)
+            signal_dim_flat = self.value.reshape(self.shape[0], -1)
             n_channels = signal_dim_flat.shape[1]
 
         resampled_channels = []
@@ -359,26 +369,27 @@ class AresSignal:
 
             if is_boolean_dtype or is_integer_dtype:
                 resampled_ch = AresSignal._resample_nearest(
-                    values_ch, signal.timestamps, timestamps_resampled
+                    values_ch, self.timestamps, timestamps_resampled
                 )
+                method = "nearest"
             elif method == "linear":
                 resampled_ch = AresSignal._resample_linear(
-                    values_ch, signal.timestamps, timestamps_resampled
+                    values_ch, self.timestamps, timestamps_resampled
                 )
             elif method == "cubic":
                 resampled_ch = AresSignal._resample_cubic(
-                    values_ch, signal.timestamps, timestamps_resampled
+                    values_ch, self.timestamps, timestamps_resampled
                 )
             elif method == "windowedsinc":
                 resampled_ch = AresSignal._resample_windowedsinc(
                     values_ch,
-                    signal.timestamps,
+                    self.timestamps,
                     timestamps_resampled,
-                    signal.fs,
+                    self.fs,
                 )
             else:
                 logger.warning(
-                    f"Unsupported resample method: '{method}'. Supported: linear, cubic"
+                    f'Unsupported resample method: \'{method}\'. Supported: "linear", "cubic", "windowedsinc"'
                 )
                 return None
             resampled_channels.append(resampled_ch)
@@ -393,6 +404,10 @@ class AresSignal:
                 (len(timestamps_resampled),) + self.shape[1:]
             )
 
+        logger.debug(
+            f"Signal '{self.label}' resampled from {self.timestamps[0]} to {self.timestamps[-1]} seconds with {len(timestamps_resampled)} samples using method '{method}'."
+        )
+
         return AresSignal(
             label=self.label,
             timestamps=timestamps_resampled,
@@ -402,23 +417,115 @@ class AresSignal:
             unit=self.unit,
         )
 
+    @error_msg(
+        exception_msg="Error in ares-data-interface cut function.",
+        log=logger,
+        include_args=["start", "end", "mode"],
+    )
     @typechecked
-    @staticmethod
-    def cut(signal: "AresSignal", t_min: np.float32, t_max: np.float32) -> "AresSignal":
-        """Cuts given AresSignal based on given t_min, t_max values.
-            Necessary to ensure "same" length before resampling for all signals.
+    def cut(
+        self,
+        start: np.float32 | int,
+        end: np.float32 | int,
+        mode: str = "time",
+    ) -> "AresSignal":
+        """Cut signal by time or index range.
+
+        Enables flexible signal trimming: either by absolute time values
+        (seconds) or by sample indices. The original signal instance is not
+        modified — a new ``AresSignal`` is returned.
+
+        Args:
+            start (np.float32 | int): Start time in seconds (if mode='time')
+                or start sample index (if mode='index').
+            end (np.float32 | int): End time in seconds (if mode='time')
+                or end sample index (if mode='index').
+            mode (str): Cutting mode - either 'time' (default) for time-based
+                or 'index' for index-based cutting.
 
         Returns:
-            AresSignal: The manipulated AresSignal.
+            AresSignal: A new signal with the trimmed timestamps and values.
         """
-        [i, j] = np.searchsorted(signal.timestamps, (t_min, t_max))
-        # signal.value = signal.value[i : j + 1]
-        # signal.timestamps = signal.timestamps[i : j + 1]
-        # return signal
+        if mode == "time":
+            i = np.searchsorted(self.timestamps, start, side="left")
+            j = np.searchsorted(self.timestamps, end, side="right") - 1
+        elif mode == "index":
+            i, j = int(start), int(end)
+        else:
+            logger.error(f"Invalid cut mode: '{mode}'. Supported: 'time', 'index'.")
+            raise
+
+        if i > 0 or j < self.shape[0] - 1:
+            logger.debug(
+                f"Cutting signal '{self.label}' ({mode}-based): "
+                f"indices [{i}:{j + 1}], "
+                f"time range [{self.timestamps[i]:.3f}, {self.timestamps[j]:.3f}] seconds, "
+                f"samples: {j - i + 1}."
+            )
+
         return AresSignal(
-            label=signal.label,
-            value=signal.value[i : j + 1],
-            timestamps=signal.timestamps[i : j + 1],
+            label=self.label,
+            value=self.value[i : j + 1],
+            timestamps=self.timestamps[i : j + 1],
+            description=self.description,
+            source=self.source,
+            unit=self.unit,
+        )
+
+    @error_msg(
+        exception_msg="Error in ares-data-interface padding function.",
+        log=logger,
+        include_args=["samples_to_add", "pad_value"],
+    )
+    @typechecked
+    def padding(
+        self,
+        samples_to_add: int,
+        pad_value: npt.NDArray | np.generic | int | float | bool = 0,
+    ) -> "AresSignal":
+        """Pad signal values by a given number of samples.
+
+        The timestamp vector is extended using the signal sample rate
+        (``self.fs``). If ``samples_to_add`` is not positive, the signal is
+        returned unchanged.
+
+        Args:
+            samples_to_add (int): Number of samples to append.
+            pad_value (npt.NDArray | np.generic | int | float | bool): Padding
+                sample value used for appended samples.
+
+        Returns:
+            AresSignal: A new signal with padded values and extended timestamps.
+        """
+
+        if samples_to_add <= 0:
+            return self
+        else:
+            logger.info(
+                f"Padding applied to signal '{self.label}' with {samples_to_add} "
+                f"sample(s) to match target length {len(self.timestamps) + samples_to_add}."
+            )
+
+        pad_sample = np.broadcast_to(pad_value, self.shape[1:])
+        pad_block = np.repeat(pad_sample[np.newaxis, ...], samples_to_add, axis=0)
+        value_aligned = np.concatenate([self.value, pad_block], axis=0)
+
+        sample_period = np.float32(1.0 / self.fs)
+
+        timestamps_padding = self.timestamps[-1] + sample_period * np.arange(
+            1, samples_to_add + 1, dtype=np.float32
+        )
+        timestamps_aligned = np.concatenate(
+            [self.timestamps, timestamps_padding]
+        ).astype(np.float32)
+
+        return AresSignal(
+            label=self.label,
+            value=value_aligned,
+            timestamps=timestamps_aligned,
+            description=self.description,
+            source=self.source,
+            unit=self.unit,
         )
 
     @staticmethod
@@ -426,7 +533,7 @@ class AresSignal:
     def _validate_resample_accuracy(
         signal_original: "AresSignal",
         signal_resampled: "AresSignal",
-        method: str = "windowedsinc",
+        method: str | None = "linear",
     ) -> None:
         """Validate resampling accuracy via round-trip resampling.
 
@@ -440,7 +547,7 @@ class AresSignal:
         Args:
             signal_original (AresSignal): The original signal before resampling.
             signal_resampled (AresSignal): The signal after one resampling step.
-            method (str): Resampling method used for the round-trip. Defaults to "windowedsinc".
+            method (str): Resampling method used for the round-trip. Defaults to "linear".
         """
 
         signal_roundtrip = signal_resampled.resample(

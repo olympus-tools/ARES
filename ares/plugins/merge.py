@@ -131,6 +131,8 @@ def ares_plugin(plugin_input: MergeElement):
                 stepsize=stepsize,
                 label_filter=plugin_input.label_filter_data,
                 vstack_pattern=plugin_input.vstack_pattern_data,
+                resample_method=plugin_input.resample_method,
+                resample_tolerance=plugin_input.resample_tolerance,
             )
             if data is not None:
                 merge_data.extend(data)
@@ -141,4 +143,6 @@ def ares_plugin(plugin_input: MergeElement):
             stepsize=stepsize,
             label_filter=plugin_input.label_filter_data,
             vstack_pattern=plugin_input.vstack_pattern_data,
+            resample_method=plugin_input.resample_method,
+            resample_tolerance=plugin_input.resample_tolerance,
         )

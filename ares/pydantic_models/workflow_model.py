@@ -75,6 +75,14 @@ class PluginFormat(StrEnum):
     PY = "py"
 
 
+class ResampleMethod(StrEnum):
+    """Allowed resampling methods for signal processing."""
+
+    LINEAR = "linear"
+    CUBIC = "cubic"
+    WINDOWEDSINC = "windowedsinc"
+
+
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
@@ -280,6 +288,8 @@ class DataElement(BaseElement):
     vstack_pattern: list[VStackPatternElement | str] | None = None
     output_format: DataFormat | None = None
     stepsize: int | None = None
+    resample_method: ResampleMethod | None = None
+    resample_tolerance: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -376,6 +386,8 @@ class SimUnitElement(PluginElement):
     cancel_condition: str | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
     transpose_mode_parameter: Literal[1, 2] | None = None
+    resample_method: ResampleMethod | None = None
+    resample_tolerance: int | None = Field(default=None, ge=0)
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
     hash_lists_parameter: list[list[str]] = []
@@ -410,6 +422,8 @@ class MergeElement(PluginElement):
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
     transpose_mode_parameter: Literal[1, 2] | None = None
     stepsize: int | None = None
+    resample_method: ResampleMethod | None = None
+    resample_tolerance: int | None = Field(default=None, ge=0)
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
     hash_lists_parameter: list[list[str]] = []

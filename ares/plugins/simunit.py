@@ -961,6 +961,8 @@ def ares_plugin(plugin_input: SimUnitElement):
                             stepsize=plugin_input.stepsize,
                             label_filter=label_filter_signal,
                             vstack_pattern=plugin_input.vstack_pattern,
+                            resample_method=plugin_input.resample_method,
+                            resample_tolerance=plugin_input.resample_tolerance,
                         ),
                         parameters=parameter_obj.get(
                             label_filter=label_filter_parameter,
