@@ -141,7 +141,6 @@ class AresDataInterface(ABC):
             label_filter (list[str] | None): List of signal names to filter when retrieving data
             resample_method (str | None): Resampling method for signals. Defaults to None.
             resample_tolerance (int | None): Tolerance for resampling signals. Defaults to None.
-            **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(

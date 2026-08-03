@@ -64,6 +64,12 @@ AresBaseType = TypeVar("AresBaseType", AresSignal, AresParameter)
 
 
 class SimUnit:
+    """Wrapper for a C shared library simulation unit that manages the full simulation lifecycle.
+
+    Loads and validates the Data Dictionary, maps C global variables to ctypes objects,
+    and provides methods to run the simulation over a sequence of time steps.
+    """
+
     DATATYPES: ClassVar[dict[str, list[Any]]] = {
         "float": [ctypes.c_float, np.float32],
         "double": [ctypes.c_double, np.float64],
@@ -780,16 +786,20 @@ class SimUnit:
         sim_input: dict[str, AresBaseType],
         dd_element_dict: Mapping[str, SignalElement | ParameterModel],
     ) -> dict[str, AresBaseType]:
-        """
-        Typecasts the values of a dictionary of AresParameter or AresSignal objects to the numpy dtypes
-        defined in the Data Dictionary. This ensures all values are in the correct format for simulation.
+        """Cast all values in the input dictionary to the numpy dtypes defined in the Data Dictionary.
+
+        Ensures all AresSignal and AresParameter values are in the correct numeric format
+        before being written to the simulation interface.
 
         Args:
-            input: Dictionary of AresParameter or AresSignal objects keyed by label.
-            dd_element_dict: Data Dictionary section (parameters or signals) providing expected dtypes.
+            sim_input (dict[str, AresBaseType]): Dictionary of AresSignal or AresParameter
+                objects keyed by label.
+            dd_element_dict (Mapping[str, SignalElement | ParameterModel]): Data Dictionary
+                section (signals or parameters) providing the expected dtypes.
 
         Returns:
-            The input dictionary with dtype_cast applied to each matching entry.
+            dict[str, AresBaseType]: The input dictionary with ``dtype_cast`` applied to
+                each matching entry.
         """
         for dd_element_name, dd_element_value in dd_element_dict.items():
             try:
@@ -920,17 +930,14 @@ class SimUnit:
 def ares_plugin(plugin_input: SimUnitElement):
     """ARES plugin entrypoint for sim_unit elements.
 
-    Args:
-        plugin_input (SimUnitElement): Pydantic model containing all plugin configuration and data.
-            name (str): Name of the workflow element.
-            file_path (Path): Path to the shared library file (.so, .dll, .dylib).
-            data_dictionary (Path): Path to the Data Dictionary JSON file.
-            parameter_obj (dict[str, AresParamInterface]): AresParameter storage with hashes as keys.
-            data_obj (dict[str, AresDataInterface]): AresData storage with hashes as keys.
-            ...: Other fields from WorkflowElement as needed.
+    Instantiates a :class:`SimUnit`, resolves input data and parameters from the
+    workflow caches, runs the simulation for every data/parameter combination, and
+    stores the results back into the :class:`AresDataInterface` cache.
 
-    Returns:
-        None
+    Args:
+        plugin_input (SimUnitElement): Pydantic model containing all plugin configuration
+            and data, including ``file_path``, ``data_dictionary``, ``parameter_obj``,
+            ``data_obj``, and related workflow fields.
     """
 
     parameter_lists: list[list[AresParamInterface]] = plugin_input.parameter_obj

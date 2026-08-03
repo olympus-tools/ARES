@@ -67,17 +67,17 @@ def get_hash_combinations(
 
 
 def ares_plugin(plugin_input: MergeElement):
-    """ARES plugin that merges multiple ARES outputs into a single output.
+    """ARES plugin that merges multiple ARES outputs into a single combined output.
+
+    Generates all cartesian-product combinations of the input parameter and data
+    hash lists, merges each combination into a single :class:`AresParamInterface`
+    and :class:`AresDataInterface` instance, and stores the results in the
+    respective caches.
 
     Args:
-        plugin_input (MergeElement): Pydantic model containing all plugin configuration and data.
-            name (str): Name of the workflow element.
-            parameter_hash_list (list[list[str]]): List of parameter hash combinations for plugin input.
-            data_hash_list (list[list[str]]): List of data hash combinations for plugin input.
-            ...: Other fields from WorkflowElement as needed.
-
-    Returns:
-        None
+        plugin_input (MergeElement): Pydantic model containing all plugin configuration
+            and data, including ``hash_lists_parameter``, ``hash_lists_data``,
+            ``label_filter_parameter``, ``label_filter_data``, and related fields.
     """
 
     hash_lists_parameter: list[list[str]] = plugin_input.hash_lists_parameter

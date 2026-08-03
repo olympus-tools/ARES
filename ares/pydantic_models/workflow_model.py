@@ -238,6 +238,8 @@ class BaseElement(BaseModel):
 
 
 class VStackPatternElement(BaseModel):
+    """Pydantic model for a single vstack pattern configuration."""
+
     model_config = ConfigDict(extra="forbid")
 
     pattern: str
@@ -247,7 +249,11 @@ class VStackPatternElement(BaseModel):
 
     @model_validator(mode="after")
     def _validate_model(self):
-        """Validates that required fields are present based on the given pattern (number of groups)."""
+        """Validates that required fields are present based on the given pattern (number of groups).
+
+        Returns:
+            VStackPatternElement: The validated model instance.
+        """
         pattern = re.compile(self.pattern)
 
         if pattern.groups >= 3:
@@ -279,6 +285,8 @@ class VStackPatternElement(BaseModel):
 
 
 class DataElement(BaseElement):
+    """Pydantic model for a data read/write workflow element."""
+
     model_config = ConfigDict(extra="forbid")
     type: Literal["data"] = "data"
     mode: Literal["read", "write"]
@@ -293,7 +301,11 @@ class DataElement(BaseElement):
 
     @model_validator(mode="after")
     def _validate_model(self):
-        """Validates that required fields are present based on the mode and the given vstack pattern."""
+        """Validates that required fields are present based on the mode and the given vstack pattern.
+
+        Returns:
+            DataElement: The validated model instance.
+        """
         if self.mode == "read":
             if not self.file_path:
                 raise ValueError("Field 'file_path' is required for mode='read'.")
@@ -322,6 +334,8 @@ class DataElement(BaseElement):
 
 
 class ParameterElement(BaseElement):
+    """Pydantic model for a parameter read/write workflow element."""
+
     model_config = ConfigDict(extra="forbid")
     type: Literal["parameter"] = "parameter"
     mode: Literal["read", "write"]
@@ -333,7 +347,11 @@ class ParameterElement(BaseElement):
 
     @model_validator(mode="after")
     def _validate_model(self):
-        """Validates that required fields are present based on the mode."""
+        """Validates that required fields are present based on the mode.
+
+        Returns:
+            ParameterElement: The validated model instance.
+        """
         if self.mode == "read":
             if not self.file_path:
                 raise ValueError("Field 'file_path' is required for mode='read'.")
@@ -353,6 +371,8 @@ class ParameterElement(BaseElement):
 
 
 class PluginElement(BaseElement):
+    """Pydantic model for a custom plugin workflow element."""
+
     model_config = ConfigDict(extra="allow")
     type: Literal["plugin"] = "plugin"
     file_path: Path | None = None
@@ -364,7 +384,11 @@ class PluginElement(BaseElement):
 
     @model_validator(mode="after")
     def _validate_model(self):
-        """Validates that file_path, if provided, points to a Python (.py) file."""
+        """Validates that file_path, if provided, points to a Python (.py) file.
+
+        Returns:
+            PluginElement: The validated model instance.
+        """
         self._validate_file_path_format(
             file_path=self.file_path, allowed_format=PluginFormat
         )
@@ -372,6 +396,8 @@ class PluginElement(BaseElement):
 
 
 class SimUnitElement(PluginElement):
+    """Pydantic model for a simulation unit workflow element."""
+
     model_config = ConfigDict(extra="forbid")
     type: Literal["sim_unit"] = "sim_unit"
     plugin_path: Path = Field(
@@ -395,6 +421,11 @@ class SimUnitElement(PluginElement):
 
     @model_validator(mode="after")
     def _validate_model(self):
+        """Validates that file_path points to a supported shared library format and expands vstack patterns.
+
+        Returns:
+            SimUnitElement: The validated model instance.
+        """
         self._validate_file_path_format(
             file_path=self.file_path, allowed_format=SimUnitFormat
         )
@@ -410,6 +441,8 @@ class SimUnitElement(PluginElement):
 
 
 class MergeElement(PluginElement):
+    """Pydantic model for a merge workflow element that combines data and parameter objects."""
+
     model_config = ConfigDict(extra="forbid")
     type: Literal["merge"] = "merge"
     plugin_path: Path = Field(
@@ -431,6 +464,11 @@ class MergeElement(PluginElement):
 
     @model_validator(mode="after")
     def _validate_model(self):
+        """Normalises vstack_pattern_data by converting plain strings to VStackPatternElement instances.
+
+        Returns:
+            MergeElement: The validated model instance.
+        """
         if self.vstack_pattern_data is not None and isinstance(
             self.vstack_pattern_data[0], str
         ):
@@ -451,28 +489,63 @@ WorkflowElement = Annotated[
 
 # TODO: don't add this extra methods => userdict???
 class WorkflowModel(RootModel):
+    """Pydantic root model representing the full workflow as a mapping of element names to workflow elements."""
+
     root: dict[str, WorkflowElement]
 
     @model_validator(mode="after")
     def _inject_element_names(self):
-        """Inject the workflow key name into each element's 'name' field."""
+        """Injects the workflow key name into each element's 'name' field.
+
+        Returns:
+            WorkflowModel: The model instance with all element names populated.
+        """
         for key, element in self.root.items():
             element.name = key
         return self
 
     def values(self):
+        """Return the workflow elements.
+
+        Returns:
+            ValuesView[WorkflowElement]: A view of all workflow elements.
+        """
         return self.root.values()
 
     def keys(self):
+        """Return the workflow element names.
+
+        Returns:
+            KeysView[str]: A view of all workflow element names.
+        """
         return self.root.keys()
 
     def __getitem__(self, key: str) -> WorkflowElement:
+        """Return the workflow element with the given name.
+
+        Args:
+            key (str): The name of the workflow element to retrieve.
+
+        Returns:
+            WorkflowElement: The workflow element associated with the key.
+        """
         return self.root[key]
 
     def __setitem__(self, key: str, value: WorkflowElement) -> None:
+        """Set or replace a workflow element by name.
+
+        Args:
+            key (str): The name of the workflow element.
+            value (WorkflowElement): The workflow element to store.
+        """
         self.root[key] = value
 
     def __delitem__(self, key: str) -> None:
+        """Delete a workflow element by name.
+
+        Args:
+            key (str): The name of the workflow element to delete.
+        """
         del self.root[key]
 
     def get(self, key: str, default: Any = None):

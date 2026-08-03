@@ -57,13 +57,16 @@ def safely_run(
     """provides try/except functionality via decorator
 
     Args:
-        default_return[Any] : default return value in case of failure -> depends on function, default = None
-        exception_msg[str] : default logger message to display in case of failure, default = None
-        exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
-        log_level[str] : log level to use, default = WARNING
-        log[Logger]: specific logger to use, defaults to ares logger
-        include_args[list[str]]: function arguments to include in logger message
-        instance_el[list[str]]: instance/object arguments to include in logger message
+        default_return (Any): Default return value in case of failure. Defaults to None.
+        exception_msg (str | None): Default logger message to display in case of failure. Defaults to None.
+        exception_map (dict[type[Exception], str] | None): Dictionary mapping exception types to
+            specific error messages. Defaults to None.
+        log_level (str): Log level to use. Defaults to 'WARNING'.
+        log (logging.Logger | None): Specific logger to use. Defaults to the ARES root logger.
+        include_args (list[str] | None): Function argument names whose values are included in the
+            log message for context. Defaults to None.
+        instance_el (list[str] | None): Instance attribute names to include in the log message.
+            Defaults to None.
 
     Returns:
         Callable: The decorated function with try/except.
@@ -149,23 +152,26 @@ def error_msg(
     include_args: list[str] | None = None,
     instance_el: list[str] | None = None,
 ) -> Callable:
-    """
-    Wraps a function to provide context to errors without suppressing them.
+    """Wraps a function to provide context to errors without suppressing them.
 
     If the decorated function raises an exception, this decorator catches it,
     logs the failure, and raises a new exception (chained to the original)
     with the provided context message.
 
     Args:
-        exception_msg (str): meaningful error context to display to the user.
-        exception_type (Type[Exception]): The type of error to raise. Defaults to None (original exception is used)
-        exception_map [dict[Exception,str]] : dictionary with specific error-messages considering the exception, default = None
-        log[Logger]: specific logger to use, defaults to ares logger
-        include_args[list[str]]: function arguments to include in logger message
-        instance_el[list[str]]: instance/object arguments to include in logger message
+        exception_msg (str): Meaningful error context to display to the user.
+        exception_type (type[Exception] | None): The type of exception to raise.
+            Defaults to None (the original exception type is re-raised).
+        exception_map (dict[type[Exception], str] | None): Dictionary mapping exception
+            types to specific error messages. Defaults to None.
+        log (logging.Logger | None): Specific logger to use. Defaults to the ARES root logger.
+        include_args (list[str] | None): Function argument names whose values are included
+            in the log message for context. Defaults to None.
+        instance_el (list[str] | None): Instance attribute names to include in the log
+            message. Defaults to None.
 
     Returns:
-        Callable: The decorated function with try/except.
+        Callable: The decorated function with error context logging.
     """
     logger = create_logger() if log is None else log
 

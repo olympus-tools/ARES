@@ -141,7 +141,7 @@ class MF4Handler(MDF, AresDataInterface):
         Wrapper for asammdf's MDF.save() that adds a timestamp to the file header.
 
         Args:
-            output_path (str): Absolute path where the mf4 file should be written.
+            output_path (Path): Absolute path where the mf4 file should be written.
             **kwargs (Any): Additional arguments passed to MDF.save().
         """
 

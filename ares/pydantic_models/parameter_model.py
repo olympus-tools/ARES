@@ -51,6 +51,8 @@ DataType = Enum("DataType", list(SimUnit.DATATYPES.keys()))
 
 
 class BaseParameter(BaseModel):
+    """Base Pydantic model shared by all parameter types."""
+
     description: str | None = None
     unit: str | None = None
 
@@ -59,17 +61,23 @@ class BaseParameter(BaseModel):
 
 
 class ScalarParameter(BaseParameter):
+    """Pydantic model for a scalar (0-dimensional) parameter."""
+
     type: Literal["scalar"] = Field("scalar")
     value: int | float | str | bool
 
 
 class Array1DParameter(BaseParameter):
+    """Pydantic model for a one-dimensional array parameter."""
+
     type: Literal["array1d"] = Field("array1d")
     name_breakpoints_1: str | None = None
     value: list[int | float]
 
 
 class Array2DParameter(BaseParameter):
+    """Pydantic model for a two-dimensional array parameter."""
+
     type: Literal["array2d"] = Field("array2d")
     name_breakpoints_1: str | None = None
     name_breakpoints_2: str | None = None
@@ -84,28 +92,74 @@ ParameterElement = Annotated[
 
 
 class ParameterModel(RootModel):
+    """Pydantic root model representing a parameter set as a mapping of parameter names to parameter elements."""
+
     root: dict[str, ParameterElement]
 
     def __getitem__(self, key: str) -> ParameterElement:
+        """Return the parameter element with the given name.
+
+        Args:
+            key (str): The name of the parameter element to retrieve.
+
+        Returns:
+            ParameterElement: The parameter element associated with the key.
+        """
         return self.root[key]
 
     def __setitem__(self, key: str, value: ParameterElement) -> None:
+        """Set or replace a parameter element by name.
+
+        Args:
+            key (str): The name of the parameter element.
+            value (ParameterElement): The parameter element to store.
+        """
         self.root[key] = value
 
     def __delitem__(self, key: str) -> None:
+        """Delete a parameter element by name.
+
+        Args:
+            key (str): The name of the parameter element to delete.
+        """
         del self.root[key]
 
     def __iter__(self):
+        """Iterate over parameter element names.
+
+        Returns:
+            Iterator[str]: An iterator over the parameter element keys.
+        """
         return iter(self.root)
 
     def __len__(self) -> int:
+        """Return the number of parameter elements.
+
+        Returns:
+            int: The total count of parameter elements in this model.
+        """
         return len(self.root)
 
     def items(self):
+        """Return parameter name–element pairs.
+
+        Returns:
+            ItemsView[str, ParameterElement]: A view of all name–element pairs.
+        """
         return self.root.items()
 
     def values(self):
+        """Return the parameter elements.
+
+        Returns:
+            ValuesView[ParameterElement]: A view of all parameter elements.
+        """
         return self.root.values()
 
     def keys(self):
+        """Return the parameter element names.
+
+        Returns:
+            KeysView[str]: A view of all parameter element names.
+        """
         return self.root.keys()
