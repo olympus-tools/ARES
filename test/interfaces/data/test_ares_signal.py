@@ -38,6 +38,8 @@ import pytest
 
 from ares.interface.data.ares_signal import AresSignal
 
+DEBUG = False
+
 
 def test_ares_signal_init():
     """
@@ -50,18 +52,25 @@ def test_ares_signal_init():
     )
 
     assert test_signal.label == "test_signal"
-    assert isinstance(test_signal.timestamps, np.ndarray), (
-        "timestamps element of signal is no numpy array."
-    )
-    assert np.issubdtype(test_signal.timestamps.dtype, np.float32), (
-        "timetamps array of signal is not of type float32."
-    )
-    assert len(test_signal.timestamps) == 4, "Ops, timstamps length is false."
-    assert isinstance(test_signal.value, np.ndarray), (
-        "data element of signal no numpy array."
-    )
+    assert isinstance(test_signal.timestamps, np.ndarray)
+    assert np.issubdtype(test_signal.timestamps.dtype, np.float32)
+    assert len(test_signal.timestamps) == 4
+    assert isinstance(test_signal.value, np.ndarray)
     assert np.issubdtype(test_signal.value.dtype, np.int64)
-    assert len(test_signal.value) == 4, "Ops, data length is false."
+    assert len(test_signal.value) == 4
+
+
+def test_ares_signal_fs():
+    """
+    Test the fs property of the ares signal.
+    """
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+    assert isinstance(test_signal.fs, np.float32)
+    assert test_signal.fs == 1
 
 
 @pytest.mark.parametrize(
@@ -79,7 +88,7 @@ def test_ares_signal_init():
         ),
     ],
 )
-def test_ares_ares_signal(label, timestamps, data):
+def test_ares_signal_init_parametrized(label, timestamps, data):
     """
     Tests different signal types and lengths.
     """
@@ -87,22 +96,16 @@ def test_ares_ares_signal(label, timestamps, data):
     data_length = len(timestamps)
 
     assert test_signal.label == label
-    assert isinstance(test_signal.timestamps, np.ndarray), (
-        "timestamps element of signal is no numpy array."
-    )
-    assert np.issubdtype(test_signal.timestamps.dtype, np.float32), (
-        "timetamps array of signal is not of type float32."
-    )
-    assert len(test_signal.timestamps) == data_length, "Ops, timstamps length is false."
-    assert isinstance(test_signal.value, np.ndarray), (
-        "data element of signal no numpy array."
-    )
-    assert len(test_signal.value) == data_length, "Ops, data length is false."
+    assert isinstance(test_signal.timestamps, np.ndarray)
+    assert np.issubdtype(test_signal.timestamps.dtype, np.float32)
+    assert len(test_signal.timestamps) == data_length
+    assert isinstance(test_signal.value, np.ndarray)
+    assert len(test_signal.value) == data_length
 
 
-def test_ares_signal_resample():
+def test_ares_signal_resample_default():
     """
-    Test the resample method of the ares signal.
+    Test the resample method in general.
     """
     test_signal = AresSignal(
         label="test_signal",
@@ -117,11 +120,122 @@ def test_ares_signal_resample():
 
     assert signal_resampled is not None
     assert signal_resampled is not test_signal
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+    assert signal_resampled.value.shape == resampled_timestamps.shape
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_linear():
+    """
+    Test linear resampling of the ares signal.
+    """
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="linear")
+
+    assert signal_resampled is not None
+    assert signal_resampled is not test_signal
 
     expected_data = np.array([0.5, 1.5, 2.5], dtype=np.float32)
     assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
     assert np.array_equal(signal_resampled.value, expected_data)
 
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_windowedsinc():
+    """
+    Test windowed-sinc resampling of the ares signal.
+    """
+    test_signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="windowedsinc")
+
+    assert signal_resampled is not None
+    assert signal_resampled is not test_signal
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_windowedsinc_sine():
+    """
+    Test windowed-sinc resampling with a sine wave (bandlimited signal).
+    """
+    fs = 100.0
+    t = np.arange(0, 5, 1 / fs, dtype=np.float32)
+    freq = 5.0
+    sine = np.sin(2 * np.pi * freq * t).astype(np.float32)
+
+    test_signal = AresSignal(
+        label="sine",
+        timestamps=t,
+        value=sine,
+    )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
+    resampled_t = np.arange(0.0, 5, 1 / (fs * 1.88), dtype=np.float32)
+    signal_resampled_up = test_signal.resample(resampled_t, method="windowedsinc")
+
+    signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
+
+    if DEBUG:
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        axes1 = fig.add_subplot(111)
+        axes1.plot(
+            signal_resampled_up.timestamps,
+            signal_resampled_up.value,
+            marker=".",
+            color="blue",
+            label="resampled up",
+        )
+        axes1.plot(
+            test_signal.timestamps,
+            test_signal.value,
+            marker="o",
+            color="red",
+            alpha=0.5,
+            label="original",
+        )
+        axes1.plot(
+            signal_resampled.timestamps,
+            signal_resampled.value,
+            marker=".",
+            color="green",
+            alpha=0.5,
+            label="resampled back",
+        )
+        axes1.set_xlabel("Time (s)")
+        axes1.set_ylabel("Value")
+        axes1.set_title("Sinus - windowed sinc resampling")
+        axes1.legend()
+        plt.show()
+
+    assert signal_resampled is not None
+    expected = np.sin(2 * np.pi * freq * resampled_t).astype(np.float32)
+    assert np.allclose(signal_resampled_up.value, expected, atol=1e-1)
+    assert np.allclose(signal_resampled.value, test_signal.value, atol=1e-1)
     assert np.array_equal(test_signal.timestamps, original_timestamps)
     assert np.array_equal(test_signal.value, original_values)
 
@@ -135,13 +249,101 @@ def test_ares_signal_resample_cubic():
         timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
         value=np.array([0, 1, 2, 3], dtype=np.float32),
     )
-    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
 
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
     signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
 
     assert signal_resampled is not None
+    assert signal_resampled is not test_signal
     assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
     assert np.allclose(signal_resampled.value, np.array([0.5, 1.5, 2.5]))
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def _make_multidim_signal(n_timestamps=10, n_channels=3):
+    """Helper to create a multi-dimensional signal with known values."""
+    timestamps = np.arange(n_timestamps, dtype=np.float32)
+    values = np.arange(n_timestamps * n_channels, dtype=np.float32).reshape(
+        n_timestamps, n_channels
+    )
+    return AresSignal(label="multidim", timestamps=timestamps, value=values)
+
+
+def test_ares_signal_resample_linear_multidim():
+    """
+    Test linear resampling preserves shape for multi-dimensional signals.
+    """
+    test_signal = _make_multidim_signal(10, 3)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="linear")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape
+
+    expected = np.array(
+        [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
+        dtype=np.float32,
+    )
+    assert np.allclose(signal_resampled.value, expected)
+
+
+def test_ares_signal_resample_cubic_multidim():
+    """
+    Test cubic resampling preserves shape for multi-dimensional signals.
+    """
+    test_signal = _make_multidim_signal(10, 3)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape
+
+    expected = np.array(
+        [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
+        dtype=np.float32,
+    )
+    assert np.allclose(signal_resampled.value, expected)
+
+
+def test_ares_signal_resample_windowedsinc_multidim():
+    """
+    Test windowed-sinc resampling preserves shape for multi-dimensional signals.
+    """
+    test_signal = _make_multidim_signal(10, 3)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="windowedsinc")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape
+
+
+def test_ares_signal_resample_3d():
+    """
+    Test resampling preserves shape for 3D signals.
+    """
+    n_timestamps = 10
+    timestamps = np.arange(n_timestamps, dtype=np.float32)
+    values = np.arange(n_timestamps * 2 * 3, dtype=np.float32).reshape(
+        n_timestamps, 2, 3
+    )
+    test_signal = AresSignal(label="3d", timestamps=timestamps, value=values)
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="linear")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 2, 3)
+    assert signal_resampled.value.shape == expected_shape
 
 
 def test_ares_signal_wrong_timestamps_type():
@@ -176,5 +378,327 @@ def test_ares_signal_wrong_dimension():
         )
 
 
+def test_ares_signal_resample_nearest_bool():
+    """
+    Test that bool signals are resampled with nearest-neighbor (not interpolated).
+    """
+    test_signal = AresSignal(
+        label="bool_step",
+        timestamps=np.array([0, 1, 2, 3, 4, 5], dtype=np.float32),
+        value=np.array([False, False, True, True, False, False], dtype=bool),
+    )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5, 4.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps)
+
+    assert signal_resampled is not None
+    assert signal_resampled is not test_signal
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+    assert signal_resampled.value.dtype == np.bool_
+
+    expected = np.array([False, True, True, False, False])
+    assert np.array_equal(signal_resampled.value, expected)
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_nearest_int():
+    """
+    Test that integer signals are resampled with nearest-neighbor (not interpolated).
+    """
+    test_signal = AresSignal(
+        label="int_step",
+        timestamps=np.array([0, 1, 2, 3, 4, 5], dtype=np.float32),
+        value=np.array([0, 0, 5, 5, 10, 10], dtype=np.int32),
+    )
+    original_timestamps = test_signal.timestamps.copy()
+    original_values = test_signal.value.copy()
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5, 3.5, 4.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="linear")
+
+    assert signal_resampled is not None
+    assert signal_resampled is not test_signal
+    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
+    assert np.issubdtype(signal_resampled.value.dtype, np.integer)
+
+    expected = np.array([0, 5, 5, 10, 10], dtype=np.int32)
+    assert np.array_equal(signal_resampled.value, expected)
+
+    assert np.array_equal(test_signal.timestamps, original_timestamps)
+    assert np.array_equal(test_signal.value, original_values)
+
+
+def test_ares_signal_resample_nearest_int_ramp():
+    """
+    Test that an integer ramp stays stepped (nearest) after resample, not linear.
+    """
+    test_signal = AresSignal(
+        label="int_ramp",
+        timestamps=np.array([0, 1, 2, 3, 4], dtype=np.float32),
+        value=np.array([0, 1, 2, 3, 4], dtype=np.int32),
+    )
+
+    resampled_timestamps = np.array(
+        [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75], dtype=np.float32
+    )
+    signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
+
+    assert signal_resampled is not None
+    expected = np.array([0, 1, 1, 2, 2, 3, 3, 4], dtype=np.int32)
+    assert np.array_equal(signal_resampled.value, expected)
+
+
+def test_ares_signal_resample_nearest_bool_multidim():
+    """
+    Test nearest-neighbor resampling preserves shape for multi-dim bool signals.
+    """
+    n_timestamps = 10
+    timestamps = np.arange(n_timestamps, dtype=np.float32)
+    values = np.zeros((n_timestamps, 3), dtype=bool)
+    values[3:7, 0] = True
+    values[5:9, 1] = True
+    values[1:4, 2] = True
+
+    test_signal = AresSignal(label="bool_multidim", timestamps=timestamps, value=values)
+
+    resampled_timestamps = np.array([0.5, 2.5, 4.5, 6.5, 8.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps)
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape
+    assert signal_resampled.value.dtype == np.bool_
+
+
+def test_ares_signal_resample_nearest_int_multidim():
+    """
+    Test nearest-neighbor resampling preserves shape for multi-dim int signals.
+    """
+    n_timestamps = 10
+    timestamps = np.arange(n_timestamps, dtype=np.float32)
+    values = np.zeros((n_timestamps, 3), dtype=np.int32)
+    values[2:5, 0] = 10
+    values[5:8, 1] = 20
+    values[0:3, 2] = 30
+
+    test_signal = AresSignal(label="int_multidim", timestamps=timestamps, value=values)
+
+    resampled_timestamps = np.array([0.5, 2.5, 4.5, 6.5, 8.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps, method="windowedsinc")
+
+    assert signal_resampled is not None
+    expected_shape = (len(resampled_timestamps), 3)
+    assert signal_resampled.value.shape == expected_shape
+    assert np.issubdtype(signal_resampled.value.dtype, np.integer)
+
+
+def test_ares_signal_resample_non_numeric():
+    """
+    Test that non-numeric, non-boolean signals return None.
+    """
+    test_signal = AresSignal(
+        label="complex",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([1 + 2j, 3 + 4j, 5 + 6j, 7 + 8j]),
+    )
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps)
+    assert signal_resampled is None
+
+
+def test_ares_signal_resample_nearest_bool_square_wave():
+    """
+    Test nearest-neighbor resampling of a bool square wave with debug plot.
+    """
+    fs = 100.0
+    t = np.arange(0, 2, 1 / fs, dtype=np.float32)
+    square = np.sin(2 * np.pi * 1.0 * t) > 0
+
+    test_signal = AresSignal(
+        label="bool_square",
+        timestamps=t,
+        value=square,
+    )
+
+    resampled_t = np.arange(0.0, 2, 1 / 123.0, dtype=np.float32)
+    signal_resampled_up = test_signal.resample(resampled_t, method="windowedsinc")
+    signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
+
+    if DEBUG:
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        axes1 = fig.add_subplot(111)
+        axes1.step(
+            test_signal.timestamps,
+            test_signal.value.astype(int),
+            color="red",
+            alpha=0.5,
+            label="original (bool)",
+        )
+        axes1.step(
+            signal_resampled.timestamps,
+            signal_resampled.value.astype(int),
+            marker=".",
+            color="blue",
+            alpha=0.5,
+            label="resampled (nearest)",
+        )
+        axes1.set_xlabel("Time (s)")
+        axes1.set_ylabel("Value")
+        axes1.set_title("Bool square wave - nearest-neighbor resampling")
+        axes1.legend()
+        plt.show()
+
+    assert signal_resampled is not None
+    assert signal_resampled.value.dtype == np.bool_
+
+
+def test_ares_signal_resample_nearest_int_staircase():
+    """
+    Test nearest-neighbor resampling of an integer staircase with debug plot.
+    """
+    fs = 100.0
+    t = np.arange(0, 5, 1 / fs, dtype=np.float32)
+    staircase = np.floor(t * 2).astype(np.int32)
+
+    test_signal = AresSignal(
+        label="int_staircase",
+        timestamps=t,
+        value=staircase,
+    )
+
+    resampled_t = np.arange(0.0, 5, 1 / 117.0, dtype=np.float32)
+    signal_resampled_up = test_signal.resample(resampled_t, method="windowedsinc")
+    signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
+
+    assert signal_resampled is not None
+    assert np.issubdtype(signal_resampled.value.dtype, np.integer)
+
+    if DEBUG:
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        axes1 = fig.add_subplot(111)
+        axes1.step(
+            test_signal.timestamps,
+            test_signal.value,
+            color="red",
+            alpha=0.5,
+            label="original (int)",
+        )
+        axes1.step(
+            signal_resampled.timestamps,
+            signal_resampled.value,
+            marker=".",
+            color="blue",
+            alpha=0.5,
+            label="resampled (nearest)",
+        )
+        axes1.set_xlabel("Time (s)")
+        axes1.set_ylabel("Value")
+        axes1.set_title("Integer staircase - nearest-neighbor resampling")
+        axes1.legend()
+        plt.show()
+
+
+def test_ares_signal_resample_whitenoise_uniform():
+    """
+    Test resampling whitenoise array with uniform timestamps.
+    """
+    fs = 200.0
+    t = np.arange(0, 50, 1 / fs, dtype=np.float32)
+    white_noise = np.random.normal(0, 1.0, len(t))
+    white_noise = np.float32(white_noise / np.max(np.abs(white_noise)))
+
+    test_signal = AresSignal(
+        label="float_whitenoise",
+        timestamps=t,
+        value=white_noise,
+    )
+
+    fs_resample = 400.0
+    resampled_t = np.arange(0.0, 50, 1 / fs_resample, dtype=np.float32)
+    signal_resampled_windowed = test_signal.resample(resampled_t, method="windowedsinc")
+    signal_resampled_cubic = test_signal.resample(resampled_t, method="cubic")
+    signal_resampled_linear = test_signal.resample(resampled_t, method="linear")
+
+    if DEBUG:
+        import matplotlib.pyplot as plt
+
+        fig = plt.figure()
+        axes1 = fig.add_subplot(311)
+        axes1.step(
+            test_signal.timestamps,
+            test_signal.value,
+            color="red",
+            alpha=0.5,
+            label="original (white noise)",
+        )
+        axes1.step(
+            signal_resampled_windowed.timestamps,
+            signal_resampled_windowed.value,
+            color="blue",
+            alpha=0.5,
+            label="resampled - windowed",
+        )
+        axes1.set_xlabel("Time (s)")
+        axes1.set_ylabel("White Noise")
+        axes1.legend()
+
+        axes2 = fig.add_subplot(312)
+        axes2.step(
+            test_signal.timestamps,
+            test_signal.value,
+            color="red",
+            alpha=0.5,
+            label="original (white noise)",
+        )
+        axes2.step(
+            signal_resampled_cubic.timestamps,
+            signal_resampled_cubic.value,
+            color="blue",
+            alpha=0.5,
+            label="resampled cubic",
+        )
+        axes2.set_xlabel("Time (s)")
+        axes2.set_ylabel("White Noise")
+        axes2.legend()
+
+        axes3 = fig.add_subplot(313)
+        axes2.sharex(axes1)
+        axes3.sharex(axes1)
+        axes3.step(
+            test_signal.timestamps,
+            test_signal.value,
+            color="red",
+            alpha=0.5,
+            label="original (white noise)",
+        )
+        axes3.step(
+            signal_resampled_linear.timestamps,
+            signal_resampled_linear.value,
+            color="blue",
+            alpha=0.5,
+            label="resampled linear",
+        )
+        axes3.set_xlabel("Time (s)")
+        axes3.set_ylabel("White Noise")
+        axes3.legend()
+        plt.show()
+
+
 if __name__ == "__main__":
-    test_ares_signal_resample()
+    test_ares_signal_resample_linear()
+    test_ares_signal_resample_linear_multidim()
+    test_ares_signal_resample_cubic_multidim()
+    test_ares_signal_resample_non_numeric()
+    test_ares_signal_resample_windowedsinc_sine()
+    test_ares_signal_resample_nearest_bool_square_wave()
+    test_ares_signal_resample_nearest_int_staircase()
+    test_ares_signal_resample_whitenoise_uniform()

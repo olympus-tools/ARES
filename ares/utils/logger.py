@@ -49,16 +49,16 @@ logger_workflow_element: contextvars.ContextVar[str] = contextvars.ContextVar(
 
 
 class AresContextFilter(logging.Filter):
-    """
-    Filter to inject the current workflow element name from contextvars into the log record.
-    """
+    """Filter to inject the current workflow element name from contextvars into the log record."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        """Function to mutate logger record to contain workflow_element name.
+        """Injects the current workflow element name into the log record.
+
         Args:
-            record (LogRecord) : LogRecord element inherited through calling logger.debug/info/warning/error.
+            record (logging.LogRecord): Log record inherited from calling logger.debug/info/warning/error.
+
         Returns:
-            True: function returns always True, injection is valid when it runs without exceptions.
+            bool: Always returns True; the injection is valid when executed without exceptions.
         """
         record.workflow_element = logger_workflow_element.get()
         return True
@@ -69,14 +69,15 @@ def create_logger(
     logdir: Path | None = None,
     level: int = logging.INFO,
 ) -> logging.Logger:
-    """
-    Creates and configures a logger that outputs logs in JSON format.
-    Usage should be to call just: "logger = create_logger()"
+    """Create and configure an ARES logger with console and rotating file handlers.
+
+    Typical usage: ``logger = create_logger()`` or ``logger = create_logger(name=__name__)``.
 
     Args:
-        name (str | None), default = None: The name for the logger, typically __name__. None creates the root logger.
-        logdir (Path | None): Directory for log files. Defaults to <package>/logs.
-        level (int), default = logging.INFO: The logging level, e.g., logging.INFO.
+        name (str | None): The name for the logger, typically ``__name__``.
+            ``None`` creates or retrieves the root logger. Defaults to None.
+        logdir (Path | None): Directory for log files. Defaults to ``<package>/logs``.
+        level (int): The logging level, e.g., ``logging.INFO``. Defaults to ``logging.INFO``.
 
     Returns:
         logging.Logger: A configured logger instance for ARES.
@@ -96,8 +97,6 @@ def create_logger(
         logger = logging.getLogger(name)
         logfile = Path(logdir, f"{name}.log")
 
-    logger.addFilter(AresContextFilter())
-
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True
 
@@ -109,6 +108,21 @@ def create_logger(
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = RotatingFileHandler(logfile, backupCount=4, maxBytes=4000000)
     file_handler.setLevel(level)
+
+    # Silence third-party DEBUG/INFO records (e.g. numba JIT logs) on all handlers.
+    # Filters on handlers intercept propagated records; root-logger filters do not.
+    class _ThirdPartyFilter(logging.Filter):
+        def filter(self, record: logging.LogRecord) -> bool:
+            return record.name.startswith("ares") or record.levelno >= logging.WARNING
+
+    third_party_filter = _ThirdPartyFilter()
+
+    # INFO: add contextfilter to custom loggers
+    ares_filter = AresContextFilter()
+    stdout_handler.addFilter(third_party_filter)
+    stdout_handler.addFilter(ares_filter)
+    file_handler.addFilter(third_party_filter)
+    file_handler.addFilter(ares_filter)
 
     fmt_plain = "%(levelname)-8s | %(asctime)s | %(workflow_element)s | %(filename)s:%(lineno)s >> %(message)s"
     fmt_color = "%(log_color)s" + fmt_plain

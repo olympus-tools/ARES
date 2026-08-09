@@ -172,6 +172,8 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `output_format`    | If `write` | `str`       | `"mf4"`             | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific signals by name or pattern.         |
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
+| `resample_method`  | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling signals. Defaults to `"linear"`. |
+| `resample_tolerance` | No       | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
 | `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
 
 #### Parameter Element (`type="parameter"`)
@@ -204,6 +206,8 @@ Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent an
 | `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
 | `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
 | `transpose_mode_parameter` | No | `int` | `1`, `2` | Optional transposing of 2D parameters (1 \| None: no transpose, 2: transpose). |
+| `resample_method`  | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling signals. Defaults to `"linear"`. |
+| `resample_tolerance` | No       | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
 
 #### Custom Plugin (`type="plugin"`)
 
@@ -232,6 +236,8 @@ When merging elements with overlapping parameter names or signal labels, later e
 | `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
 | `transpose_mode_parameter` | No         | `int`       | `1`, `2`            | Optional transposing of 2D parameters (1 \| None: no transpose, 2: transpose). |
 | `stepsize`                 | No         | `int`       |                     | Resampling step size in ms applied to merged data.  |
+| `resample_method`          | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling merged signals. Defaults to `"linear"`. |
+| `resample_tolerance`       | No         | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
 
 ## 7. Examples
 

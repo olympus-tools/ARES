@@ -103,7 +103,7 @@ def AresPluginInterface(
             logger.error(
                 f"{plugin_input.name}: Plugin {plugin_path.name} does not have an 'ares_plugin' function"
             )
-            return
+            raise
 
         logger.debug(
             f"{plugin_input.name}: Plugin {plugin_path.name} executed successfully"

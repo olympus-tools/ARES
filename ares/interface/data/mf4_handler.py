@@ -80,6 +80,8 @@ class MF4Handler(MDF, AresDataInterface):
         vstack_pattern: list[VStackPatternElement] | None = None,
         stepsize: int | None = None,
         label_filter: list[str] | None = None,
+        resample_method: str | None = None,
+        resample_tolerance: int | None = None,
         **kwargs,
     ):
         """Initialize MF4Handler and load available channels.
@@ -94,6 +96,8 @@ class MF4Handler(MDF, AresDataInterface):
             vstack_pattern ( list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
             stepsize (int | None): Optional step size for resampling signals when reading.
             label_filter (list[str] | None): Optional list of signal names or patterns to filter
+            resample_method (str | None): Optional resampling method for reading signals.
+            resample_tolerance (int | None): Optional tolerance for resampling signals.
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
 
@@ -104,6 +108,8 @@ class MF4Handler(MDF, AresDataInterface):
             vstack_pattern=vstack_pattern,
             stepsize=stepsize,
             label_filter=label_filter,
+            resample_method=resample_method,
+            resample_tolerance=resample_tolerance,
         )
 
         if file_path is None:
@@ -135,7 +141,7 @@ class MF4Handler(MDF, AresDataInterface):
         Wrapper for asammdf's MDF.save() that adds a timestamp to the file header.
 
         Args:
-            output_path (str): Absolute path where the mf4 file should be written.
+            output_path (Path): Absolute path where the mf4 file should be written.
             **kwargs (Any): Additional arguments passed to MDF.save().
         """
 
@@ -154,6 +160,8 @@ class MF4Handler(MDF, AresDataInterface):
         self,
         label_filter: list[str] | None = None,
         stepsize: int | None = None,
+        resample_tolerance: int | None = None,
+        resample_method: str | None = None,
         vstack_pattern: list[VStackPatternElement] | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
@@ -162,9 +170,17 @@ class MF4Handler(MDF, AresDataInterface):
         Args:
             label_filter (list[str] | None): List of signal names or pattern to read from mf4 file.
                 If None, all available signals are read. Defaults to None.
-            stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
-            vstack_pattern (list[VStackPatternElement] | None): Pattern (regex) used to stack AresSignal's
-            **kwargs (Any): Additional arguments. 'stepsize' (int) triggers resampling.
+            stepsize (int | None): Step size for resampling signals in milliseconds.
+                If None, no resampling is performed. Defaults to None.
+            resample_tolerance (int | None): Maximum allowed absolute deviation in number
+                of timesteps between the current signal time vector (within common overlap)
+                and the generated resample time vector. If all signals are within tolerance,
+                resampling is skipped. Defaults to None.
+            resample_method (str | None): Resampling method forwarded to AresSignal.resample().
+                Supported values depend on AresSignal, e.g. "linear", "cubic", "windowedsinc".
+                Defaults to None (treated as "linear").
+            vstack_pattern (list[VStackPatternElement] | None): Pattern (regex) used to stack AresSignal's.
+            **kwargs (Any): Additional arguments.
 
         Returns:
             list[AresSignal] | None: List of AresSignal objects, optionally resampled to common time vector.
@@ -179,6 +195,15 @@ class MF4Handler(MDF, AresDataInterface):
         label_filter = self._label_filter if label_filter is None else label_filter
 
         stepsize = self.stepsize if stepsize is None else stepsize
+
+        resample_tolerance = (
+            self._resample_tolerance
+            if resample_tolerance is None
+            else resample_tolerance
+        )
+        resample_method = (
+            self._resample_method if resample_method is None else resample_method
+        )
 
         tmp_data = (
             self._get_signals(label_filter=self._available_signals, **kwargs)
@@ -199,7 +224,12 @@ class MF4Handler(MDF, AresDataInterface):
 
         if stepsize:
             logger.debug(f"Resampling all signals to: {stepsize} ms.")
-            return self._resample(data=tmp_data, stepsize=stepsize)
+            return self._resample(
+                data=tmp_data,
+                stepsize=stepsize,
+                resample_method=resample_method,
+                resample_tolerance=resample_tolerance,
+            )
         else:
             return tmp_data
 

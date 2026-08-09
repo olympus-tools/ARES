@@ -54,10 +54,8 @@ meta_data = {"username": getpass.getuser(), "version": __version__}
     is_eager=True,
     expose_value=False,
     callback=lambda ctx, param, value: (
-        click.echo(f"ARES version {__version__}") or ctx.exit()
-    )
-    if value
-    else None,
+        (click.echo(f"ARES version {__version__}") or ctx.exit()) if value else None
+    ),
     help="Show the installed ARES version.",
 )
 def cli():
@@ -99,6 +97,19 @@ def cli():
     """,
 )
 def pipeline_command(workflow, output, log_dir, log_level):
+    """Entry point for the ARES pipeline CLI command.
+
+    Initialises the logger with the provided directory and level, then delegates
+    to the :func:`pipeline` function.
+
+    Args:
+        workflow (Path): Absolute file path to the workflow JSON file.
+        output (Path | None): Absolute path to the output directory.
+            If None, results are written to a subdirectory 'output' next to the workflow file.
+        log_dir (Path | None): Directory where log files will be written.
+            Defaults to ``<package>/logs`` when None.
+        log_level (int): Integer log level for the root logger (e.g. 10=DEBUG, 20=INFO).
+    """
     create_logger(logdir=log_dir, level=log_level)
     logging.getLogger().setLevel(log_level)
 

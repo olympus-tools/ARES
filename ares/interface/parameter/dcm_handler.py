@@ -73,8 +73,9 @@ class DCMHandler(DCMI, AresParamInterface):
         Args:
             file_path (Path | None): Optional absolute path to the dcm file to load
             label_filter (list[str] | None): Optional list of parameter names or patterns to filter
-            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
-            **kwargs: Additional arguments (e.g., parameters - not used in DCMHandler)
+            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters
+                (1 | None: no transpose, 2: transpose).
+            **kwargs (Any): Additional arguments (e.g., ``parameters`` – not used in DCMHandler).
         """
         AresParamInterface.__init__(
             self,
@@ -97,8 +98,8 @@ class DCMHandler(DCMI, AresParamInterface):
         """Write parameters to dcm file.
 
         Args:
-            output_path (str): Absolute path where the dcm file should be written
-            **kwargs: Additional format-specific arguments
+            output_path (Path): Absolute path where the dcm file should be written.
+            **kwargs (Any): Additional format-specific arguments (unused).
         """
         self.write(output_path)
         logger.info(f"Successfully saved dcm parameter file: {output_path}")
@@ -122,10 +123,11 @@ class DCMHandler(DCMI, AresParamInterface):
         Uses safe dictionary access to handle missing optional fields.
 
         Args:
-            label_filter (list[str] | None): List of parameter names or pattern to retrieve
-            from the interface. If None, all parameters are returned. Defaults to None.
-            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
-            **kwargs: Additional format-specific arguments
+            label_filter (list[str] | None): List of parameter names or patterns to retrieve
+                from the interface. If None, all parameters are returned. Defaults to None.
+            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters
+                (1 | None: no transpose, 2: transpose).
+            **kwargs (Any): Additional format-specific arguments (unused).
 
         Returns:
             list[AresParameter] | None: List of AresParameter objects, or None if no
@@ -197,8 +199,8 @@ class DCMHandler(DCMI, AresParamInterface):
         Duplicate parameter labels are automatically removed, keeping the last occurrence.
 
         Args:
-            parameters (list[AresParameter]): List of AresParameter objects to add to the interface
-            **kwargs: Additional format-specific arguments (unused)
+            parameters (list[AresParameter]): List of AresParameter objects to add to the interface.
+            **kwargs (Any): Additional format-specific arguments (unused).
         """
         parameters = AresParamInterface._filter_deduplicates(parameters=parameters)
         for param in parameters:
