@@ -38,6 +38,17 @@ from pathlib import Path
 
 
 def bin_based_hash(file_path: Path) -> str:
+    """Calculate a SHA-256 hash from a binary file's contents.
+
+    Reads the file in chunks to efficiently handle large files without
+    loading the entire content into memory.
+
+    Args:
+        file_path (Path): Path to the file to hash.
+
+    Returns:
+        str: Hexadecimal SHA-256 digest of the file contents.
+    """
     hasher = hashlib.sha256()
     with open(file_path, "rb") as f:
         while chunk := f.read(4096):
@@ -46,5 +57,13 @@ def bin_based_hash(file_path: Path) -> str:
 
 
 def str_based_hash(input_string: str) -> str:
+    """Calculate a SHA-256 hash from a UTF-8 encoded string.
+
+    Args:
+        input_string (str): The string to hash.
+
+    Returns:
+        str: Hexadecimal SHA-256 digest of the encoded string.
+    """
     sha256 = hashlib.sha256(input_string.encode("utf-8"))
     return sha256.hexdigest()

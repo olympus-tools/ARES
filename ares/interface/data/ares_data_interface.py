@@ -33,6 +33,7 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
@@ -125,6 +126,8 @@ class AresDataInterface(ABC):
         vstack_pattern: list[VStackPatternElement] | None = None,
         stepsize: int | None = None,
         label_filter: list[str] | None = None,
+        resample_method: str | None = None,
+        resample_tolerance: int | None = None,
     ):
         """Initialize base attributes for all data handlers.
 
@@ -136,7 +139,8 @@ class AresDataInterface(ABC):
             vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
             stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
             label_filter (list[str] | None): List of signal names to filter when retrieving data
-            **kwargs (Any): Additional arguments passed to subclass
+            resample_method (str | None): Resampling method for signals. Defaults to None.
+            resample_tolerance (int | None): Tolerance for resampling signals. Defaults to None.
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(
@@ -145,6 +149,8 @@ class AresDataInterface(ABC):
         object.__setattr__(self, "stepsize", stepsize)
         object.__setattr__(self, "_label_filter", label_filter)
         object.__setattr__(self, "_vstack_pattern", vstack_pattern)
+        object.__setattr__(self, "_resample_method", resample_method)
+        object.__setattr__(self, "_resample_tolerance", resample_tolerance)
 
     @classmethod
     @typechecked
@@ -194,6 +200,8 @@ class AresDataInterface(ABC):
                         label_filter=wf_element_value.label_filter,
                         stepsize=wf_element_value.stepsize,
                         vstack_pattern=wf_element_value.vstack_pattern,
+                        resample_method=wf_element_value.resample_method,
+                        resample_tolerance=wf_element_value.resample_tolerance,
                     )
 
             case "write":
@@ -212,6 +220,8 @@ class AresDataInterface(ABC):
                                 label_filter=wf_element_value.label_filter,
                                 stepsize=wf_element_value.stepsize,
                                 vstack_pattern=wf_element_value.vstack_pattern,
+                                resample_method=wf_element_value.resample_method,
+                                resample_tolerance=wf_element_value.resample_tolerance,
                                 **kwargs,
                             )
 
@@ -338,20 +348,31 @@ class AresDataInterface(ABC):
         log=logger,
     )
     @typechecked
-    def _resample(data: list[AresSignal], stepsize: int) -> list[AresSignal]:
-        """Resample all signals to a common time vector using linear interpolation.
+    def _resample(
+        data: list[AresSignal],
+        stepsize: int,
+        resample_method: str | None = None,
+        resample_tolerance: int | None = None,
+    ) -> list[AresSignal]:
+        """Resample signals to a common time vector when needed.
 
         Args:
-            data (list[AresSignal]): List of AresSignal objects to resample
-            stepsize (int): Resampling step size in milliseconds
+            data (list[AresSignal]): List of AresSignal objects to resample.
+            stepsize (int): Resampling step size in milliseconds.
+            resample_method (str | None): Resampling method for signals. Defaults to None.
+            resample_tolerance (int | None): Maximum allowed absolute deviation in
+                number of timesteps between the overlap-cut source signal and the
+                generated common resample time vector. If the deviation is within
+                tolerance, the signal is kept without resampling. Defaults to None,
+                which forces resampling for all signals.
 
         Returns:
-            list[AresSignal]: List of resampled AresSignal objects with common time vector
+            list[AresSignal]: List of AresSignal objects aligned to a common time vector.
         """
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
 
-        # get timevector
+        # Determine the common overlap across all signals.
         for signal in data:
             if len(signal.timestamps) > 0:
                 latest_start_time = np.maximum(latest_start_time, signal.timestamps[0])
@@ -368,17 +389,70 @@ class AresDataInterface(ABC):
             dtype=np.float32,
         )
 
-        resampled_data: list[AresSignal] = []
-        for signal in data:
-            signal_resampled = signal.resample(timestamps_resampled=timestamps_resample)
-            if signal_resampled is None:
-                logger.debug(
-                    f"Signal '{signal.label}' is not attached to resampled data since resampling was not possible."
-                )
-                continue
-            resampled_data.append(signal_resampled)
+        processed_data: list[AresSignal] = []
 
-        return resampled_data
+        logger.info(
+            f"Resampling '{len(data)}' signals to common time vector with, stepsize '{stepsize}', resample_method '{resample_method}', resample_tolerance '{resample_tolerance}'."
+        )
+
+        for signal in data:
+            signal_cut = signal.cut(
+                start=timestamps_resample[0],
+                end=timestamps_resample[-1],
+                mode="time",
+            )
+
+            sample_deviation = abs(signal_cut.shape[0] - len(timestamps_resample))
+
+            if resample_tolerance is None or sample_deviation > resample_tolerance:
+                signal_processed = signal_cut.resample(
+                    timestamps_resampled=timestamps_resample,
+                    method=resample_method,
+                )
+
+                if signal_processed is None:
+                    logger.debug(
+                        f"Signal '{signal_cut.label}' is not attached to resampled data since resampling was not possible."
+                    )
+                    continue
+
+                if logger.isEnabledFor(logging.DEBUG):
+                    AresSignal._validate_resample_accuracy(
+                        signal_original=signal_cut,
+                        signal_resampled=signal_processed,
+                        method=resample_method,
+                    )
+
+            else:
+                logger.debug(
+                    f"Signal '{signal.label}' is not resampled since the deviation ('{sample_deviation}' sample(s)) is within the defined tolerance."
+                )
+                if signal_cut.shape[0] != len(timestamps_resample):
+                    logger.warning(
+                        f"Signal '{signal_cut.label}' is cut/padded to match the resample time vector. Original: '{signal_cut.shape[0]}' samples, New: '{len(timestamps_resample)}' samples."
+                    )
+                    if signal_cut.shape[0] > len(timestamps_resample):
+                        signal_processed = signal_cut.cut(
+                            start=0,
+                            end=len(timestamps_resample) - 1,
+                            mode="index",
+                        )
+                    else:  # signal_cut.shape[0] < len(timestamps_resample)
+                        signal_processed = signal_cut.padding(
+                            samples_to_add=len(timestamps_resample)
+                            - signal_cut.shape[0],
+                            pad_value=signal_cut.value[-1]
+                            if signal_cut.shape[0] > 0
+                            else 0,
+                        )
+                else:
+                    signal_processed = signal_cut
+
+                signal_processed.timestamps = timestamps_resample
+
+            processed_data.append(signal_processed)
+
+        return processed_data
 
     @staticmethod
     @typechecked
@@ -578,6 +652,8 @@ class AresDataInterface(ABC):
         label_filter: list[str] | None = None,
         stepsize: int | None = None,
         vstack_pattern: list[VStackPatternElement] | None = None,
+        resample_method: str | None = None,
+        resample_tolerance: int | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
         """Get data from the interface.
@@ -586,6 +662,8 @@ class AresDataInterface(ABC):
             label_filter (list[str] | None): List of signal names to retrieve from the interface.
             stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
             vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
+            resample_method (str | None): Resampling method for signals. Defaults to None.
+            resample_tolerance (int | None): Tolerance for resampling signals. Defaults to None.
             **kwargs (Any): Additional format-specific arguments
 
         Returns:

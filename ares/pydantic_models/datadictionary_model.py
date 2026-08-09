@@ -40,6 +40,8 @@ from pydantic import BaseModel, Field
 
 
 class Datatype(str, Enum):
+    """Allowed C datatypes for signals and parameters in the Data Dictionary."""
+
     float = "float"
     double = "double"
     bool = "bool"
@@ -58,6 +60,8 @@ type MappingAlternatives = list[str | float | list[float] | list[list[float]]]
 
 
 class BaseDDModel(BaseModel):
+    """Base Pydantic model shared by all Data Dictionary signal and parameter entries."""
+
     datatype: Datatype
     size: list[int]
 
@@ -66,25 +70,35 @@ class BaseDDModel(BaseModel):
 
 
 class SignalModel(BaseDDModel):
+    """Base model for signal entries in the Data Dictionary."""
+
     unit: str | None = None
     description: str | None = None
 
 
 class InModel(SignalModel):
+    """Data Dictionary model for input signals (type 'in')."""
+
     type: Literal["in"]
     mapping_alternatives: MappingAlternatives = []
 
 
 class InoutModel(SignalModel):
+    """Data Dictionary model for bidirectional signals (type 'inout')."""
+
     type: Literal["inout"]
     mapping_alternatives: MappingAlternatives = []
 
 
 class OutModel(SignalModel):
+    """Data Dictionary model for output signals (type 'out')."""
+
     type: Literal["out"]
 
 
 class ParameterModel(BaseDDModel):
+    """Data Dictionary model for simulation parameters."""
+
     mapping_alternatives: MappingAlternatives = []
 
 
@@ -92,31 +106,14 @@ SignalElement = InModel | InoutModel | OutModel
 
 
 class ExecutionOrder(BaseModel):
-    """Execution order model with optional initialization and cyclical function lists.
-
-    Args:
-        initialization (list[str] | None): Optional list of initialization function names
-        cyclical (list[str] | None): Optional list of cyclical function names
-
-    Returns:
-        ExecutionOrder: Validated execution order instance
-    """
+    """Pydantic model for the execution order of initialization and cyclical simulation functions."""
 
     initialization: list[str] | None = []
     cyclical: list[str] | None = []
 
 
 class DataDictionaryModel(BaseModel):
-    """Data Dictionary Model with separate signals and parameters sections.
-
-    Args:
-        signals (dict[str, SignalElement] | None): Dictionary of signal definitions (in, inout, out)
-        parameters (dict[str, ParameterModel] | None): Dictionary of parameter definitions
-        execution_order (ExecutionOrder | None): Optional execution order containing initialization and cyclical function lists
-
-    Returns:
-        DataDictionaryModel: Validated data dictionary instance
-    """
+    """Pydantic model for a simulation unit Data Dictionary with signals, parameters, and execution order."""
 
     signals: (
         dict[Annotated[str, Field(pattern=r"^[a-zA-Z0-9_]+$")], SignalElement] | None

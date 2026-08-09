@@ -126,8 +126,6 @@ class AresParameter:
             dtype (np.dtype | type[np.generic]): Target numpy data type
                 (e.g., np.float32, np.int64, np.dtype('float64')).
 
-        Returns:
-            None: Modifies the parameter value in-place.
         """
         target_dtype = np.dtype(dtype)
 

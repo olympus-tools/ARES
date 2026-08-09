@@ -129,7 +129,6 @@ class AresParamInterface(ABC):
             dependencies (list[str] | None): Optional list of parameter labels that this instance depends on
             label_filter (list[str] | None): Optional list of parameter names or patterns to filter
             transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
-            **kwargs (Any): Additional arguments passed to subclass
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(

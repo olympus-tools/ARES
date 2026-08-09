@@ -46,14 +46,17 @@ def resolve_label_filter(
     label_filter: list[str],
     available_elements: list[str],
 ) -> list[str]:
-    """Resolve regex-pattern in "label_filter". Function is a general approach for all ares interaces (e.g. data/parameter).
+    """Resolve regex patterns in ``label_filter`` against a list of available elements.
+
+    This is a general utility for all ARES interfaces (e.g. data/parameter).
 
     Args:
-        label_filter (list[str]): List of element names/search pattern to retrieve.
-        available_elements (list [str]): List of available elements (parameter/signals/etc.) to use given label_filter on.
+        label_filter (list[str]): List of element names or regex search patterns to match.
+        available_elements (list[str]): List of available elements (parameters, signals, etc.)
+            to apply the label filter against.
 
     Returns:
-        list[str]: List of element names to extract from interace.
+        list[str]: Deduplicated list of matched element names extracted from the interface.
     """
     result_list: list[str] = []
     for regex in label_filter:
