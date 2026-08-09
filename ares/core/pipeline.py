@@ -139,6 +139,8 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                 ]
                 plugin_input.hash_lists_data = tmp_data_hash_list
 
+                plugin_input.output_dir = output_dir
+
                 AresPluginInterface(
                     plugin_input=plugin_input,
                 )
