@@ -106,7 +106,7 @@ class AresSignal:
     @typechecked
     def _cast(
         self,
-        input: npt.NDArray | np.generic | int | float | bool,
+        input: npt.NDArray | np.generic | float | bool,
         target_dtype: np.dtype | type[np.generic],
         input_type: str = "array",
     ) -> npt.NDArray:
@@ -202,8 +202,8 @@ class AresSignal:
 
         return values_1d[nearest_idx]
 
-    @typechecked
     @staticmethod
+    @njit
     def _resample_linear(
         values_1d: npt.NDArray[np.float32],
         timestamps_source: npt.NDArray[np.float32],
@@ -356,33 +356,35 @@ class AresSignal:
             )
             return None
 
+        # Flatten all dimensions except the time axis so that every resample
+        # method can operate on plain 1D slices (one column at a time).
+        # Example: shape (20, 2, 3) → reshape(20, -1) → shape (20, 6)
+        #          iterating .T yields 6 slices, each shape (20,)
+        #          after stacking: (20, 6) → reshape back to (20, 2, 3)
         if self.value.ndim == 1:
-            signal_dim_flat = self.value
-            n_channels = 1
+            dim_cols = [self.value]
         else:
             signal_dim_flat = self.value.reshape(self.shape[0], -1)
-            n_channels = signal_dim_flat.shape[1]
+            dim_cols = list(signal_dim_flat.T)
 
-        resampled_channels = []
-        for ch in range(n_channels):
-            values_ch = signal_dim_flat if n_channels == 1 else signal_dim_flat[:, ch]
-
+        resampled_cols = []
+        for values_col in dim_cols:
             if is_boolean_dtype or is_integer_dtype:
-                resampled_ch = AresSignal._resample_nearest(
-                    values_ch, self.timestamps, timestamps_resampled
+                resampled_col = AresSignal._resample_nearest(
+                    values_col, self.timestamps, timestamps_resampled
                 )
                 method = "nearest"
             elif method == "linear":
-                resampled_ch = AresSignal._resample_linear(
-                    values_ch, self.timestamps, timestamps_resampled
+                resampled_col = AresSignal._resample_linear(
+                    values_col, self.timestamps, timestamps_resampled
                 )
             elif method == "cubic":
-                resampled_ch = AresSignal._resample_cubic(
-                    values_ch, self.timestamps, timestamps_resampled
+                resampled_col = AresSignal._resample_cubic(
+                    values_col, self.timestamps, timestamps_resampled
                 )
             elif method == "windowedsinc":
-                resampled_ch = AresSignal._resample_windowedsinc(
-                    values_ch,
+                resampled_col = AresSignal._resample_windowedsinc(
+                    values_col,
                     self.timestamps,
                     timestamps_resampled,
                     self.fs,
@@ -392,12 +394,12 @@ class AresSignal:
                     f'Unsupported resample method: \'{method}\'. Supported: "linear", "cubic", "windowedsinc"'
                 )
                 return None
-            resampled_channels.append(resampled_ch)
+            resampled_cols.append(resampled_col)
 
-        if n_channels == 1:
-            resampled_value = resampled_channels[0]
+        if len(dim_cols) == 1:
+            resampled_value = resampled_cols[0]
         else:
-            resampled_value = np.column_stack(resampled_channels)
+            resampled_value = np.column_stack(resampled_cols)
 
         if self.value.ndim > 1:
             resampled_value = resampled_value.reshape(
@@ -457,10 +459,8 @@ class AresSignal:
 
         if i > 0 or j < self.shape[0] - 1:
             logger.debug(
-                f"Cutting signal '{self.label}' ({mode}-based): "
-                f"indices [{i}:{j + 1}], "
-                f"time range [{self.timestamps[i]:.3f}, {self.timestamps[j]:.3f}] seconds, "
-                f"samples: {j - i + 1}."
+                f"Cutting signal '{self.label}' ({mode}-based): indices [{i}:{j + 1}], "
+                f"time range [{self.timestamps[i]:.3f}, {self.timestamps[j]:.3f}] seconds, samples: {j - i + 1}."
             )
 
         return AresSignal(
@@ -481,7 +481,7 @@ class AresSignal:
     def padding(
         self,
         samples_to_add: int,
-        pad_value: npt.NDArray | np.generic | int | float | bool = 0,
+        pad_value: npt.NDArray | np.generic | float | bool = 0,
     ) -> "AresSignal":
         """Pad signal values by a given number of samples.
 
@@ -595,7 +595,7 @@ class AresSignal:
         logger.debug(
             "Resample accuracy validation | "
             f"label = {signal_original.label:<50} | "
-            f"dtype = {str(signal_original.dtype):<10} | "
+            f"dtype = {signal_original.dtype!s:<10} | "
             f"mean_pct_deviation = {mean_pct_deviation:>10.4f} % | "
             f"max_abs_deviation = {max_abs_deviation:>12.6f} | "
             f"max_abs_timestamp = {max_abs_deviation_timestamp:>12.6f} s"

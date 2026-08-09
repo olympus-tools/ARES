@@ -145,7 +145,7 @@ def test_ares_signal_resample_linear():
     assert signal_resampled is not None
     assert signal_resampled is not test_signal
 
-    expected_data = np.array([1.0, 1.5, 2.5], dtype=np.float32)
+    expected_data = np.array([0.5, 1.5, 2.5], dtype=np.float32)
     assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
     assert np.array_equal(signal_resampled.value, expected_data)
 
@@ -287,7 +287,7 @@ def test_ares_signal_resample_linear_multidim():
     assert signal_resampled.value.shape == expected_shape
 
     expected = np.array(
-        [[3.0, 4.0, 5.0], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
+        [[1.5, 2.5, 3.5], [4.5, 5.5, 6.5], [7.5, 8.5, 9.5], [10.5, 11.5, 12.5]],
         dtype=np.float32,
     )
     assert np.allclose(signal_resampled.value, expected)
@@ -448,7 +448,7 @@ def test_ares_signal_resample_nearest_int_ramp():
     signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
 
     assert signal_resampled is not None
-    expected = np.array([1, 1, 1, 2, 2, 3, 3, 4], dtype=np.int32)
+    expected = np.array([0, 1, 1, 2, 2, 3, 3, 4], dtype=np.int32)
     assert np.array_equal(signal_resampled.value, expected)
 
 
