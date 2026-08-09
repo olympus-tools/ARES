@@ -40,7 +40,7 @@ Apache Software License; GNU General Public License v2 (GPLv2) License:
 
 Apache-2.0 License:
 ------------------------------------------------------------------------------
-  * coverage 7.14.1
+  * coverage 7.15.4
     URL: https://github.com/coveragepy/coveragepy
 
   * readme_renderer 45.0
@@ -52,13 +52,13 @@ Apache-2.0 License:
 
 Apache-2.0 OR BSD-2-Clause License:
 ------------------------------------------------------------------------------
-  * packaging 26.2
+  * packaging 26.3
     URL: https://github.com/pypa/packaging
 
 
 Apache-2.0 OR BSD-3-Clause License:
 ------------------------------------------------------------------------------
-  * cryptography 49.0.0
+  * cryptography 50.0.0
     URL: https://github.com/pyca/cryptography
 
 
@@ -67,8 +67,17 @@ BSD License License:
   * canmatrix 1.2
     URL: http://github.com/ebroecker/canmatrix
 
+  * contourpy 1.3.3
+    URL: https://github.com/contourpy/contourpy
+
+  * cycler 0.12.1
+    URL: https://matplotlib.org/cycler/
+
   * gitdb 4.0.12
     URL: https://github.com/gitpython-developers/gitdb
+
+  * kiwisolver 1.5.0
+    URL: https://github.com/nucleic/kiwi
 
   * lz4 4.4.5
     URL: https://github.com/python-lz4/python-lz4
@@ -76,7 +85,7 @@ BSD License License:
   * numpy 2.2.4
     URL: https://numpy.org
 
-  * pandas 3.0.3
+  * pandas 3.0.5
     URL: https://pandas.pydata.org
 
   * scipy 1.17.1
@@ -139,11 +148,11 @@ MIT License:
   * build 1.3.0
     URL: https://build.pypa.io
 
-  * cffi 2.0.0
-    URL: https://cffi.readthedocs.io/en/latest/whatsnew.html
-
-  * charset-normalizer 3.4.7
+  * charset-normalizer 3.4.9
     URL: https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
+
+  * fonttools 4.63.0
+    URL: http://github.com/fonttools/fonttools
 
   * iniconfig 2.3.0
     URL: https://github.com/pytest-dev/iniconfig
@@ -151,7 +160,7 @@ MIT License:
   * jaraco.context 6.1.2
     URL: https://github.com/jaraco/jaraco.context
 
-  * jaraco.functools 4.5.0
+  * jaraco.functools 4.6.0
     URL: https://github.com/jaraco/jaraco.functools
 
   * jeepney 0.9.0
@@ -169,16 +178,19 @@ MIT License:
   * more-itertools 11.1.0
     URL: https://github.com/more-itertools/more-itertools
 
-  * nh3 0.3.5
+  * nh3 0.3.6
     URL: UNKNOWN
 
-  * numexpr 2.14.1
+  * numexpr 2.14.2
     URL: https://github.com/pydata/numexpr
+
+  * pyparsing 3.3.2
+    URL: https://github.com/pyparsing/pyparsing/
 
   * referencing 0.37.0
     URL: https://github.com/python-jsonschema/referencing
 
-  * rpds-py 2026.5.1
+  * rpds-py 2026.6.3
     URL: https://github.com/crate-py/rpds
 
   * typeguard 4.4.4
@@ -196,7 +208,7 @@ MIT License License:
   * altgraph 0.17.5
     URL: https://altgraph.readthedocs.io
 
-  * annotated-types 0.7.0
+  * annotated-types 0.8.0
     URL: https://github.com/annotated-types/annotated-types
 
   * colorlog 6.9.0
@@ -242,9 +254,21 @@ MIT License License:
     URL: https://github.com/benjaminp/six
 
 
+MIT-0 License:
+------------------------------------------------------------------------------
+  * cffi 2.1.1
+    URL: https://cffi.readthedocs.io/en/latest/whatsnew.html
+
+
+MIT-CMU License:
+------------------------------------------------------------------------------
+  * pillow 12.3.0
+    URL: https://python-pillow.github.io
+
+
 Mozilla Public License 2.0 (MPL 2.0) License:
 ------------------------------------------------------------------------------
-  * certifi 2026.5.20
+  * certifi 2026.7.22
     URL: https://github.com/certifi/python-certifi
 
 
@@ -253,6 +277,12 @@ PSF-2.0 License:
   * isal 1.8.0
     URL: https://github.com/pycompression/python-isal
 
-  * typing_extensions 4.15.0
+  * typing_extensions 4.16.0
     URL: https://github.com/python/typing_extensions
+
+
+Python Software Foundation License License:
+------------------------------------------------------------------------------
+  * matplotlib 3.11.1
+    URL: https://matplotlib.org
 
