@@ -113,7 +113,7 @@ python -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 | Option | Short | Description | Required | Default |
 | :--- | :--- | :--- | :--- | :--- |
 | `--workflow` | `-wf` | Path to the workflow JSON file. | Yes | - |
-| `--output` | `-o` | Directory where output files will be saved. | No | Workflow directory |
+| `--output` | `-o` | Directory where output files (data, parameter, workflow state) will be saved. If omitted, ARES creates an `output/` subdirectory relative to the workflow file. | No | `<workflow_dir>/output/` |
 | `--log-level` | | Logging verbosity (10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR). | No | 20 (INFO) |
 
 ### Example
@@ -218,6 +218,7 @@ Allows users to execute custom Python scripts within the workflow. Plugins can d
 | `type`             | Yes        | `str`       | `"plugin"`          | Unique identifier for the element type.             |
 | `file_path`        | Yes        | `str`       |                     | Path to the Python plugin script.                   |
 | `plugin_name`      | No         | `str`       |                     | Name of the plugin function to execute. If not specified, defaults to `"ares_plugin"`. |
+| `output_dir`       | No         | `str`       |                     | Output directory passed to the plugin at runtime. If omitted, ARES uses `<workflow_dir>/output/` by default. |
 | *Custom*           | No         | `Any`       |                     | Additional fields as required by the plugin.        |
 
 #### Merge Element (`type="merge"`)

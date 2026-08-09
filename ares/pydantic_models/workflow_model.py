@@ -205,7 +205,7 @@ class BaseElement(BaseModel):
             return self
         base_dir: Path = info.context["base_dir"]
         path_eval_pattern = r"\.[a-zA-Z0-9]+$"
-        skip_fields = {"plugin_path"}
+        skip_fields = {"plugin_path", "output_dir"}
 
         for field_name, field_value in self.__dict__.items():
             if field_name in skip_fields:
@@ -377,6 +377,7 @@ class PluginElement(BaseElement):
     type: Literal["plugin"] = "plugin"
     file_path: Path | None = None
     plugin_name: str | None = None
+    output_dir: Path | None = None
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
     hash_lists_parameter: list[list[str]] = []
