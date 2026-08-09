@@ -70,6 +70,7 @@ dev = [
     "pip-licenses==5.0.0",
     "pipdeptree==2.23.4",
     "pyinstaller==6.15.0",
+    "matplotlib==3.11.1",
     "ares[test]",
 ]
 docs = [
