@@ -45,7 +45,7 @@ dependencies = [
     "numpy==2.2.4",
     "numba==0.65.1",
     "scipy==1.17.1",
-    "asammdf==8.2.9",
+    "asammdf==8.8.23",
     "jsonschema==4.24.0",
     "pydantic==2.11.7",
     "typeguard==4.4.4",
