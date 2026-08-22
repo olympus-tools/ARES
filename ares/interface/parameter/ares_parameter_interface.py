@@ -95,7 +95,7 @@ class AresParamInterface(ABC):
         if file_path is not None:
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
-            parameters = temp_instance.get(**kwargs)
+            parameters = temp_instance.get(**kwargs) or []
 
         # calculate hash from parameters
         content_hash = cls._calculate_hash(parameters=parameters, **kwargs)
