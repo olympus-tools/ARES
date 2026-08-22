@@ -64,6 +64,12 @@ def test_logger_instance():
 def test_log_levels_capture(caplog, level, message, expected_in_output):
     """
     Tests that messages are logged correctly at different levels.
+
+    Args:
+        caplog: pytest fixture capturing log records.
+        level (int): Logging level under test.
+        message (str): Message that is logged at the given level.
+        expected_in_output (bool): Whether the message must appear in the log.
     """
     caplog.clear()
     logger = create_logger("test_log_levels", level=logging.DEBUG)
@@ -79,6 +85,9 @@ def test_log_levels_capture(caplog, level, message, expected_in_output):
 def test_log_level_is_respected(caplog):
     """
     Tests that the logger's level is respected and lower level messages are ignored.
+
+    Args:
+        caplog: pytest fixture capturing log records.
     """
     caplog.clear()
     caplog.set_level(logging.WARNING)
@@ -100,14 +109,10 @@ def test_logfile_creation():
     log_name = "test_logfile_creation"
     logger = create_logger(log_name)
     logger.info(
-        "This is an test message to create the corresponding logfile for testing."
+        "This is a test message to create the corresponding logfile for testing."
     )
     logdir = Path(__file__).parent.parent.parent / "logs"
     logfile = logdir / f"{log_name}.log"
     assert logfile.exists()
     # Clean up the created log file
     logfile.unlink()
-
-
-if __name__ == "__main__":
-    test_logfile_creation()

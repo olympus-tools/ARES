@@ -69,6 +69,9 @@ def test_safely_run_exception():
 def test_safely_run_exception_msg(caplog):
     """
     Tests that a message is logged when the decorated function raises an exception.
+
+    Args:
+        caplog: pytest fixture capturing log records.
     """
 
     @safely_run(default_return="error", exception_msg="HELP WANTED")
@@ -89,6 +92,10 @@ def test_safely_run_exception_msg(caplog):
 def test_safely_run_log_level(caplog, test_log_level):
     """
     Tests that the decorator respects the requested log_level (e.g., WARNING).
+
+    Args:
+        caplog: pytest fixture capturing log records.
+        test_log_level (str): Log level requested from the decorator.
     """
     caplog.set_level(logging.INFO)
 
@@ -134,6 +141,9 @@ def test_safely_run_with_args_exception():
 def test_safely_run_exception_map(caplog):
     """
     Tests that the decorator uses the specific message from exception_map.
+
+    Args:
+        caplog: pytest fixture capturing log records.
     """
 
     exception_map = {
@@ -170,6 +180,9 @@ def test_safely_run_exception_map(caplog):
 def test_safely_run_include_args(caplog):
     """
     Tests that the safely_run decorator includes requested arguments in the log message.
+
+    Args:
+        caplog: pytest fixture capturing log records.
     """
 
     @safely_run(default_return="error", include_args=["a", "c"])
@@ -177,14 +190,13 @@ def test_safely_run_include_args(caplog):
         raise ValueError("Failed with args")
 
     fail_with_args("val_a", "val_b", c="val_c")
-    print(f"DEBUG: {repr(caplog.text)}")
 
     pattern = r"\| Context:\s+\| \s+\{'a': 'val_a', 'c': 'val_c'\}"
     assert re.search(pattern, caplog.text)
 
 
 # TEST: error_msg
-def test_happy_path_execution():
+def test_error_msg_happy_path():
     """Ensure the function runs normally when no error occurs."""
 
     @error_msg("This should not trigger")
@@ -194,7 +206,7 @@ def test_happy_path_execution():
     assert add(2, 3) == 5
 
 
-def test_argument_passing():
+def test_error_msg_argument_passing():
     """Ensure args and kwargs are passed correctly to the wrapped function."""
 
     @error_msg("Args failed")
@@ -204,10 +216,13 @@ def test_argument_passing():
     assert greet("Ares", greeting="Hi") == "Hi, Ares"
 
 
-def test_catches_and_reraises_with_context(caplog):
+def test_error_msg_reraises_with_context(caplog):
     """
     Ensure the decorator catches the error, wraps it in the custom message,
     and raises the original exception type (ValueError).
+
+    Args:
+        caplog: pytest fixture capturing log records.
     """
 
     @error_msg("Critical failure in database")
@@ -227,7 +242,7 @@ def test_catches_and_reraises_with_context(caplog):
     assert "Connection refused" in caplog.text
 
 
-def test_exception_chaining_is_preserved():
+def test_error_msg_exception_chaining_preserved():
     """
     Ensure 'raise ... from e' is used. This allows debuggers to see
     the original traceback.
@@ -245,7 +260,7 @@ def test_exception_chaining_is_preserved():
     assert exc_info.value.__cause__ is original_error
 
 
-def test_custom_exception_type():
+def test_error_msg_custom_exception_type():
     """Ensure the user can specify a specific exception class to raise."""
 
     class MyCustomError(Exception):
@@ -259,7 +274,7 @@ def test_custom_exception_type():
         fail_custom()
 
 
-def test_metadata_preservation():
+def test_error_msg_metadata_preservation():
     """Ensure @wraps is working (docstrings and function names are kept)."""
 
     @error_msg("Metadata context")
@@ -274,6 +289,9 @@ def test_metadata_preservation():
 def test_error_msg_include_args(caplog):
     """
     Tests that the error_msg decorator includes requested arguments in the log and exception message.
+
+    Args:
+        caplog: pytest fixture capturing log records.
     """
 
     @error_msg("Critical error", include_args=["x", "z"])

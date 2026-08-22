@@ -5,8 +5,8 @@ ________________________________________________________________________
 |              $$  __$$\ $$  __$$\ $$  _____|$$  __$$\                 |
 |              $$ /  $$ |$$ |  $$ |$$ |      $$ /  \__|                |
 |              $$$$$$$$ |$$$$$$$  |$$$$$\    \$$$$$$\                  |
-|              $$  __$$ |$$  __$$< $$  __|    \____$$\                 |
 |              $$ |  $$ |$$ |  $$ |$$ |      $$\   $$ |                |
+|              $$ |  $$ |$$ |  $$ |$$$$$$$$\ \$$$$$$  |                |
 |              $$ |  $$ |$$ |  $$ |$$$$$$$$\ \$$$$$$  |                |
 |              \__|  \__|\__|  \__|\________| \______/                 |
 |                                                                      |
@@ -40,66 +40,64 @@ import pytest
 from ares.utils.resolve_label_filter import resolve_label_filter
 
 
-class TestResolveLabelFilter:
-    @pytest.mark.parametrize(
-        "label_filter, available_elements, expected",
-        [
-            # 1. Exact Matches
-            (
-                ["voltage", "current"],
-                ["voltage", "current", "power"],
-                ["voltage", "current"],
-            ),
-            # 2. Regex: Wildcards
-            (
-                ["sensor_.*"],
-                ["sensor_1", "sensor_2", "actuator_1"],
-                ["sensor_1", "sensor_2"],
-            ),
-            # 3. Regex: Partial Match (re.search matches anywhere in string)
-            (
-                ["temp"],
-                ["engine_temp_high", "outside_temp", "pressure"],
-                ["engine_temp_high", "outside_temp"],
-            ),
-            # 4. No Matches
-            (["missing_signal"], ["signal_a", "signal_b"], []),
-            # 5. Deduplication (Same element matched by multiple patterns)
-            (["signal", "signal_1"], ["signal_1"], ["signal_1"]),
-        ],
-    )
-    def test_resolve_label_filter_scenarios(
-        self, label_filter, available_elements, expected
-    ):
-        """
-        Tests various success scenarios including regex and deduplication.
-        """
-        result = resolve_label_filter(label_filter, available_elements)
+# TEST: resolve_label_filter scenarios
+@pytest.mark.parametrize(
+    "label_filter, available_elements, expected",
+    [
+        # 1. Exact Matches
+        (
+            ["voltage", "current"],
+            ["voltage", "current", "power"],
+            ["voltage", "current"],
+        ),
+        # 2. Regex: Wildcards
+        (
+            ["sensor_.*"],
+            ["sensor_1", "sensor_2", "actuator_1"],
+            ["sensor_1", "sensor_2"],
+        ),
+        # 3. Regex: Partial Match (re.search matches anywhere in string)
+        (
+            ["temp"],
+            ["engine_temp_high", "outside_temp", "pressure"],
+            ["engine_temp_high", "outside_temp"],
+        ),
+        # 4. No Matches
+        (["missing_signal"], ["signal_a", "signal_b"], []),
+        # 5. Deduplication (Same element matched by multiple patterns)
+        (["signal", "signal_1"], ["signal_1"], ["signal_1"]),
+    ],
+)
+def test_resolve_label_filter_scenarios(label_filter, available_elements, expected):
+    """
+    Tests various success scenarios including regex and deduplication.
 
-        assert set(result) == set(expected)
+    Args:
+        label_filter (list[str]): Label filter patterns to apply.
+        available_elements (list[str]): Available element labels.
+        expected (list[str]): Expected matching elements.
+    """
+    result = resolve_label_filter(label_filter, available_elements)
 
-    def test_empty_label_filter(self):
-        """Should return empty list if no filters are provided."""
-        available = ["a", "b", "c"]
-        result = resolve_label_filter([], available)
-        assert result == []
+    assert set(result) == set(expected)
 
-    def test_empty_available_elements(self):
-        """Should return empty list if available elements list is empty."""
-        result = resolve_label_filter(["pattern"], [])
-        assert result == []
 
-    # def test_none_available_elements(self):
-    #     """
-    #     CRITICAL:
-    #     This test checks if the function handles None safely (returns empty list).
-    #     """
-    #     result = resolve_label_filter(["pattern"], None)
-    #     assert result == []
+def test_resolve_label_filter_empty_filter():
+    """Should return empty list if no filters are provided."""
+    available = ["a", "b", "c"]
+    result = resolve_label_filter([], available)
+    assert result == []
 
-    def test_invalid_regex_pattern(self):
-        """Ensures that invalid regex patterns raise a re.error."""
-        available = ["data"]
-        # '[' is an invalid regex pattern (unclosed bracket)
-        with pytest.raises(re.error):
-            resolve_label_filter(["["], available)
+
+def test_resolve_label_filter_empty_available_elements():
+    """Should return empty list if available elements list is empty."""
+    result = resolve_label_filter(["pattern"], [])
+    assert result == []
+
+
+def test_resolve_label_filter_invalid_regex_pattern():
+    """Ensures that invalid regex patterns raise a re.error."""
+    available = ["data"]
+    # '[' is an invalid regex pattern (unclosed bracket)
+    with pytest.raises(re.error):
+        resolve_label_filter(["["], available)
