@@ -368,7 +368,6 @@ class AresDataInterface(ABC):
             raise
         elif not stepsize:
             logger.error("Resampling requires a valid stepsize.")
-            raise
 
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
