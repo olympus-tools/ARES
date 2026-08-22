@@ -41,6 +41,7 @@ from ares.interface.data.ares_signal import AresSignal
 DEBUG = False
 
 
+# TEST: AresSignal initialization
 def test_ares_signal_init():
     """
     Test if ares signal can be initialized with data.
@@ -91,6 +92,11 @@ def test_ares_signal_fs():
 def test_ares_signal_init_parametrized(label, timestamps, data):
     """
     Tests different signal types and lengths.
+
+    Args:
+        label (str): Signal label under test.
+        timestamps (np.ndarray): Timestamp array for the signal.
+        data (np.ndarray): Value array for the signal.
     """
     test_signal = AresSignal(label=label, timestamps=timestamps, value=data)
     data_length = len(timestamps)
@@ -103,6 +109,7 @@ def test_ares_signal_init_parametrized(label, timestamps, data):
     assert len(test_signal.value) == data_length
 
 
+# TEST: AresSignal resampling
 def test_ares_signal_resample_default():
     """
     Test the resample method in general.
@@ -346,6 +353,7 @@ def test_ares_signal_resample_3d():
     assert signal_resampled.value.shape == expected_shape
 
 
+# TEST: AresSignal input validation
 def test_ares_signal_wrong_timestamps_type():
     """
     Test if integer timestamps are cast and accepted.
@@ -691,14 +699,3 @@ def test_ares_signal_resample_whitenoise_uniform():
         axes3.set_ylabel("White Noise")
         axes3.legend()
         plt.show()
-
-
-if __name__ == "__main__":
-    test_ares_signal_resample_linear()
-    test_ares_signal_resample_linear_multidim()
-    test_ares_signal_resample_cubic_multidim()
-    test_ares_signal_resample_non_numeric()
-    test_ares_signal_resample_windowedsinc_sine()
-    test_ares_signal_resample_nearest_bool_square_wave()
-    test_ares_signal_resample_nearest_int_staircase()
-    test_ares_signal_resample_whitenoise_uniform()
