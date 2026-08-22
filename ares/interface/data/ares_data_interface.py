@@ -37,6 +37,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -99,17 +100,14 @@ class AresDataInterface(ABC):
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
             content_hash = cls._calculate_hash(file_path=file_path, **kwargs)
-        else:  # calculate hash in case data is provided directly
-            data_dict = {
-                s.label: {
-                    "timestamps": s.timestamps.tolist(),
-                    "value": s.value.tolist(),
-                }
-                for s in data
-            }
-            data_str = json.dumps(data_dict, sort_keys=True)
-            content_hash = cls._calculate_hash(input_string=data_str, **kwargs)
-
+        elif data is not None:
+            data_string = "".join(
+                [str(s.label) + str(s.timestamps) + str(s.value) for s in data]
+            )
+            content_hash = cls._calculate_hash(input_string=data_string, **kwargs)
+        else:
+            timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")[:-3]
+            content_hash = cls._calculate_hash(input_string=timestamp_str, **kwargs)
         cls.tmp_hash_list.append(content_hash)
 
         # return cached instance if hash already exists
@@ -373,6 +371,9 @@ class AresDataInterface(ABC):
         Returns:
             list[AresSignal]: List of AresSignal objects aligned to a common time vector.
         """
+        if not data:
+            raise ValueError("No Ares Signals given for resampling.")
+
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
 
