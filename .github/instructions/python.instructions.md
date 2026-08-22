@@ -164,3 +164,62 @@ def test_circle_calculator():
     CircleCalculator(Circle(radius=0)).calculate_diameter()
 
 ```
+
+# dict.get() for default values
+
+When retrieving keys from dictionaries use `dict.get(key, default)` to specify default values when keys don't exist. 
+More efficient and readable than `try/except` or `if key in dict`.
+
+## References
+- [Python Docs - dict.get()](https://docs.python.org/3/library/stdtypes.html#dict.get)
+
+# List Comprehensions over loops
+
+Instead of building lists with for loops, use list comprehensions for more concise code and better performance.
+Comprehensions are optimized at the C level and avoid repeated append method calls.
+
+# Sets for sorting, uniqueness
+The `in` operator on lists performs O(n) linear search, while sets use O(1) hash-based lookup. 
+For memberships checks or for obtaining unique lists/sets, converting to a set provides significant speedup even accounting for conversion cost.
+
+## References
+- [Python Docs - Set Types](https://docs.python.org/3/library/stdtypes.html#set)
+
+
+## References
+- [Python Docs - List Comprehensions](https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions)
+
+# Numba for performance optimization
+
+When writing Python code that involves heavy mathematical computation, numerical arrays (NumPy), 
+or performance-critical loops, automatically consider using Numba (@jit or @njit decorators) to accelerate execution. 
+Ensure that functions targeted for JIT compilation are written in a Numba-compatible subset of Python 
+(e.g., avoiding unsupported library calls and relying on primitive types or NumPy arrays).
+
+```python
+import numpy as np
+from numba import njit
+
+# Automatically apply @njit for heavy numerical loops
+@njit(cache=True)
+def calculate_euclidean_distance_matrix(coords):
+    """Compute pairwise Euclidean distance matrix for a set of coordinates."""
+    n = coords.shape[0]
+    dist_matrix = np.zeros((n, n), dtype=np.float64)
+    
+    for i in range(n):
+        for j in range(i + 1, n):
+            d = 0.0
+            for k in range(coords.shape[1]):
+                diff = coords[i, k] - coords[j, k]
+                d += diff * diff
+            val = np.sqrt(d)
+            dist_matrix[i, j] = val
+            dist_matrix[j, i] = val
+            
+    return dist_matrix
+```
+
+## References
+- [Numba 5min guide](https://numba.pydata.org/numba-doc/dev/user/5minguide.html)
+- [Numba tips](https://numba.pydata.org/numba-doc/dev/user/performance-tips.html)
