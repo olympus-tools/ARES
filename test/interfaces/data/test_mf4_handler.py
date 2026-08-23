@@ -5,8 +5,8 @@ ________________________________________________________________________
 |              $$  __$$\ $$  __$$\ $$  _____|$$  __$$\                 |
 |              $$ /  $$ |$$ |  $$ |$$ |      $$ /  \__|                |
 |              $$$$$$$$ |$$$$$$$  |$$$$$\    \$$$$$$\                  |
+|              $$  __$$ |$$  __$$< $$  __|    \____$$\                 |
 |              $$ |  $$ |$$ |  $$ |$$ |      $$\   $$ |                |
-|              $$ |  $$ |$$ |  $$ |$$$$$$$$\ \$$$$$$  |                |
 |              $$ |  $$ |$$ |  $$ |$$$$$$$$\ \$$$$$$  |                |
 |              \__|  \__|\__|  \__|\________| \______/                 |
 |                                                                      |
@@ -33,7 +33,6 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
 from pathlib import Path
 
 import numpy as np
@@ -47,28 +46,22 @@ def test_ares_mf4handler_file_init_read():
     """
     Tests if mf4handler can be initialized with mf4-file mode "read".
     """
-    mf4_filepath = Path(
-        os.path.join(
-            os.path.dirname(__file__),
-            "../../../examples/data/data_example_1.mf4",
-        )
-    )
+    project_root = Path(__file__).resolve().parent.parent.parent.parent
+    mf4_filepath = project_root / "examples" / "data" / "data_example_1.mf4"
 
     test_data = MF4Handler(file_path=mf4_filepath)
 
-    assert "input_value" in test_data._available_signals
+    signals = test_data.get()
+    assert signals is not None
+    assert "input_value" in [signal.label for signal in signals]
 
 
 def test_ares_mf4handler_file_read_get():
     """
     Tests if mf4handler can read signals from mf4-files.
     """
-    mf4_filepath = Path(
-        os.path.join(
-            os.path.dirname(__file__),
-            "../../../examples/data/data_example_1.mf4",
-        )
-    )
+    project_root = Path(__file__).resolve().parent.parent.parent.parent
+    mf4_filepath = project_root / "examples" / "data" / "data_example_1.mf4"
 
     test_data = MF4Handler(file_path=mf4_filepath)
 
@@ -103,7 +96,7 @@ def test_ares_mf4handler_file_init_write(tmp_path):
     # that loads cleanly without any signals.
     test_data_read = MF4Handler(file_path=mf4_filepath)
 
-    assert not test_data_read._available_signals, (
+    assert test_data_read.get() is None, (
         "Saved empty mf4-file should not contain any signals."
     )
 

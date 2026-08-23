@@ -3,7 +3,7 @@ description: 'Guidelines for workflow example tests'
 applyTo: 'test/examples/**/*.py'
 ---
 
-# Workflow Example Test Instructions
+## Workflow Example Test Instructions
 
 These instructions apply to integration-style tests in `test/examples/` that
 execute the workflows from the `examples/` directory end to end.
