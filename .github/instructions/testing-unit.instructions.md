@@ -3,7 +3,7 @@ description: 'Guidelines for writing and running unit tests'
 applyTo: 'test/**/*.py'
 ---
 
-# Unit Testing Instructions
+## Unit Testing Instructions
 
 ## Running Tests
 

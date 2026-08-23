@@ -3,7 +3,7 @@ name: ares-review
 description: 'Review code for compliance with ares project conventions. Use when: reviewing files, checking python code quality, validating test coverage, auditing code for best practices, pre-merge review.'
 ---
 
-# ARES Code Review
+## ARES Code Review
 
 Systematic review of code for compliance with ares project best practices and olympic tools conventions.
 
@@ -53,11 +53,11 @@ Use `file_search` and `grep_search` to locate:
 Perform systematic checks based on file type. See **Check Categories** below.
 
 **Important**: Load all available language instructions and testing instruction files: 
-- [ARES README](../../README.md)
-- [python](../instructions/python.instructions.md)
-- [markdown](../instructions/markdown.instructions.md)
-- [testing-examples](../testing-examples.instructions.md)
-- [testing-unit](../testing-unit.instructions.md)
+- [ARES README](../../../README.md)
+- [python](../../instructions/python.instructions.md)
+- [markdown](../../instructions/markdown.instructions.md)
+- [testing-examples](../../instructions/testing-examples.instructions.md)
+- [testing-unit](../../instructions/testing-unit.instructions.md)
 
 ### Step 4: Generate Report
 
@@ -109,7 +109,7 @@ This section maps ares skill conventions to review checks.
 ### Python File Checks
 
 **References**:
-- [Python Best Practices](../instructions/python.instructions.md)
+- [Python Best Practices](../../instructions/python.instructions.md)
 
 Check for compliance with both ares-specific conventions and general Python best practices.
 
@@ -139,7 +139,7 @@ Check for compliance with both ares-specific conventions and general Python best
 
 ### Test File Checks
 
-Reference: [ARES Unit Tests](../instructions/testing-unit.instruction.md)
+Reference: [ARES Unit Tests](../../instructions/testing-unit.instructions.md)
 
 #### Major Findings
 
@@ -308,9 +308,9 @@ Group files by ares/<folder> and test/<folder>:
 
 - **ares-review Skill Version**: [link to commit]
 - **Best Practices Referenced**:
-  - [ARES README](../../README.md)
-  - [ARES python instructions](../instructions/python.instructions.md)
-  - [ARES markdown instructions](../instructions/markdown.instructions.md)
+  - [ARES README](../../../README.md)
+  - [ARES python instructions](../../instructions/python.instructions.md)
+  - [ARES markdown instructions](../../instructions/markdown.instructions.md)
 ```
 
 ## Quick Usage Guide
@@ -337,9 +337,9 @@ Review this file for ares standards
 ## Tips for Effective Reviews
 
 1. **Consult language best practices**: Always review the relevant best practices documentation:
-  - [ARES README](../../README.md)
-  - [ARES python instructions](../instructions/python.instructions.md)
-  - [ARES markdown instructions](../instructions/markdown.instructions.md)
+  - [ARES README](../../../README.md)
+  - [ARES python instructions](../../instructions/python.instructions.md)
+  - [ARES markdown instructions](../../instructions/markdown.instructions.md)
 
 2. **Always create a summary file**: Document every review in a markdown file using the template from the "Review Output Format" section. This provides a permanent record for compliance tracking and PR reviews.
 

@@ -34,7 +34,6 @@ limitations under the License:
 """
 
 import logging
-from pathlib import Path
 
 import pytest
 
@@ -102,17 +101,17 @@ def test_log_level_is_respected(caplog):
     assert "This is a warning message." in caplog.text
 
 
-def test_logfile_creation():
+def test_logfile_creation(tmp_path):
     """
-    Tests if the logger creates a log file.
+    Tests that create_logger writes log files into the requested logdir.
+
+    Args:
+        tmp_path (Path): pytest fixture providing a temporary directory.
     """
     log_name = "test_logfile_creation"
-    logger = create_logger(log_name)
+    logger = create_logger(log_name, logdir=tmp_path)
     logger.info(
         "This is a test message to create the corresponding logfile for testing."
     )
-    logdir = Path(__file__).parent.parent.parent / "logs"
-    logfile = logdir / f"{log_name}.log"
+    logfile = tmp_path / "ares_log" / f"{log_name}.log"
     assert logfile.exists()
-    # Clean up the created log file
-    logfile.unlink()

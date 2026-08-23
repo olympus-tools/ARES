@@ -3,7 +3,7 @@ description: 'Python coding conventions and guidelines'
 applyTo: '**/*.py'
 ---
 
-# Python Coding Conventions
+## Python Coding Conventions
 
 ## Python Instructions
 
@@ -165,31 +165,31 @@ def test_circle_calculator():
 
 ```
 
-# dict.get() for default values
+## dict.get() for default values
 
 When retrieving keys from dictionaries use `dict.get(key, default)` to specify default values when keys don't exist. 
 More efficient and readable than `try/except` or `if key in dict`.
 
-## References
+### References
 - [Python Docs - dict.get()](https://docs.python.org/3/library/stdtypes.html#dict.get)
 
-# List Comprehensions over loops
+## List Comprehensions over loops
 
 Instead of building lists with for loops, use list comprehensions for more concise code and better performance.
 Comprehensions are optimized at the C level and avoid repeated append method calls.
 
-# Sets for sorting, uniqueness
+## Sets for sorting, uniqueness
 The `in` operator on lists performs O(n) linear search, while sets use O(1) hash-based lookup. 
 For memberships checks or for obtaining unique lists/sets, converting to a set provides significant speedup even accounting for conversion cost.
 
-## References
+### References
 - [Python Docs - Set Types](https://docs.python.org/3/library/stdtypes.html#set)
 
 
-## References
+### References
 - [Python Docs - List Comprehensions](https://docs.python.org/3/tutorial/datastructures.html#list-comprehensions)
 
-# Numba for performance optimization
+## Numba for performance optimization
 
 When writing Python code that involves heavy mathematical computation, numerical arrays (NumPy), 
 or performance-critical loops, automatically consider using Numba (@jit or @njit decorators) to accelerate execution. 
@@ -220,6 +220,6 @@ def calculate_euclidean_distance_matrix(coords):
     return dist_matrix
 ```
 
-## References
+### References
 - [Numba 5min guide](https://numba.pydata.org/numba-doc/dev/user/5minguide.html)
 - [Numba tips](https://numba.pydata.org/numba-doc/dev/user/performance-tips.html)

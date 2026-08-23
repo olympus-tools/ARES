@@ -53,3 +53,13 @@ Ensure compliance with the following validation requirements:
 - **Content Rules**: Ensure that the content follows the markdown content rules specified above.
 - **Formatting**: Ensure that the content is properly formatted and structured according to the guidelines.
 - **Validation**: Run the validation tools to check for compliance with the rules and guidelines.
+
+## Scope
+
+> [!NOTE]
+> The front matter fields listed under "Validation Requirements" apply to
+> published documentation posts only. Internal tooling documents such as
+> `.github/instructions/*.md` and `.github/skills/**` use their own minimal
+> front matter (`description`, `applyTo`) and are exempt from these publishing
+> fields. All other content and formatting rules (English, headings, lists,
+> links, line length, admonitions) still apply to them.
