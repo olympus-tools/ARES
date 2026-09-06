@@ -8,6 +8,15 @@ For complete license texts, please visit the respective project URLs.
 
 This product contains dependencies with the following licenses:
 
+0BSD OR CC0-1.0 License:
+------------------------------------------------------------------------------
+  * roman-numerals 4.1.0
+    URL: https://github.com/AA-Turner/roman-numerals/blob/master/CHANGES.rst
+
+  * roman-numerals-py 4.1.0
+    URL: UNKNOWN
+
+
 Apache Software License License:
 ------------------------------------------------------------------------------
   * dcmi 0.0.0
@@ -34,16 +43,16 @@ Apache Software License; BSD License License:
 
 Apache Software License; GNU General Public License v2 (GPLv2) License:
 ------------------------------------------------------------------------------
-  * pyinstaller-hooks-contrib 2026.6
+  * pyinstaller-hooks-contrib 2026.7
     URL: https://github.com/pyinstaller/pyinstaller-hooks-contrib
 
 
 Apache-2.0 License:
 ------------------------------------------------------------------------------
-  * coverage 7.15.4
+  * coverage 7.16.0
     URL: https://github.com/coveragepy/coveragepy
 
-  * readme_renderer 45.0
+  * readme_renderer 46.0
     URL: https://github.com/pypa/readme_renderer
 
   * twine 6.2.0
@@ -58,12 +67,21 @@ Apache-2.0 OR BSD-2-Clause License:
 
 Apache-2.0 OR BSD-3-Clause License:
 ------------------------------------------------------------------------------
-  * cryptography 50.0.0
+  * cryptography 50.0.1
     URL: https://github.com/pyca/cryptography
 
 
 BSD License License:
 ------------------------------------------------------------------------------
+  * Jinja2 3.1.6
+    URL: https://github.com/pallets/jinja/
+
+  * alabaster 1.0.0
+    URL: https://alabaster.readthedocs.io/
+
+  * babel 2.18.0
+    URL: https://babel.pocoo.org/
+
   * canmatrix 1.2
     URL: http://github.com/ebroecker/canmatrix
 
@@ -76,11 +94,14 @@ BSD License License:
   * gitdb 4.0.12
     URL: https://github.com/gitpython-developers/gitdb
 
-  * kiwisolver 1.5.0
+  * kiwisolver 1.5.1
     URL: https://github.com/nucleic/kiwi
 
   * lz4 4.4.5
     URL: https://github.com/python-lz4/python-lz4
+
+  * numba 0.65.1
+    URL: https://numba.pydata.org
 
   * numpy 2.2.4
     URL: https://numpy.org
@@ -94,17 +115,44 @@ BSD License License:
   * smmap 5.0.3
     URL: https://github.com/gitpython-developers/smmap
 
+  * sphinxcontrib-applehelp 2.0.0
+    URL: https://www.sphinx-doc.org/
 
-BSD License; GNU General Public License (GPL); Public Domain License:
+  * sphinxcontrib-devhelp 2.0.0
+    URL: https://www.sphinx-doc.org/
+
+  * sphinxcontrib-htmlhelp 2.1.0
+    URL: https://www.sphinx-doc.org/
+
+  * sphinxcontrib-jsmath 1.0.1
+    URL: http://sphinx-doc.org/
+
+  * sphinxcontrib-qthelp 2.0.0
+    URL: https://www.sphinx-doc.org/
+
+  * sphinxcontrib-serializinghtml 2.0.0
+    URL: https://www.sphinx-doc.org/
+
+
+BSD License; GNU General Public License (GPL); Public Domain; Python Software Foundation License License:
 ------------------------------------------------------------------------------
-  * docutils 0.23
+  * docutils 0.21.2
     URL: https://docutils.sourceforge.io
 
 
 BSD-2-Clause License:
 ------------------------------------------------------------------------------
-  * Pygments 2.20.0
+  * Pygments 2.21.0
     URL: https://pygments.org
+
+  * Sphinx 8.2.3
+    URL: https://www.sphinx-doc.org/
+
+
+BSD-2-Clause AND Apache-2.0 WITH LLVM-exception License:
+------------------------------------------------------------------------------
+  * llvmlite 0.47.0
+    URL: http://llvmlite.readthedocs.io
 
 
 BSD-3-Clause License:
@@ -112,20 +160,26 @@ BSD-3-Clause License:
   * GitPython 3.1.45
     URL: https://github.com/gitpython-developers/GitPython
 
+  * MarkupSafe 3.0.3
+    URL: https://github.com/pallets/markupsafe/
+
   * SecretStorage 3.5.0
     URL: https://github.com/mitya57/secretstorage
 
   * click 8.2.1
     URL: https://github.com/pallets/click/
 
-  * idna 3.18
+  * idna 3.19
     URL: https://github.com/kjd/idna
 
-  * lxml 6.1.1
+  * lxml 6.1.3
     URL: https://lxml.de/
 
   * pycparser 3.0
     URL: https://github.com/eliben/pycparser
+
+  * snowballstemmer 3.1.1
+    URL: https://github.com/snowballstem/snowball
 
 
 GNU General Public License v2 (GPLv2) License:
@@ -148,11 +202,14 @@ MIT License:
   * build 1.3.0
     URL: https://build.pypa.io
 
-  * charset-normalizer 3.4.9
+  * charset-normalizer 3.5.1
     URL: https://github.com/jawah/charset_normalizer/blob/master/CHANGELOG.md
 
-  * fonttools 4.63.0
+  * fonttools 4.64.0
     URL: http://github.com/fonttools/fonttools
+
+  * imagesize 2.0.1
+    URL: https://github.com/shibukawa/imagesize_py
 
   * iniconfig 2.3.0
     URL: https://github.com/pytest-dev/iniconfig
@@ -178,7 +235,7 @@ MIT License:
   * more-itertools 11.1.0
     URL: https://github.com/more-itertools/more-itertools
 
-  * nh3 0.3.6
+  * nh3 0.3.7
     URL: UNKNOWN
 
   * numexpr 2.14.2
@@ -196,7 +253,7 @@ MIT License:
   * typeguard 4.4.4
     URL: UNKNOWN
 
-  * typing-inspection 0.4.2
+  * typing-inspection 0.4.4
     URL: https://github.com/pydantic/typing-inspection
 
   * urllib3 2.7.0
@@ -205,23 +262,38 @@ MIT License:
 
 MIT License License:
 ------------------------------------------------------------------------------
+  * PyYAML 6.0.3
+    URL: https://pyyaml.org/
+
   * altgraph 0.17.5
     URL: https://altgraph.readthedocs.io
 
   * annotated-types 0.8.0
     URL: https://github.com/annotated-types/annotated-types
 
+  * beautifulsoup4 4.15.0
+    URL: https://www.crummy.com/software/BeautifulSoup/bs4/
+
   * colorlog 6.9.0
     URL: https://github.com/borntyping/python-colorlog
+
+  * furo 2024.8.6
+    URL: UNKNOWN
 
   * jaraco.classes 3.4.0
     URL: https://github.com/jaraco/jaraco.classes
 
-  * markdown-it-py 4.2.0
+  * markdown-it-py 3.0.0
     URL: https://github.com/executablebooks/markdown-it-py
+
+  * mdit-py-plugins 0.6.1
+    URL: https://github.com/executablebooks/mdit-py-plugins
 
   * mdurl 0.1.2
     URL: https://github.com/executablebooks/mdurl
+
+  * myst-parser 4.0.1
+    URL: https://github.com/executablebooks/MyST-Parser
 
   * pipdeptree 2.23.4
     URL: https://github.com/tox-dev/pipdeptree
@@ -252,6 +324,15 @@ MIT License License:
 
   * six 1.17.0
     URL: https://github.com/benjaminp/six
+
+  * soupsieve 2.9.2
+    URL: https://github.com/facelessuser/soupsieve
+
+  * sphinx-autodoc-typehints 3.1.0
+    URL: https://github.com/tox-dev/sphinx-autodoc-typehints
+
+  * sphinx-basic-ng 1.0.0b2
+    URL: https://github.com/pradyunsg/sphinx-basic-ng
 
 
 MIT-0 License:
