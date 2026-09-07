@@ -21,6 +21,7 @@ docs/_build/*
 .coverage
 .coverage.*
 htmlcov/
+cov_annotate/
 
 # datasource
 *.mf4
