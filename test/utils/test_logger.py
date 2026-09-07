@@ -102,8 +102,8 @@ def test_logfile_creation():
     logger.info(
         "This is an test message to create the corresponding logfile for testing."
     )
-    logdir = Path(__file__).parent.parent.parent / "logs"
-    logfile = logdir / f"{log_name}.log"
+    log_dir = Path(__file__).parent.parent.parent / "logs"
+    logfile = log_dir / f"{log_name}.log"
     assert logfile.exists()
     # Clean up the created log file
     logfile.unlink()
