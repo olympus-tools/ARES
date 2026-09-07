@@ -21,16 +21,8 @@
 #   - make simunit_interface_std
 #   - make simunit_vstack
 
-VENV_DIR ?= ../.venv
+ARES ?= "uv run ares"
 
-# Platform detection for virtual environment binary path
-ifeq ($(OS),Windows_NT)
-	VENV_BIN := $(VENV_DIR)/Scripts
-else
-	VENV_BIN := $(VENV_DIR)/bin
-endif
-
-ARES ?= "$(VENV_BIN)/ares"
 .PHONY: all
 all: data_caching \
      data_labelfilter \

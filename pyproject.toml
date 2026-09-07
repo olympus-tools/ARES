@@ -51,7 +51,7 @@ dependencies = [
     "typeguard==4.4.4",
     "click==8.2.1",
     "colorlog==6.9.0",
-    "dcmi @ file:submodules/dcmi",
+    "dcmi",
 ]
 dynamic = ["version"]
 
@@ -84,6 +84,9 @@ release = [
     "ares[dev]",
     "ares[docs]",
 ]
+
+[tool.uv.sources]
+dcmi = { path = "submodules/dcmi", editable = true }
 
 [project.urls]
 "Homepage" = "https://github.com/olympus-tools/ARES"

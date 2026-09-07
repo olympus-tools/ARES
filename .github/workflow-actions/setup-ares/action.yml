@@ -18,4 +18,5 @@ runs:
     - name: Setup virtual environment
       shell: bash
       run: |
-        make setup-venv VENV_RELEASE=true VENV_RECREATE=true
+        pipx install uv
+        make setup-venv

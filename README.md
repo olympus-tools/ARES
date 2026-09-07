@@ -31,72 +31,30 @@ Before setting up ARES, ensure your system meets the following requirements:
 *   **Operating System**: Linux, Windows
 *   **Python**: Version equal 3.13.7 or higher and lower than 3.14
 *   **Build Tools**: `make` (only required for **Option A: Automated Setup**)
+*   **uv**: `uv` package manger alternative to pip, further information see [here](https://docs.astral.sh/uv/))
+*   **Repository**: Clone ARES with its submodules:
+    ```bash
+    git clone --recurse-submodules https://github.com/olympus-tools/ARES.git ares
+    cd ares
+    ```
 
 ### 1.2. Installation in Virtual Environment (Recommended)
 
 Using a virtual environment is recommended to avoid conflicts with system packages. You can set this up automatically or manually.
 
-#### Option A: Automated Setup (via Makefile)
+Choose one of the following setup options from the repository root:
 
-1.  **Clone the repository:**
-    ```bash
-    git clone --recurse-submodules https://github.com/olympus-tools/ARES.git
-    cd ares
-    ```
+#### Option A: Via Makefile
 
-2.  **Create and configure the environment:**
-    This command creates a `.venv` directory and installs dependencies:
-    ```bash
-    make setup-venv
-    ```
-    To also install documentation dependencies (required for `make docs`), add the `VENV_RELEASE=true` flag:
-    ```bash
-    make setup-venv VENV_RELEASE=true
-    ```
+```bash
+make setup-venv
+```
 
-3.  **Activate the environment:**
-    ```bash
-    # Bash/Zsh
-    source .venv/bin/activate
-    
-    # Fish
-    source .venv/bin/activate.fish
-    
-    # Windows (CMD)
-    .venv\Scripts\activate.bat
-    
-    # Windows (PowerShell)
-    .venv\Scripts\Activate.ps1
-    ```
+#### Option B: Via uv
 
-#### Option B: Manual Setup
-
-If you prefer to configure the virtual environment manually:
-
-1.  **Create a virtual environment:**
-    ```bash
-    python -m venv .venv
-    ```
-
-2.  **Activate the environment:**
-    ```bash
-    # Bash/Zsh
-    source .venv/bin/activate
-    
-    # Fish
-    source .venv/bin/activate.fish
-    
-    # Windows (CMD)
-    .venv\Scripts\activate.bat
-    
-    # Windows (PowerShell)
-    .venv\Scripts\Activate.ps1
-    ```
-
-3.  **Install ARES:**
-    ```bash
-    pip install .
-    ```
+```bash
+uv sync --all-extras
+```
 
 ## 2. Usage
 
@@ -105,7 +63,7 @@ ARES is primarily used via its Command Line Interface (CLI). The main command is
 ### Basic Command
 
 ```bash
-python -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
+uv run ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 ```
 
 ### Options
@@ -119,7 +77,7 @@ python -m ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 ### Example
 
 ```bash
-python -m ares pipeline -wf ./my_workflow.json -o ./results --log-level 10
+uv run ares pipeline -wf ./my_workflow.json -o ./results --log-level 10
 ```
 
 ## 3. Architecture
