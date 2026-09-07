@@ -39,6 +39,7 @@ import logging
 import sys
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import cast
 
 import colorlog
 
@@ -46,6 +47,12 @@ import colorlog
 logger_workflow_element: contextvars.ContextVar[str] = contextvars.ContextVar(
     "workflow_element", default="N/A"
 )
+
+
+class AresLogger(logging.Logger):
+    """Logger with ARES-specific configuration metadata."""
+
+    log_dir: Path
 
 
 class AresContextFilter(logging.Filter):
@@ -66,9 +73,9 @@ class AresContextFilter(logging.Filter):
 
 def create_logger(
     name: str | None = None,
-    logdir: Path | None = None,
+    log_dir: Path | None = None,
     level: int = logging.INFO,
-) -> logging.Logger:
+) -> AresLogger:
     """Create and configure an ARES logger with console and rotating file handlers.
 
     Typical usage: ``logger = create_logger()`` or ``logger = create_logger(name=__name__)``.
@@ -76,26 +83,28 @@ def create_logger(
     Args:
         name (str | None): The name for the logger, typically ``__name__``.
             ``None`` creates or retrieves the root logger. Defaults to None.
-        logdir (Path | None): Directory for log files. Defaults to ``<package>/logs``.
+        log_dir (Path | None): Directory for log files. Defaults to ``<package>/logs``.
         level (int): The logging level, e.g., ``logging.INFO``. Defaults to ``logging.INFO``.
 
     Returns:
         logging.Logger: A configured logger instance for ARES.
     """
-    if logdir is None:
-        logdir = Path(__file__).parent / "../../logs"
+    if log_dir is None:
+        log_dir = Path(__file__).parent / "../../logs"
     else:
-        logdir = Path(logdir) / "ares_log"
+        log_dir = Path(log_dir) / "ares_log"
 
-    logdir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     if name is None:
-        logger = logging.getLogger()
-        logfile = Path(logdir, "ares_root.log")
+        logger = cast(AresLogger, logging.getLogger())
+        logfile = Path(log_dir, "ares_root.log")
         logger.setLevel(level)
     else:
-        logger = logging.getLogger(name)
-        logfile = Path(logdir, f"{name}.log")
+        logger = cast(AresLogger, logging.getLogger(name))
+        logfile = Path(log_dir, f"{name}.log")
+
+    logger.log_dir = log_dir
 
     # INFO: Could prevent logs from being propagated to the root logger
     logger.propagate = True
