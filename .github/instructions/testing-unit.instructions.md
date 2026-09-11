@@ -34,7 +34,7 @@ environment. Create or sync the environment first with `make setup-venv`
 ## File Conventions
 
 - Every test file must start with the ARES license header docstring
-  (see `python.instructions.md`).
+  (see `coding-python.instructions.md`).
 - Group related tests with a section comment above the first test,
   e.g. `# TEST: safely_run`.
 - Name test functions descriptively after the behavior under test:
@@ -107,7 +107,7 @@ systems (see below):
 
 ```python
 # NOTE: the file must start with the ARES license header docstring
-# (see python.instructions.md), omitted here for brevity.
+# (see coding-python.instructions.md), omitted here for brevity.
 
 from pathlib import Path
 from unittest.mock import Mock, patch

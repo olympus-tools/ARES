@@ -18,7 +18,7 @@ execute the workflows from the `examples/` directory end to end.
 ## Conventions
 
 - Every test file must start with the ARES license header docstring
-  (see `python.instructions.md`) and use english for all content.
+  (see `coding-python.instructions.md`) and use english for all content.
 - Drive examples via their workflow files: keep one parametrized list of
   relative workflow paths (e.g. `workflow/data_interface/data_caching.wf.json`)
   and iterate over it with `pytest.mark.parametrize`.
