@@ -37,7 +37,7 @@ import logging
 
 import pytest
 
-from ares.utils.logger import AresFileHandler, create_logger
+from ares.utils.logger import create_logger
 
 
 def test_logger_instance():
@@ -108,8 +108,9 @@ def test_logfile_creation(tmp_path):
     Args:
         tmp_path (Path): pytest fixture providing a temporary directory.
     """
-    log_name = "test_logfile_creation"
-    logger = create_logger(log_name, logdir=tmp_path)
+    log_name = "ares.test_logfile_creation"
+    logger = create_logger(log_name, log_dir=tmp_path, level=logging.INFO)
+    logger.setLevel(logging.INFO)
     logger.info(
         "This is a test message to create the corresponding logfile for testing."
     )
