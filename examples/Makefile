@@ -21,7 +21,7 @@
 #   - make simunit_interface_std
 #   - make simunit_vstack
 
-ARES ?= "uv run ares"
+ARES ?= uv run ares
 
 .PHONY: all
 all: data_caching \

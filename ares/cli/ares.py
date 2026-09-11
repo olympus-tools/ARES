@@ -110,7 +110,7 @@ def pipeline_command(workflow, output, log_dir, log_level):
             Defaults to ``<package>/logs`` when None.
         log_level (int): Integer log level for the root logger (e.g. 10=DEBUG, 20=INFO).
     """
-    create_logger(logdir=log_dir, level=log_level)
+    create_logger(log_dir=log_dir, level=log_level)
     logging.getLogger().setLevel(log_level)
 
     pipeline(wf_path=workflow, output_dir=output, meta_data=meta_data)
