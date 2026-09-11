@@ -99,7 +99,7 @@ Before you start coding, please create a new issue for your planned work. This h
 **Before submitting a pull request:**
 
 1.  **Fork the repository** and create a new branch from `master`. The branch name should be linked to your issue (e.g., `fix-issue-123` or `feature-124`).
-2.  **Make your changes.** Ensure your code is well-commented and follows our coding style defined in `.github/instructions/` (e.g., `python.instructions.md` for Python files, `markdown.instructions.md` for Markdown).
+2.  **Make your changes.** Ensure your code is well-commented and follows our coding style defined in `.github/instructions/` (e.g., `coding-python.instructions.md` for Python files, `markdown.instructions.md` for Markdown).
 3.  **Format your code** using `make format`. Verify formatting compliance with `make format-check` before committing.
 4.  **Test your changes.** Verify that your code works as expected and doesn't introduce any new bugs.
 5.  **Update dependencies documentation.** If you added or modified dependencies in `pyproject.toml`, regenerate the NOTICE file:

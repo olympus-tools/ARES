@@ -33,75 +33,37 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import os
 from pathlib import Path
 
 import numpy as np
-import pytest
-from asammdf.blocks.utils import MdfException
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.data.mf4_handler import MF4Handler
 
 
+# TEST: MF4Handler read mode
 def test_ares_mf4handler_file_init_read():
     """
-    Test if mf4handler can be initialized with mf4-file mode "read".
+    Tests if mf4handler can be initialized with mf4-file mode "read".
     """
-    mf4_filepath = Path(
-        os.path.join(
-            os.path.dirname(__file__),
-            "../../../examples/data/data_example_1.mf4",
-        )
-    )
+    project_root = Path(__file__).resolve().parent.parent.parent.parent
+    mf4_filepath = project_root / "examples" / "data" / "data_example_1.mf4"
 
-    if mf4_filepath.is_file():
-        test_data = MF4Handler(
-            file_path=mf4_filepath,
-        )
+    test_data = MF4Handler(file_path=mf4_filepath)
 
-
-def test_ares_mf4handler_file_init_write():
-    """
-    Test if mf4handler can be initialized with mf4-file mode "write".
-    """
-    mf4_filepath = Path(os.path.join(os.path.dirname(__file__), "test_file.mf4"))
-    test_data_write01 = MF4Handler(file_path=None, signals=[])
-    test_data_write01._save(mf4_filepath)
-
-    if not mf4_filepath.is_file():
-        assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
-    else:
-        mf4_filepath.unlink()
-
-    test_data_write02 = MF4Handler(file_path=None, signals=[])
-    test_data_write02._save(mf4_filepath)
-
-    if not mf4_filepath.is_file():
-        assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
-    else:
-        mf4_filepath.unlink()
-
-    # WARN: The following part in the test leads to an recursion in asammdf. This is on purpose!
-    with pytest.raises(MdfException):
-        test_data_read = MF4Handler(file_path=mf4_filepath)
+    signals = test_data.get()
+    assert signals is not None
+    assert "input_value" in [signal.label for signal in signals]
 
 
 def test_ares_mf4handler_file_read_get():
     """
-    Test if mf4handler can read signals from mf4-files.
+    Tests if mf4handler can read signals from mf4-files.
     """
-    mf4_filepath = Path(
-        os.path.join(
-            os.path.dirname(__file__),
-            "../../../examples/data/data_example_1.mf4",
-        )
-    )
+    project_root = Path(__file__).resolve().parent.parent.parent.parent
+    mf4_filepath = project_root / "examples" / "data" / "data_example_1.mf4"
 
-    if mf4_filepath.is_file():
-        test_data = MF4Handler(
-            file_path=mf4_filepath,
-        )
+    test_data = MF4Handler(file_path=mf4_filepath)
 
     test_signal = test_data.get(["input_value"])
     test_signals = test_data.get([".*_"])
@@ -109,15 +71,44 @@ def test_ares_mf4handler_file_read_get():
     assert len(test_signal) == 1, "Wrong number of signals were extracted."
     assert test_signal[0].label == "input_value", "The wrong signal was extracted."
     assert len(test_signals) != 1, (
-        "Too few singals were extracted. Regex pattern should extract all available signals."
+        "Too few signals were extracted. Regex pattern should extract all available signals."
     )
 
 
-def test_ares_mf4handler_file_write_get():
+# TEST: MF4Handler write mode
+def test_ares_mf4handler_file_init_write(tmp_path):
     """
-    Test if mf4handler can read signals from created mf4-file.
+    Tests if mf4handler can be initialized with mf4-file mode "write".
+
+    Args:
+        tmp_path (Path): pytest fixture providing a temporary directory.
     """
-    mf4_filepath = Path(os.path.join(os.path.dirname(__file__), "test_file.mf4"))
+    mf4_filepath = tmp_path / "test_file.mf4"
+
+    test_data_write01 = MF4Handler(file_path=None)
+    test_data_write01._save(mf4_filepath)
+
+    assert mf4_filepath.is_file(), (
+        "Argh. No mf-4-file was created. Check mf4_handler implementation."
+    )
+
+    # NOTE: Since asammdf 8.7.x, saving an empty MDF produces a valid mf4-file
+    # that loads cleanly without any signals.
+    test_data_read = MF4Handler(file_path=mf4_filepath)
+
+    assert test_data_read.get() is None, (
+        "Saved empty mf4-file should not contain any signals."
+    )
+
+
+def test_ares_mf4handler_file_write_get(tmp_path):
+    """
+    Tests if mf4handler can read signals from created mf4-file.
+
+    Args:
+        tmp_path (Path): pytest fixture providing a temporary directory.
+    """
+    mf4_filepath = tmp_path / "test_file.mf4"
 
     test_signal = AresSignal(
         label="test_signal",
@@ -136,7 +127,6 @@ def test_ares_mf4handler_file_write_get():
     )
 
     test_data_write._save(mf4_filepath)
-    if not mf4_filepath.is_file():
-        assert "Argh. No mf-4-file was created. Check mf4_handler implementation."
-    else:
-        mf4_filepath.unlink()
+    assert mf4_filepath.is_file(), (
+        "Argh. No mf-4-file was created. Check mf4_handler implementation."
+    )

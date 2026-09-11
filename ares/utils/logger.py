@@ -74,18 +74,17 @@ class AresContextFilter(logging.Filter):
 class AresFileHandler(RotatingFileHandler):
     """Rotating file handler that resolves its directory when it writes."""
 
-    def __init__(self, logger_name: str, default_log_dir: Path) -> None:
+    def __init__(self, logger: AresLogger, default_log_dir: Path) -> None:
         """Initialize a delayed handler with the default log file location."""
-        self.logger_name = logger_name
+        self.logger = logger
         self.default_log_dir = default_log_dir
-        default_logfile = default_log_dir / f"{logger_name}.log"
+        default_logfile = default_log_dir / f"{logger.name}.log"
         super().__init__(default_logfile, backupCount=4, maxBytes=4000000, delay=True)
 
     def emit(self, record: logging.LogRecord) -> None:
         """Write the record below the currently configured root log directory."""
-        root_logger = cast(AresLogger, logging.getLogger())
-        log_dir = getattr(root_logger, "log_dir", self.default_log_dir)
-        logfile = Path(log_dir) / f"{self.logger_name}.log"
+        log_dir = getattr(self.logger, "log_dir", self.default_log_dir)
+        logfile = Path(log_dir) / f"{self.logger.name}.log"
         logfile.parent.mkdir(parents=True, exist_ok=True)
 
         if Path(self.baseFilename) != logfile.resolve():
@@ -143,7 +142,7 @@ def create_logger(
     # Use RotatingFileHandler with Count=4 and 4MB size -> 4 is just a good number + always use logger.INFO
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/
     file_handler = AresFileHandler(
-        logger_name="ares_root" if name is None else name,
+        logger=logger,
         default_log_dir=resolved_log_dir,
     )
     file_handler.setLevel(level)

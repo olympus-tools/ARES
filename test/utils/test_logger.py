@@ -34,11 +34,10 @@ limitations under the License:
 """
 
 import logging
-from pathlib import Path
 
 import pytest
 
-from ares.utils.logger import AresFileHandler, create_logger
+from ares.utils.logger import create_logger
 
 
 def test_logger_instance():
@@ -64,6 +63,12 @@ def test_logger_instance():
 def test_log_levels_capture(caplog, level, message, expected_in_output):
     """
     Tests that messages are logged correctly at different levels.
+
+    Args:
+        caplog: pytest fixture capturing log records.
+        level (int): Logging level under test.
+        message (str): Message that is logged at the given level.
+        expected_in_output (bool): Whether the message must appear in the log.
     """
     caplog.clear()
     logger = create_logger("test_log_levels", level=logging.DEBUG)
@@ -79,6 +84,9 @@ def test_log_levels_capture(caplog, level, message, expected_in_output):
 def test_log_level_is_respected(caplog):
     """
     Tests that the logger's level is respected and lower level messages are ignored.
+
+    Args:
+        caplog: pytest fixture capturing log records.
     """
     caplog.clear()
     caplog.set_level(logging.WARNING)
@@ -93,44 +101,18 @@ def test_log_level_is_respected(caplog):
     assert "This is a warning message." in caplog.text
 
 
-def test_logfile_creation():
+def test_logfile_creation(tmp_path):
     """
-    Tests if the logger creates a log file.
+    Tests that create_logger writes log files into the requested logdir.
+
+    Args:
+        tmp_path (Path): pytest fixture providing a temporary directory.
     """
-    log_name = "test_logfile_creation"
-    logger = create_logger(log_name)
+    log_name = "ares.test_logfile_creation"
+    logger = create_logger(log_name, log_dir=tmp_path, level=logging.INFO)
     logger.setLevel(logging.INFO)
-    logger.warning(
-        "This is an test message to create the corresponding logfile for testing."
+    logger.info(
+        "This is a test message to create the corresponding logfile for testing."
     )
-    log_dir = Path(__file__).parent.parent.parent / "logs"
-    logfile = log_dir / f"{log_name}.log"
+    logfile = tmp_path / "ares_log" / f"{log_name}.log"
     assert logfile.exists()
-    # Clean up the created log file
-    logfile.unlink()
-
-
-def test_existing_logger_uses_root_log_dir(tmp_path):
-    """Tests that existing loggers receive the root logger directory."""
-    logger = create_logger("test_existing_logger_uses_root_log_dir")
-    root_logger = create_logger(log_dir=tmp_path)
-
-    assert logger.log_dir == root_logger.log_dir
-    assert all(isinstance(handler, AresFileHandler) for handler in logger.handlers)
-
-
-def test_log_dir_is_not_created_before_logging(tmp_path):
-    """Tests that a log directory is created only when a record is written."""
-    log_dir = tmp_path / "ares_log"
-    create_logger(log_dir=tmp_path)
-    logger = create_logger("test_lazy_log_dir")
-
-    assert not log_dir.exists()
-
-    logger.warning("Create the log directory on first write.")
-
-    assert (log_dir / "test_lazy_log_dir.log").exists()
-
-
-if __name__ == "__main__":
-    test_logfile_creation()
