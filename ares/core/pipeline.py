@@ -45,6 +45,7 @@ from ares.pydantic_models.workflow_model import (
     PluginElement,
     SimUnitElement,
 )
+from ares.report import Report
 from ares.utils.decorators import error_msg
 from ares.utils.logger import create_logger, logger_workflow_element
 
@@ -56,7 +57,11 @@ logger = create_logger(name=__name__)
     log=logger,
     include_args=["wf_path", "output_dir", "meta_data"],
 )
-def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) -> None:
+def pipeline(
+    wf_path: Path,
+    output_dir: Path | None,
+    meta_data: dict[str, Any],
+) -> None:
     """Executes the ARES simulation pipeline based on a defined workflow.
 
     This function orchestrates the entire simulation process, from data acquisition and
@@ -156,5 +161,7 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
 
     # TODO: if parameter/measurement not needed anymore => drop it
     ares_wf.save(output_dir=output_dir)
+    Report(workflow=ares_wf).save(output_dir=output_dir)
+
     logger.info("ARES pipeline successfully finished.")
-    logger.info(f"Log files were saved to: {logger.log_dir}")
+    logger.info(f"Log files were saved to: {logger.log_dir.resolve()}")
