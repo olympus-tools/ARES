@@ -29,8 +29,9 @@ endif
 # Main setup-venv target - uses POSIX shell commands (works with Git Bash on Windows)
 .PHONY: setup-venv
 setup-venv:
-	echo "Syncing project dependencies:"	
+	echo "Syncing project dependencies:"
 	uv sync --all-extras
+	uv run playwright install chromium
 
 .PHONY: examples
 examples: setup-venv
