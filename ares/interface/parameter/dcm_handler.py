@@ -102,7 +102,7 @@ class DCMHandler(DCMI, AresParamInterface):
             **kwargs (Any): Additional format-specific arguments (unused).
         """
         self.write(output_path)
-        logger.info(f"Successfully saved dcm parameter file: {output_path}")
+        logger.info(f"Successfully saved dcm parameter file: {output_path.resolve()}")
 
     @override
     @error_msg(

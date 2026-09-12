@@ -148,7 +148,7 @@ class MF4Handler(MDF, AresDataInterface):
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.header.comment = f"File last saved on: {timestamp}"
         result_path = self.save(output_path, **kwargs)
-        logger.info(f"Successfully saved mf4 data file: {result_path}")
+        logger.info(f"Successfully saved mf4 data file: {result_path.resolve()}.")
 
     @override
     @error_msg(

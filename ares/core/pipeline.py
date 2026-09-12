@@ -157,4 +157,4 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
     # TODO: if parameter/measurement not needed anymore => drop it
     ares_wf.save(output_dir=output_dir)
     logger.info("ARES pipeline successfully finished.")
-    logger.info(f"Log files were saved to: {logger.log_dir}")
+    logger.info(f"Log files were saved to: {logger.log_dir.resolve()}")
