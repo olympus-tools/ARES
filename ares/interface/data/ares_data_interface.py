@@ -96,7 +96,8 @@ class AresDataInterface(ABC):
             object.__setattr__(empty_instance, "hash", "empty_instance_no_hash")
             cls.cache["empty_instance_no_hash"] = empty_instance
             return empty_instance
-        elif file_path is not None:  # load data from file if file_path provided
+        # load data from file if file_path provided
+        elif file_path is not None:
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
             content_hash = cls._calculate_hash(file_path=file_path, **kwargs)
