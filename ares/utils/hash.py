@@ -34,7 +34,21 @@ limitations under the License:
 """
 
 import hashlib
+from dataclasses import fields
 from pathlib import Path
+
+import numpy as np
+
+from ares.interface.data.ares_signal import AresSignal
+from ares.utils.decorators import error_msg
+from ares.utils.decorators import typechecked_dev as typechecked
+from ares.utils.logger import create_logger
+
+ENDIAN_TYPE = "big"
+CHUNK_SIZE = 4096
+BYTE_SIZE = 8
+
+logger = create_logger(name=__name__)
 
 
 def bin_based_hash(file_path: Path) -> str:
@@ -51,7 +65,7 @@ def bin_based_hash(file_path: Path) -> str:
     """
     hasher = hashlib.sha256()
     with open(file_path, "rb") as f:
-        while chunk := f.read(4096):
+        while chunk := f.read(CHUNK_SIZE):
             hasher.update(chunk)
     return hasher.hexdigest()
 
@@ -67,3 +81,80 @@ def str_based_hash(input_string: str) -> str:
     """
     sha256 = hashlib.sha256(input_string.encode("utf-8"))
     return sha256.hexdigest()
+
+
+@error_msg(
+    exception_msg="Signals hash could not be calculated.",
+    log=logger,
+)
+@typechecked
+def signals_based_hash(signals: list[AresSignal]) -> str:
+    """Calculate a SHA-256 hash from a list of AresSignals using streaming binary encoding.
+
+    Streaming ensures memory usage stays bounded independent of data size,
+    with no unnecessary copies of the data or intermediate buffers created.
+
+    Args:
+        signals (list[AresSignal]): List of AresSignal objects to hash.
+
+    Returns:
+        str: Hexadecimal SHA-256 digest of the encoded signal data.
+    """
+
+    @typechecked
+    def _update_hasher(hasher, data: bytes) -> None:
+        """Update hasher based on given binary data considering length.
+
+        Args:
+            hasher: Open SHA-256 hasher.
+            data (bytes): Raw bytes of the field value.
+        """
+        hasher.update(len(data).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+        hasher.update(data)
+
+    @typechecked
+    def _update_hasher_numpy(hasher, array: np.ndarray) -> None:
+        """Stream a numpy array into the hasher as raw binary data.
+
+        The array is normalized to be C-contiguous using numpy functionality
+        (e.g. ensure row-major for transposed arrays or avoid gaps in array slices).
+        Additionally the byte order is checked (*.isnative compares data order with system)
+        and adapts if necessary.
+        This ensures 'minimal' copy since the hasher gets the current values streamed and only byte order updates
+        need copy operations.
+
+        The shape and dtype are always hashed before the raw buffer so the encoding
+        stays self-delimiting and collision-resistant.
+
+        Args:
+            hasher: Open SHA-256 hasher.
+            array (np.ndarray): Numpy array to hash.
+        """
+        array = np.ascontiguousarray(array)
+        if not array.dtype.isnative:
+            array = array.astype(array.dtype.newbyteorder("="))
+
+        _update_hasher(hasher, str(array.dtype).encode("utf-8"))
+        _update_hasher(hasher, repr(array.shape).encode("utf-8"))
+
+        hasher.update(array.nbytes.to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+        hasher.update(array)
+
+    hasher = hashlib.sha256()
+    hasher.update(len(signals).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+
+    for signal in signals:
+        for field in fields(signal):
+            value = getattr(signal, field.name)
+            if value is None:
+                _update_hasher(hasher, b"")
+            elif isinstance(value, str):
+                _update_hasher(hasher, value.encode("utf-8"))
+            elif isinstance(value, np.ndarray):
+                _update_hasher_numpy(hasher, value)
+            else:
+                raise TypeError(
+                    f"Cannot hash field '{field.name}' of type {type(value)!r}."
+                )
+
+    return hasher.hexdigest()

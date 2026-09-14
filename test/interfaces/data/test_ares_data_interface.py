@@ -35,6 +35,7 @@ limitations under the License:
 
 import numpy as np
 import pytest
+from dataclasses import dataclass
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
@@ -88,6 +89,13 @@ def clear_cache():
     ConcreteDataInterface.cache.clear()
     ConcreteDataInterface.tmp_hash_list.clear()
     yield
+
+
+@dataclass
+class _SignalWithUnsupportedField(AresSignal):
+    """AresSignal subclass with an extra non-hashable field type."""
+
+    counter: int = 0
 
 
 class TestAresDataInterfaceNew:
@@ -192,13 +200,18 @@ class TestAresDataInterfaceCalculateHash:
             == "6ae8a75555209fd6c44157c0aed8016e763ff435a19cf186f76863140143ff72"
         )
 
-    def test_calculate_hash_from_string(self):
-        hash_result = AresDataInterface._calculate_hash(input_string="test_string")
+    def test_calculate_hash_from_signals(self):
+        signal = AresSignal(
+            label="a",
+            timestamps=np.array([0.0, 1.0], dtype=np.float32),
+            value=np.array([1.0, 2.0], dtype=np.float32),
+        )
+        hash_result = AresDataInterface._calculate_hash(data=[signal])
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
         assert (
             hash_result
-            == "4b641e9a923d1ea57e18fe41dcb543e2c4005c41ff210864a710b0fbb2654c11"
+            == "699715526fd228d1e9e952be2c6dfe63b3510fc3814f2906e5d91cacfc574975"
         )
 
     def test_calculate_hash_no_args_raises(self):
@@ -211,6 +224,37 @@ class TestAresDataInterfaceCalculateHash:
         hash1 = AresDataInterface._calculate_hash(file_path=test_file)
         hash2 = AresDataInterface._calculate_hash(file_path=test_file)
         assert hash1 == hash2
+
+    def test_calculate_hash_empty_signal_list(self):
+        hash_result = AresDataInterface._calculate_hash(data=[])
+        assert isinstance(hash_result, str)
+        assert len(hash_result) == 64
+        assert AresDataInterface._calculate_hash(data=[]) == hash_result
+
+    def test_calculate_hash_optional_fields_influence_hash(self):
+        signal = AresSignal(
+            label="a",
+            timestamps=np.array([0.0, 1.0], dtype=np.float32),
+            value=np.array([1.0, 2.0], dtype=np.float32),
+        )
+        signal_unit = AresSignal(
+            label="a",
+            timestamps=np.array([0.0, 1.0], dtype=np.float32),
+            value=np.array([1.0, 2.0], dtype=np.float32),
+            unit="m/s",
+        )
+        assert AresDataInterface._calculate_hash(
+            data=[signal]
+        ) != AresDataInterface._calculate_hash(data=[signal_unit])
+
+    def test_calculate_hash_unsupported_field_type_raises(self):
+        signal = _SignalWithUnsupportedField(
+            label="a",
+            timestamps=np.array([0.0, 1.0], dtype=np.float32),
+            value=np.array([1.0, 2.0], dtype=np.float32),
+        )
+        with pytest.raises(TypeError):
+            AresDataInterface._calculate_hash(data=[signal])
 
 
 class TestAresDataInterfaceFilterDeduplicates:
