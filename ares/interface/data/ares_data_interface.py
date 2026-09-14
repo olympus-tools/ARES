@@ -37,7 +37,6 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -101,14 +100,11 @@ class AresDataInterface(ABC):
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
             content_hash = cls._calculate_hash(file_path=file_path, **kwargs)
-        elif data is not None:
+        else:
             data_string = "".join(
                 [str(s.label) + str(s.timestamps) + str(s.value) for s in data]
             )
             content_hash = cls._calculate_hash(input_string=data_string, **kwargs)
-        else:
-            timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")[:-3]
-            content_hash = cls._calculate_hash(input_string=timestamp_str, **kwargs)
         cls.tmp_hash_list.append(content_hash)
 
         # return cached instance if hash already exists
