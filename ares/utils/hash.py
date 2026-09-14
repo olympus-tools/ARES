@@ -51,6 +51,15 @@ BYTE_SIZE = 8
 logger = create_logger(name=__name__)
 
 
+from ares.utils.logger import create_logger
+
+ENDIAN_TYPE = "big"
+CHUNK_SIZE = 4096
+BYTE_SIZE = 8
+
+logger = create_logger(name=__name__)
+
+
 def bin_based_hash(file_path: Path) -> str:
     """Calculate a SHA-256 hash from a binary file's contents.
 

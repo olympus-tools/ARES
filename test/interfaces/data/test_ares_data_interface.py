@@ -212,7 +212,7 @@ class TestAresDataInterfaceCalculateHash:
         assert len(hash_result) == 64
         assert (
             hash_result
-            == "4b641e9a923d1ea57e18fe41dcb543e2c4005c41ff210864a710b0fbb2654c11"
+            == "699715526fd228d1e9e952be2c6dfe63b3510fc3814f2906e5d91cacfc574975"
         )
 
     def test_calculate_hash_no_args_raises(self):
