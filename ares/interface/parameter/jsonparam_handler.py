@@ -35,7 +35,7 @@ limitations under the License:
 
 import json
 from pathlib import Path
-from typing import Any, Literal, override
+from typing import Any, override
 
 import numpy as np
 
@@ -72,7 +72,7 @@ class JSONParamHandler(AresParamInterface):
         file_path: Path | None = None,
         parameters: list[AresParameter] | None = None,
         label_filter: list[str] | None = None,
-        transpose_mode: Literal[1, 2] | None = None,
+        transpose: bool | None = None,
         **kwargs,
     ):
         """Initialize JSONParamHandler from file or parameter list.
@@ -81,7 +81,8 @@ class JSONParamHandler(AresParamInterface):
             file_path (Path | None): Optional absolute path to the JSON file to load
             parameters (list[AresParameter] | None): Optional list of AresParameter objects to initialize with
             label_filter (list[str] | None): Optional list of parameter names or patterns to filter
-            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
+            transpose (bool | None): Whether to transpose 2D parameters. If None,
+                parameters are not transposed by default.
             **kwargs (Any): Additional arguments.
                 - dependencies (list[str]): Optional list of parameter labels that this instance depends on
         """
@@ -89,7 +90,7 @@ class JSONParamHandler(AresParamInterface):
             file_path=file_path,
             dependencies=kwargs.pop("dependencies", None),
             label_filter=label_filter,
-            transpose_mode=transpose_mode,
+            transpose=transpose,
         )
         self.parameter: dict[str, dict[str, Any]] = {}
 
@@ -134,13 +135,13 @@ class JSONParamHandler(AresParamInterface):
     @error_msg(
         exception_msg="Error in jsonparam-handler get function.",
         log=logger,
-        include_args=["label_filter", "transpose_mode"],
+        include_args=["label_filter", "transpose"],
     )
     @typechecked
     def get(
         self,
         label_filter: list[str] | None = None,
-        transpose_mode: Literal[1, 2] | None = None,
+        transpose: bool | None = None,
         **kwargs,
     ) -> list[AresParameter] | None:
         """Get parameters from the JSON interface.
@@ -151,7 +152,8 @@ class JSONParamHandler(AresParamInterface):
         Args:
             label_filter (list[str] | None): List of parameter names or pattern to retrieve from the interface.
                 If None, all parameters are returned. Defaults to None.
-            transpose_mode (Literal[1, 2] | None): Optional transposing of 2D parameters (1 | None: no transpose, 2: transpose)
+            transpose (bool | None): Whether to transpose 2D parameters. If None,
+                the value from initialization is used.
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
@@ -174,11 +176,9 @@ class JSONParamHandler(AresParamInterface):
         else:
             parameter_tmp = self.parameter
 
-        transpose_mode = (
-            self._transpose_mode if transpose_mode is None else transpose_mode
-        )
+        transpose = self._transpose if transpose is None else transpose
 
-        if transpose_mode is None or transpose_mode == 1:
+        if not transpose:
             result = [
                 AresParameter(
                     label=parameter_name,
@@ -191,7 +191,7 @@ class JSONParamHandler(AresParamInterface):
                 )
                 for parameter_name, parameter_value in parameter_tmp.items()
             ]
-        elif transpose_mode == 2:
+        else:
             result = [
                 AresParameter(
                     label=parameter_name,

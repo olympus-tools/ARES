@@ -973,7 +973,7 @@ def ares_plugin(plugin_input: SimUnitElement):
                         ),
                         parameters=parameter_obj.get(
                             label_filter=label_filter_parameter,
-                            transpose_mode=plugin_input.transpose_mode_parameter,
+                            transpose=plugin_input.transpose_parameter,
                         ),
                     )
 
