@@ -36,7 +36,7 @@ limitations under the License:
 import re
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated, Any
+from typing import Annotated, Any, ClassVar
 
 from pydantic import (
     BaseModel,
@@ -86,9 +86,40 @@ class ResampleMethod(StrEnum):
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
+    _resettable_runtime_fields: ClassVar[tuple[str, ...]] = (
+        "element_workflow",
+        "hash_lists",
+        "hash_lists_parameter",
+        "hash_lists_data",
+    )
+
     name: str | None = None
     element_workflow: list[str] = []
     hash_lists: dict[str, list[str]] = {}
+
+    @model_validator(mode="before")
+    @classmethod
+    def _reset_runtime_fields(cls, wf_element_value: Any) -> Any:
+        """Reset explicitly registered runtime fields to their Pydantic defaults.
+
+        Runtime fields are derived during simulation and must not be restored
+        from serialized workflow files. Each model class explicitly registers
+        the fields that belong to this runtime state.
+
+        Args:
+            wf_element_value (Any): Raw data provided to the Pydantic model.
+
+        Returns:
+            Any: A copy of the raw data with registered runtime fields reset.
+        """
+        wf_element_value = wf_element_value.copy()
+        for field_name in cls._resettable_runtime_fields:
+            if field_name in wf_element_value:
+                field_info = cls.model_fields[field_name]
+                wf_element_value[field_name] = field_info.get_default(
+                    call_default_factory=True
+                )
+        return wf_element_value
 
     @staticmethod
     def _resolve_single_path(
@@ -372,6 +403,12 @@ class ParameterElement(BaseElement):
 
 class PluginElement(BaseElement):
     """Pydantic model for a custom plugin workflow element."""
+
+    _resettable_runtime_fields: ClassVar[tuple[str, ...]] = (
+        *BaseElement._resettable_runtime_fields,
+        "hash_lists_parameter",
+        "hash_lists_data",
+    )
 
     model_config = ConfigDict(extra="allow")
     type: Literal["plugin"] = "plugin"
