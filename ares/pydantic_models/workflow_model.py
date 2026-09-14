@@ -88,7 +88,7 @@ class BaseElement(BaseModel):
 
     name: str | None = None
     element_workflow: list[str] = []
-    hash_list: dict[str, list[str]] = {}
+    hash_lists: dict[str, list[str]] = {}
 
     @staticmethod
     def _resolve_single_path(
