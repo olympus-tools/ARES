@@ -87,11 +87,13 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
         tmp_param_hash_lists: list[list[str]] = []
         for parameter in getattr(wf_element_value, "parameter", []):
             tmp_param_hash_lists.append(
-                list(ares_wf.workflow[parameter].hash_lists.keys())
+                list(ares_wf.workflow[parameter].hash_lists_parameter.keys())
             )
         tmp_data_hash_lists: list[list[str]] = []
         for data in getattr(wf_element_value, "data", []):
-            tmp_data_hash_lists.append(list(ares_wf.workflow[data].hash_lists.keys()))
+            tmp_data_hash_lists.append(
+                list(ares_wf.workflow[data].hash_lists_data.keys())
+            )
 
         # handle workflow elements based on their type
         match wf_element_value.type:
@@ -151,9 +153,13 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
 
         # update workflow element hash list and clear temporary hash list for next iteration
         for hash_key in AresParamInterface.tmp_hash_lists:
-            wf_element_value.hash_lists[hash_key] = param_storage[hash_key].dependencies
+            wf_element_value.hash_lists_parameter[hash_key] = param_storage[
+                hash_key
+            ].dependencies
         for hash_key in AresDataInterface.tmp_hash_lists:
-            wf_element_value.hash_lists[hash_key] = data_storage[hash_key].dependencies
+            wf_element_value.hash_lists_data[hash_key] = data_storage[
+                hash_key
+            ].dependencies
 
         AresParamInterface.tmp_hash_lists = []
         AresDataInterface.tmp_hash_lists = []

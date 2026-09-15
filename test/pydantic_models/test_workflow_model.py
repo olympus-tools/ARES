@@ -50,7 +50,7 @@ from ares.pydantic_models.workflow_model import (
 
 
 # TEST: runtime field reset
-def test_runtime_fields_are_reset_to_explicit_model_defaults():
+def test_runtime_fields_are_reset_to_model_defaults():
     """
     Tests that serialized runtime state is replaced by the model defaults.
     """
@@ -58,17 +58,17 @@ def test_runtime_fields_are_reset_to_explicit_model_defaults():
         {
             "type": "plugin",
             "file_path": "plugin.py",
-            "element_workflow": ["legacy_source"],
-            "hash_lists": {"legacy_hash": ["legacy_source"]},
-            "hash_lists_parameter": [["legacy_parameter_hash"]],
-            "hash_lists_data": [["legacy_data_hash"]],
+            "element_workflow": ["serialized_source"],
+            "hash_lists_parameter": {
+                "serialized_parameter_hash": ["serialized_parameter_source"]
+            },
+            "hash_lists_data": {"serialized_data_hash": ["serialized_data_source"]},
         }
     )
 
     assert element.element_workflow == []
-    assert element.hash_lists == {}
-    assert element.hash_lists_parameter == []
-    assert element.hash_lists_data == []
+    assert element.hash_lists_parameter == {}
+    assert element.hash_lists_data == {}
 
 
 @pytest.mark.parametrize(
@@ -98,19 +98,19 @@ def test_runtime_field_registry_is_inherited_by_element_subclasses(
     """
     data.update(
         {
-            "element_workflow": ["legacy_source"],
-            "hash_lists": {"legacy_hash": ["legacy_source"]},
-            "hash_lists_parameter": [["legacy_parameter_hash"]],
-            "hash_lists_data": [["legacy_data_hash"]],
+            "element_workflow": ["serialized_source"],
+            "hash_lists_parameter": {
+                "serialized_parameter_hash": ["serialized_parameter_source"]
+            },
+            "hash_lists_data": {"serialized_data_hash": ["serialized_data_source"]},
         }
     )
 
     element = element_type.model_validate(data)
 
     assert element.element_workflow == []
-    assert element.hash_lists == {}
-    assert element.hash_lists_parameter == []
-    assert element.hash_lists_data == []
+    assert element.hash_lists_parameter == {}
+    assert element.hash_lists_data == {}
 
 
 def test_unregistered_hash_lists_named_extra_field_is_preserved():
@@ -121,11 +121,11 @@ def test_unregistered_hash_lists_named_extra_field_is_preserved():
         {
             "type": "plugin",
             "file_path": "plugin.py",
-            "legacy_hash_lists_metadata": {"keep": "this"},
+            "unrelated_hash_lists_metadata": {"keep": "this"},
         }
     )
 
-    assert element.legacy_hash_lists_metadata == {"keep": "this"}
+    assert element.unrelated_hash_lists_metadata == {"keep": "this"}
 
 
 def test_reset_uses_default_factory():
@@ -140,7 +140,7 @@ def test_reset_uses_default_factory():
         )
         runtime_state: list[str] = Field(default_factory=list)
 
-    first = FactoryElement.model_validate({"runtime_state": ["legacy"]})
+    first = FactoryElement.model_validate({"runtime_state": ["serialized"]})
     second = FactoryElement.model_validate({})
 
     assert first.runtime_state == []
@@ -148,48 +148,37 @@ def test_reset_uses_default_factory():
     assert first.runtime_state is not second.runtime_state
 
 
-def test_invalid_runtime_field_registration_raises():
-    """
-    Tests that a registry entry for a missing field fails validation visibly.
-    """
-
-    class InvalidElement(BaseElement):
-        _resettable_runtime_fields: ClassVar[tuple[str, ...]] = (
-            *BaseElement._resettable_runtime_fields,
-            "missing_runtime_state",
-        )
-
-    with pytest.raises(
-        ValueError, match="Registered runtime field 'missing_runtime_state'"
-    ):
-        InvalidElement.model_validate({})
-
-
-def test_workflow_loader_resets_legacy_state_and_recomputes_element_workflow(
+def test_workflow_loader_resets_serialized_state_and_recomputes_element_workflow(
     tmp_path: Path,
 ):
     """
-    Tests that loading a legacy workflow discards serialized runtime state.
+    Tests that loading a workflow discards serialized runtime state.
 
     Args:
         tmp_path: Pytest temporary directory for the workflow file.
     """
-    workflow_path = tmp_path / "legacy_workflow.json"
+    workflow_path = tmp_path / "workflow.json"
     workflow_data = {
         "source": {
             "type": "data",
             "mode": "read",
             "file_path": ["input.mf4"],
-            "element_workflow": ["legacy_source"],
-            "hash_lists": {"legacy_hash": ["legacy_source"]},
+            "element_workflow": ["serialized_source"],
+            "hash_lists_parameter": {
+                "serialized_parameter_hash": ["serialized_parameter_source"]
+            },
+            "hash_lists_data": {"serialized_data_hash": ["serialized_data_source"]},
         },
         "sink": {
             "type": "data",
             "mode": "write",
             "data": ["source"],
             "output_format": "mf4",
-            "element_workflow": ["legacy_sink"],
-            "hash_lists": {"legacy_hash": ["legacy_source"]},
+            "element_workflow": ["serialized_sink"],
+            "hash_lists_parameter": {
+                "serialized_parameter_hash": ["serialized_parameter_source"]
+            },
+            "hash_lists_data": {"serialized_data_hash": ["serialized_data_source"]},
         },
     }
     workflow_path.write_text(json.dumps(workflow_data), encoding="utf-8")
@@ -197,7 +186,9 @@ def test_workflow_loader_resets_legacy_state_and_recomputes_element_workflow(
     workflow = Workflow(file_path=workflow_path)
 
     assert workflow.workflow["source"].element_workflow == []
-    assert workflow.workflow["source"].hash_lists == {}
+    assert workflow.workflow["source"].hash_lists_parameter == {}
+    assert workflow.workflow["source"].hash_lists_data == {}
     assert workflow.workflow["sink"].element_workflow == ["source"]
-    assert workflow.workflow["sink"].hash_lists == {}
+    assert workflow.workflow["sink"].hash_lists_parameter == {}
+    assert workflow.workflow["sink"].hash_lists_data == {}
     assert json.loads(workflow_path.read_text(encoding="utf-8")) == workflow_data

@@ -88,14 +88,14 @@ class BaseElement(BaseModel):
 
     _resettable_runtime_fields: ClassVar[tuple[str, ...]] = (
         "element_workflow",
-        "hash_lists",
         "hash_lists_parameter",
         "hash_lists_data",
     )
 
     name: str | None = None
     element_workflow: list[str] = []
-    hash_lists: dict[str, list[str]] = {}
+    hash_lists_parameter: dict[str, list[str]] = {}
+    hash_lists_data: dict[str, list[str]] = {}
 
     @model_validator(mode="before")
     @classmethod
@@ -404,12 +404,6 @@ class ParameterElement(BaseElement):
 class PluginElement(BaseElement):
     """Pydantic model for a custom plugin workflow element."""
 
-    _resettable_runtime_fields: ClassVar[tuple[str, ...]] = (
-        *BaseElement._resettable_runtime_fields,
-        "hash_lists_parameter",
-        "hash_lists_data",
-    )
-
     model_config = ConfigDict(extra="allow")
     type: Literal["plugin"] = "plugin"
     file_path: Path | None = None
@@ -417,8 +411,6 @@ class PluginElement(BaseElement):
     output_dir: Path | None = None
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
-    hash_lists_parameter: list[list[str]] = []
-    hash_lists_data: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -454,8 +446,6 @@ class SimUnitElement(PluginElement):
     resample_tolerance: int | None = Field(default=None, ge=0)
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
-    hash_lists_parameter: list[list[str]] = []
-    hash_lists_data: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -497,8 +487,6 @@ class MergeElement(PluginElement):
     resample_tolerance: int | None = Field(default=None, ge=0)
     parameter_obj: list[Any] | None = None
     data_obj: list[Any] | None = None
-    hash_lists_parameter: list[list[str]] = []
-    hash_lists_data: list[list[str]] = []
 
     @model_validator(mode="after")
     def _validate_model(self):
