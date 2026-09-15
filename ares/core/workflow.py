@@ -330,7 +330,9 @@ class Workflow:
         with open(output_file_path, "w", encoding="utf-8") as file:
             file.write(self.workflow.model_dump_json(indent=4, exclude_none=True))
 
-        logger.info(f"Workflow output file successfully written to {output_file_path}.")
+        logger.info(
+            f"Workflow output file successfully written to {output_file_path.resolve()}."
+        )
 
     @safely_run(
         default_return=None,

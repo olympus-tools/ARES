@@ -128,7 +128,7 @@ class JSONParamHandler(AresParamInterface):
                 sort_keys=True,
             )
 
-        logger.info(f"Successfully saved json parameter file: {output_path}")
+        logger.info(f"Successfully saved json parameter file: {output_path.resolve()}")
 
     @override
     @error_msg(
