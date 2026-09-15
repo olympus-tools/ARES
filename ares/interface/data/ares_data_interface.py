@@ -37,7 +37,6 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
 from typing import ClassVar
 
@@ -48,7 +47,7 @@ from ares.pydantic_models.workflow_model import DataElement, VStackPatternElemen
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import bin_based_hash, str_based_hash
+from ares.utils.hash import bin_based_hash, signals_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -101,11 +100,8 @@ class AresDataInterface(ABC):
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
             content_hash = cls._calculate_hash(file_path=file_path, **kwargs)
-        # calculate hash in case data are provided directly
         else:
-            timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S-%f")[:-3]
-            content_hash = cls._calculate_hash(input_string=timestamp_str, **kwargs)
-
+            content_hash = cls._calculate_hash(data=data, **kwargs)
         cls.tmp_hash_list.append(content_hash)
 
         # return cached instance if hash already exists
@@ -284,12 +280,12 @@ class AresDataInterface(ABC):
     @error_msg(
         exception_msg="Hash of ares-data-interface could not be calculated.",
         log=logger,
-        include_args=["file_path", "input_string"],
+        include_args=["file_path", "data"],
     )
     @typechecked
     def _calculate_hash(
         file_path: Path | None = None,
-        input_string: str | None = None,
+        data: list[AresSignal] | None = None,
         **kwargs,
     ) -> str:
         """Calculate hash from signal list.
@@ -297,13 +293,9 @@ class AresDataInterface(ABC):
         This method is used for cache lookup. It always calculates hash
         from a signal list for consistent hash generation.
 
-        Converts data to a normalized dictionary format, then serializes
-        to JSON with sorted keys to ensure consistent hash generation for
-        identical signal content.
-
         Args:
             file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
-            input_string (str | None): Input string to hash. Used if file_path is None.
+            data (list[AresSignal] | None): List of AresSignal objects to hash. Used if file_path is None.
             **kwargs (Any): Additional arguments (ignored, but accepted for compatibility)
 
         Returns:
@@ -311,8 +303,8 @@ class AresDataInterface(ABC):
         """
         if file_path is not None:
             return_hash = bin_based_hash(file_path=file_path)
-        elif input_string is not None:
-            return_hash = str_based_hash(input_string=input_string)
+        elif data is not None:
+            return_hash = signals_based_hash(signals=data)
         else:
             raise
 
@@ -369,6 +361,9 @@ class AresDataInterface(ABC):
         Returns:
             list[AresSignal]: List of AresSignal objects aligned to a common time vector.
         """
+        if not data:
+            raise ValueError("No Ares Signals given for resampling.")
+
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
 
