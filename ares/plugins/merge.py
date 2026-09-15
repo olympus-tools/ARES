@@ -97,7 +97,7 @@ def ares_plugin(plugin_input: MergeElement):
         for parameter_hash in parameter_dependency_list:
             params = AresParamInterface.cache[parameter_hash].get(
                 label_filter=plugin_input.label_filter_parameter,
-                transpose_mode=plugin_input.transpose_mode_parameter,
+                transpose=plugin_input.transpose_parameter,
             )
             if params is not None:
                 merge_parameters.extend(params)
@@ -106,7 +106,7 @@ def ares_plugin(plugin_input: MergeElement):
             parameters=merge_parameters,
             dependencies=parameter_dependency_list,
             label_filter=plugin_input.label_filter_parameter,
-            transpose_mode=plugin_input.transpose_mode_parameter,
+            transpose=plugin_input.transpose_parameter,
         )
 
     # create merged data for each hash combination

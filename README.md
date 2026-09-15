@@ -146,7 +146,7 @@ Handles parameter sets that remain constant throughout the simulation duration. 
 | `parameter`        | If `write` | `list[str]` |                     | List of element names to write to file.             |
 | `output_format`    | If `write` | `str`       | `"dcm"`, `"json"`   | Target file format.                                 |
 | `label_filter`     | No         | `list[str]` |                     | Filter specific parameters by name or pattern.      |
-| `transpose_mode`   | No         | `int`       | `1`, `2`            | Optional transposing of 2D parameters (1 \| None: no transpose, 2: transpose). |
+| `transpose`   | No         | `bool`       | `false`, `true`            | Optional transposing of 2D parameters. `false` is the default and does not transpose; `true` transposes. |
 
 #### Simulation Unit (`type="sim_unit"`)
 
@@ -163,7 +163,7 @@ Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent an
 | `init`             | No         | `list[str]` |                     | List of elements for initialization.                |
 | `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
 | `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
-| `transpose_mode_parameter` | No | `int` | `1`, `2` | Optional transposing of 2D parameters (1 \| None: no transpose, 2: transpose). |
+| `transpose_parameter` | No | `bool` | `false`, `true` | Optional transposing of 2D parameters. `false` is the default and does not transpose; `true` transposes. |
 | `resample_method`  | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling signals. Defaults to `"linear"`. |
 | `resample_tolerance` | No       | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
 
@@ -193,7 +193,7 @@ When merging elements with overlapping parameter names or signal labels, later e
 | `label_filter_data`        | No         | `list[str]` |                     | Filter specific signals by name or pattern when merging data. |
 | `label_filter_parameter`   | No         | `list[str]` |                     | Filter specific parameters by name or pattern when merging parameters. |
 | `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
-| `transpose_mode_parameter` | No         | `int`       | `1`, `2`            | Optional transposing of 2D parameters (1 \| None: no transpose, 2: transpose). |
+| `transpose_parameter` | No         | `bool`       | `false`, `true`            | Optional transposing of 2D parameters. `false` is the default and does not transpose; `true` transposes. |
 | `stepsize`                 | No         | `int`       |                     | Resampling step size in ms applied to merged data.  |
 | `resample_method`          | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling merged signals. Defaults to `"linear"`. |
 | `resample_tolerance`       | No         | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |

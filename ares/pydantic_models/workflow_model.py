@@ -342,7 +342,7 @@ class ParameterElement(BaseElement):
     file_path: list[Path] | None = []
     parameter: list[str] | None = []
     label_filter: list[str] | None = None
-    transpose_mode: Literal[1, 2] | None = None
+    transpose: bool | None = False
     output_format: ParameterFormat | None = None
 
     @model_validator(mode="after")
@@ -412,7 +412,7 @@ class SimUnitElement(PluginElement):
     init: list[str] | None = []
     cancel_condition: str | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
-    transpose_mode_parameter: Literal[1, 2] | None = None
+    transpose_parameter: bool | None = False
     resample_method: ResampleMethod | None = None
     resample_tolerance: int | None = Field(default=None, ge=0)
     parameter_obj: list[Any] | None = None
@@ -454,7 +454,7 @@ class MergeElement(PluginElement):
     label_filter_data: list[str] | None = None
     label_filter_parameter: list[str] | None = None
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
-    transpose_mode_parameter: Literal[1, 2] | None = None
+    transpose_parameter: bool | None = False
     stepsize: int | None = None
     resample_method: ResampleMethod | None = None
     resample_tolerance: int | None = Field(default=None, ge=0)
