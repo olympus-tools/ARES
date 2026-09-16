@@ -47,7 +47,7 @@ from ares.pydantic_models.workflow_model import DataElement, VStackPatternElemen
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import bin_based_hash, signals_based_hash
+from ares.utils.hash import bin_based_hash, dataobject_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -304,7 +304,7 @@ class AresDataInterface(ABC):
         if file_path is not None:
             return_hash = bin_based_hash(file_path=file_path)
         elif data is not None:
-            return_hash = signals_based_hash(signals=data)
+            return_hash = dataobject_based_hash(dataobjects=data)
         else:
             raise
 

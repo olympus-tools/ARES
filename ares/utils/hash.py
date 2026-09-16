@@ -36,10 +36,10 @@ limitations under the License:
 import hashlib
 from dataclasses import fields
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 
-from ares.interface.data.ares_signal import AresSignal
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
@@ -88,14 +88,14 @@ def str_based_hash(input_string: str) -> str:
     log=logger,
 )
 @typechecked
-def signals_based_hash(signals: list[AresSignal]) -> str:
-    """Calculate a SHA-256 hash from a list of AresSignals using streaming binary encoding.
+def dataobject_based_hash(dataobjects: list[Any]) -> str:
+    """Calculate a SHA-256 hash from a list of dataobjects using streaming binary encoding.
 
     Streaming ensures memory usage stays bounded independent of data size,
     with no unnecessary copies of the data or intermediate buffers created.
 
     Args:
-        signals (list[AresSignal]): List of AresSignal objects to hash.
+        dataobjects (list[Any]): List of dataclass instances (e.g. AresSignal or AresParameter) to hash.
 
     Returns:
         str: Hexadecimal SHA-256 digest of the encoded signal data.
@@ -141,11 +141,11 @@ def signals_based_hash(signals: list[AresSignal]) -> str:
         hasher.update(array)
 
     hasher = hashlib.sha256()
-    hasher.update(len(signals).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+    hasher.update(len(dataobjects).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
 
-    for signal in signals:
-        for field in fields(signal):
-            value = getattr(signal, field.name)
+    for dataobject in dataobjects:
+        for field in fields(dataobject):
+            value = getattr(dataobject, field.name)
             if value is None:
                 _update_hasher(hasher, b"")
             elif isinstance(value, str):
