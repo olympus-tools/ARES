@@ -70,19 +70,6 @@ def bin_based_hash(file_path: Path) -> str:
     return hasher.hexdigest()
 
 
-def str_based_hash(input_string: str) -> str:
-    """Calculate a SHA-256 hash from a UTF-8 encoded string.
-
-    Args:
-        input_string (str): The string to hash.
-
-    Returns:
-        str: Hexadecimal SHA-256 digest of the encoded string.
-    """
-    sha256 = hashlib.sha256(input_string.encode("utf-8"))
-    return sha256.hexdigest()
-
-
 @error_msg(
     exception_msg="Signals hash could not be calculated.",
     log=logger,

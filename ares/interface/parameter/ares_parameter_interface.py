@@ -33,7 +33,6 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar
@@ -43,7 +42,7 @@ from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import str_based_hash
+from ares.utils.hash import dataobject_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -266,10 +265,6 @@ class AresParamInterface(ABC):
         This method is used for cache lookup. It always calculates hash
         from a parameter list for consistent hash generation.
 
-        Converts parameters to a normalized dictionary format, then serializes
-        to JSON with sorted keys to ensure consistent hash generation for
-        identical parameter content.
-
         Args:
             parameters (list[AresParameter]): List of AresParameter objects
             **kwargs (Any): Additional format-specific arguments (unused)
@@ -277,18 +272,7 @@ class AresParamInterface(ABC):
         Returns:
             str: SHA256 hash string of the content
         """
-        temp_param_dict = {}
-        temp_param_dict["metadata"] = {"type": "AresParamInterface"}
-        for param in parameters:
-            temp_param_dict[param.label] = {
-                "description": param.description
-                if param.description is not None
-                else "",
-                "unit": param.unit if param.unit is not None else "",
-                "value": param.value.tolist(),
-            }
-        param_json = json.dumps(temp_param_dict, sort_keys=True)
-        return str_based_hash(input_string=param_json)
+        return dataobject_based_hash(dataobjects=parameters)
 
     @staticmethod
     @typechecked
