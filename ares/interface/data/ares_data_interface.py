@@ -65,7 +65,7 @@ class AresDataInterface(ABC):
     """
 
     cache: ClassVar[dict[str, "AresDataInterface"]] = {}
-    tmp_hash_list: ClassVar[list[str]] = []
+    tmp_hash_lists: ClassVar[list[str]] = []
     _handlers: ClassVar[dict[str, type["AresDataInterface"]]] = {}
 
     @typechecked
@@ -102,7 +102,7 @@ class AresDataInterface(ABC):
             content_hash = cls._calculate_hash(file_path=file_path)
         else:
             content_hash = cls._calculate_hash(data=data)
-        cls.tmp_hash_list.append(content_hash)
+        cls.tmp_hash_lists.append(content_hash)
 
         # return cached instance if hash already exists
         if content_hash in cls.cache:
@@ -165,7 +165,7 @@ class AresDataInterface(ABC):
         log=logger,
         include_args=[
             "wf_element_value",
-            "input_hash_list",
+            "input_hash_lists",
             "output_dir",
         ],
     )
@@ -173,7 +173,7 @@ class AresDataInterface(ABC):
     def wf_element_handler(
         cls,
         wf_element_value: DataElement,
-        input_hash_list: list[list[str]] | None = None,
+        input_hash_lists: list[list[str]] | None = None,
         output_dir: Path | None = None,
         **kwargs,
     ):
@@ -183,7 +183,7 @@ class AresDataInterface(ABC):
 
         Args:
             wf_element_value (DataElement): DataElement containing mode, file_path, and output_format
-            input_hash_list (list[list[str]] | None): Nested list of data hashes for writing operations
+            input_hash_lists (list[list[str]] | None): Nested list of data hashes for writing operations
             output_dir (Path | None): Output directory path for writing operations
             **kwargs (Any): Additional format-specific arguments
         """
@@ -201,14 +201,14 @@ class AresDataInterface(ABC):
                     )
 
             case "write":
-                if not input_hash_list or not output_dir:
+                if not input_hash_lists or not output_dir:
                     return
 
                 target_extension = f".{wf_element_value.output_format}"
                 target_handler_class = cls._handlers.get(target_extension)
 
-                for wf_element_hash_list in input_hash_list:
-                    for output_hash in wf_element_hash_list:
+                for wf_element_hash_lists in input_hash_lists:
+                    for output_hash in wf_element_hash_lists:
                         if output_hash in cls.cache:
                             source_instance = cls.cache.get(output_hash)
 

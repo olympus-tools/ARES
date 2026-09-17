@@ -82,6 +82,9 @@ class Workflow:
     def _load_and_validate_wf(self) -> WorkflowModel:
         """Reads and validates the workflow JSON file using Pydantic.
 
+        Runtime state serialized by previous simulations is reset by the
+        workflow element models during validation.
+
         Returns:
             WorkflowModel: A Pydantic object representing the workflow.
         """
@@ -344,8 +347,8 @@ class Workflow:
     def _eval_output_path(self, dir_path: Path, output_format: str) -> Path:
         """Adds a timestamps to the filename and returns a complete, absolute file path.
 
-        The timestamps prevents overwriting. The format is `*_YYYYMMDD_HHMMSS*` before
-        the file extension.
+        The timestamp prevents overwriting. For compound extensions such as
+        ``.wf.json``, it is inserted before the complete extension.
 
         Args:
             dir_path (Path): The absolute path to the output directory.
@@ -356,8 +359,9 @@ class Workflow:
             Path: The new, complete file path with a timestamps.
         """
         dir_path.mkdir(parents=True, exist_ok=True)
-        file_name = self._file_path.stem
+        suffixes = "".join(self._file_path.suffixes)
+        file_name = self._file_path.name.removesuffix(suffixes)
         timestamps = datetime.now().strftime("%Y%m%d%H%M%S")
-        new_file_name = f"{file_name}_{timestamps}.{output_format}"
+        new_file_name = f"{file_name}_{timestamps}{suffixes}"
         full_path = dir_path / new_file_name
         return full_path

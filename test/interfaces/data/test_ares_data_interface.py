@@ -86,9 +86,9 @@ class ConcreteDataInterface(AresDataInterface):
 def clear_cache():
     """Clear the flyweight cache before each test."""
     AresDataInterface.cache.clear()
-    AresDataInterface.tmp_hash_list.clear()
+    AresDataInterface.tmp_hash_lists.clear()
     ConcreteDataInterface.cache.clear()
-    ConcreteDataInterface.tmp_hash_list.clear()
+    ConcreteDataInterface.tmp_hash_lists.clear()
     yield
 
 
