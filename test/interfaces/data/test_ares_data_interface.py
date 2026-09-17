@@ -33,9 +33,10 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+from dataclasses import dataclass
+
 import numpy as np
 import pytest
-from dataclasses import dataclass
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
@@ -253,7 +254,7 @@ class TestAresDataInterfaceCalculateHash:
             timestamps=np.array([0.0, 1.0], dtype=np.float32),
             value=np.array([1.0, 2.0], dtype=np.float32),
         )
-        with pytest.raises(TypeError):
+        with pytest.raises(RuntimeError):
             AresDataInterface._calculate_hash(data=[signal])
 
 
@@ -333,7 +334,7 @@ class TestAresDataInterfaceResample:
         assert np.array_equal(result[0].timestamps, result[1].timestamps)
 
     def test_resample_empty_signal_list(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(RuntimeError):
             AresDataInterface._resample([], stepsize=100)
 
 

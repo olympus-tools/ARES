@@ -47,7 +47,7 @@ from ares.pydantic_models.workflow_model import DataElement, VStackPatternElemen
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import bin_based_hash, dataobject_based_hash
+from ares.utils.hash import bin_based_hash, object_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -99,9 +99,9 @@ class AresDataInterface(ABC):
         elif file_path is not None:
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
-            content_hash = cls._calculate_hash(file_path=file_path, **kwargs)
+            content_hash = cls._calculate_hash(file_path=file_path)
         else:
-            content_hash = cls._calculate_hash(data=data, **kwargs)
+            content_hash = cls._calculate_hash(data=data)
         cls.tmp_hash_list.append(content_hash)
 
         # return cached instance if hash already exists
@@ -286,7 +286,6 @@ class AresDataInterface(ABC):
     def _calculate_hash(
         file_path: Path | None = None,
         data: list[AresSignal] | None = None,
-        **kwargs,
     ) -> str:
         """Calculate hash from signal list.
 
@@ -296,7 +295,6 @@ class AresDataInterface(ABC):
         Args:
             file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
             data (list[AresSignal] | None): List of AresSignal objects to hash. Used if file_path is None.
-            **kwargs (Any): Additional arguments (ignored, but accepted for compatibility)
 
         Returns:
             str: SHA256 hash string of the content
@@ -304,8 +302,11 @@ class AresDataInterface(ABC):
         if file_path is not None:
             return_hash = bin_based_hash(file_path=file_path)
         elif data is not None:
-            return_hash = dataobject_based_hash(dataobjects=data)
+            return_hash = object_based_hash(interface_objects=data)
         else:
+            logger.error(
+                "For calculation of AresDataInterface hash, either file_path or data must be provided."
+            )
             raise
 
         return return_hash
@@ -338,6 +339,7 @@ class AresDataInterface(ABC):
     @error_msg(
         exception_msg="Error in ares-data-interface resample function.",
         log=logger,
+        include_args=["data", "stepsize", "resample_method", "resample_tolerance"],
     )
     @typechecked
     def _resample(
@@ -362,7 +364,11 @@ class AresDataInterface(ABC):
             list[AresSignal]: List of AresSignal objects aligned to a common time vector.
         """
         if not data:
-            raise ValueError("No Ares Signals given for resampling.")
+            logger.error("Resampling requires at least one input signal.")
+            raise
+        elif not stepsize:
+            logger.error("Resampling requires a valid stepsize.")
+            raise
 
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)

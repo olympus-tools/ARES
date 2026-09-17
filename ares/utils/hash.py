@@ -73,16 +73,17 @@ def bin_based_hash(file_path: Path) -> str:
 @error_msg(
     exception_msg="Signals hash could not be calculated.",
     log=logger,
+    include_args=["interface_objects"],
 )
 @typechecked
-def dataobject_based_hash(dataobjects: list[Any]) -> str:
-    """Calculate a SHA-256 hash from a list of dataobjects using streaming binary encoding.
+def object_based_hash(interface_objects: list[Any]) -> str:
+    """Calculate a SHA-256 hash from a list of interface_objects using streaming binary encoding.
 
     Streaming ensures memory usage stays bounded independent of data size,
     with no unnecessary copies of the data or intermediate buffers created.
 
     Args:
-        dataobjects (list[Any]): List of dataclass instances (e.g. AresSignal or AresParameter) to hash.
+        interface_objects (list[Any]): List of dataclass instances (e.g. AresSignal or AresParameter) to hash.
 
     Returns:
         str: Hexadecimal SHA-256 digest of the encoded signal data.
@@ -128,11 +129,11 @@ def dataobject_based_hash(dataobjects: list[Any]) -> str:
         hasher.update(array)
 
     hasher = hashlib.sha256()
-    hasher.update(len(dataobjects).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+    hasher.update(len(interface_objects).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
 
-    for dataobject in dataobjects:
-        for field in fields(dataobject):
-            value = getattr(dataobject, field.name)
+    for object in interface_objects:
+        for field in fields(object):
+            value = getattr(object, field.name)
             if value is None:
                 _update_hasher(hasher, b"")
             elif isinstance(value, str):
@@ -140,8 +141,9 @@ def dataobject_based_hash(dataobjects: list[Any]) -> str:
             elif isinstance(value, np.ndarray):
                 _update_hasher_numpy(hasher, value)
             else:
-                raise TypeError(
+                logger.error(
                     f"Cannot hash field '{field.name}' of type {type(value)!r}."
                 )
+                raise
 
     return hasher.hexdigest()

@@ -34,7 +34,6 @@ limitations under the License:
 """
 
 import json
-import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any

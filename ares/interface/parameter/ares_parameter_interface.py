@@ -42,7 +42,7 @@ from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import dataobject_based_hash
+from ares.utils.hash import object_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -272,7 +272,7 @@ class AresParamInterface(ABC):
         Returns:
             str: SHA256 hash string of the content
         """
-        return dataobject_based_hash(dataobjects=parameters)
+        return object_based_hash(interface_objects=parameters)
 
     @staticmethod
     @typechecked
