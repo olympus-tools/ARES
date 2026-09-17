@@ -83,6 +83,9 @@ class Workflow:
     def _load_and_validate_wf(self) -> WorkflowModel:
         """Reads and validates the workflow JSON file using Pydantic.
 
+        Runtime state serialized by previous simulations is reset by the
+        workflow element models during validation.
+
         Returns:
             WorkflowModel: A Pydantic object representing the workflow.
         """
