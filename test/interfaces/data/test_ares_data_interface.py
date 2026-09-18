@@ -40,6 +40,7 @@ import pytest
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
+from ares.utils.hash import calculate_hash
 from ares.pydantic_models.workflow_model import DataElement, VStackPatternElement
 
 
@@ -188,12 +189,12 @@ class TestAresDataInterfaceCreate:
 
 
 class TestAresDataInterfaceCalculateHash:
-    """Tests for the _calculate_hash static method."""
+    """Tests for the calculate_hash utility function."""
 
     def test_calculate_hash_from_file(self, tmp_path):
         test_file = tmp_path / "test.file"
         test_file.write_bytes(b"test content")
-        hash_result = AresDataInterface._calculate_hash(file_path=test_file)
+        hash_result = calculate_hash(file_path=test_file)
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
         assert (
@@ -207,7 +208,7 @@ class TestAresDataInterfaceCalculateHash:
             timestamps=np.array([0.0, 1.0], dtype=np.float32),
             value=np.array([1.0, 2.0], dtype=np.float32),
         )
-        hash_result = AresDataInterface._calculate_hash(data=[signal])
+        hash_result = calculate_hash(interface_objects=[signal])
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
         assert (
@@ -217,20 +218,20 @@ class TestAresDataInterfaceCalculateHash:
 
     def test_calculate_hash_no_args_raises(self):
         with pytest.raises(Exception):
-            AresDataInterface._calculate_hash()
+            calculate_hash()
 
     def test_calculate_hash_consistency(self, tmp_path):
         test_file = tmp_path / "test.file"
         test_file.write_bytes(b"test content test")
-        hash1 = AresDataInterface._calculate_hash(file_path=test_file)
-        hash2 = AresDataInterface._calculate_hash(file_path=test_file)
+        hash1 = calculate_hash(file_path=test_file)
+        hash2 = calculate_hash(file_path=test_file)
         assert hash1 == hash2
 
     def test_calculate_hash_empty_signal_list(self):
-        hash_result = AresDataInterface._calculate_hash(data=[])
+        hash_result = calculate_hash(interface_objects=[])
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
-        assert AresDataInterface._calculate_hash(data=[]) == hash_result
+        assert calculate_hash(interface_objects=[]) == hash_result
 
     def test_calculate_hash_optional_fields_influence_hash(self):
         signal = AresSignal(
@@ -244,9 +245,9 @@ class TestAresDataInterfaceCalculateHash:
             value=np.array([1.0, 2.0], dtype=np.float32),
             unit="m/s",
         )
-        assert AresDataInterface._calculate_hash(
-            data=[signal]
-        ) != AresDataInterface._calculate_hash(data=[signal_unit])
+        assert calculate_hash(interface_objects=[signal]) != calculate_hash(
+            interface_objects=[signal_unit]
+        )
 
     def test_calculate_hash_unsupported_field_type_raises(self):
         signal = _SignalWithUnsupportedField(
@@ -255,7 +256,7 @@ class TestAresDataInterfaceCalculateHash:
             value=np.array([1.0, 2.0], dtype=np.float32),
         )
         with pytest.raises(RuntimeError):
-            AresDataInterface._calculate_hash(data=[signal])
+            calculate_hash(interface_objects=[signal])
 
 
 class TestAresDataInterfaceFilterDeduplicates:

@@ -34,14 +34,14 @@ limitations under the License:
 """
 
 import json
-from pathlib import Path
 
 import numpy as np
 import pytest
 
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
-from ares.pydantic_models.workflow_model import ParameterElement, ParameterFormat
+from ares.pydantic_models.workflow_model import ParameterElement
+from ares.utils.hash import calculate_hash
 
 
 class ConcreteParamInterface(AresParamInterface):
@@ -79,9 +79,9 @@ class ConcreteParamInterface(AresParamInterface):
 def clear_cache():
     """Clear the flyweight cache before each test."""
     AresParamInterface.cache.clear()
-    AresParamInterface.tmp_hash_list.clear()
+    AresParamInterface.tmp_hash_lists.clear()
     ConcreteParamInterface.cache.clear()
-    ConcreteParamInterface.tmp_hash_list.clear()
+    ConcreteParamInterface.tmp_hash_lists.clear()
     yield
 
 
@@ -165,7 +165,7 @@ class TestAresParamInterfaceCreate:
 
 
 class TestAresParamInterfaceCalculateHash:
-    """Tests for the _calculate_hash static method."""
+    """Tests for the calculate_hash utility function."""
 
     def test_calculate_hash_from_parameters(self):
         params = [
@@ -176,7 +176,7 @@ class TestAresParamInterfaceCalculateHash:
                 unit="m/s",
             ),
         ]
-        hash_result = AresParamInterface._calculate_hash(parameters=params)
+        hash_result = calculate_hash(interface_objects=params)
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
 
@@ -189,8 +189,8 @@ class TestAresParamInterfaceCalculateHash:
                 unit="m/s",
             ),
         ]
-        hash1 = AresParamInterface._calculate_hash(parameters=params)
-        hash2 = AresParamInterface._calculate_hash(parameters=params)
+        hash1 = calculate_hash(interface_objects=params)
+        hash2 = calculate_hash(interface_objects=params)
         assert hash1 == hash2
 
     def test_calculate_hash_different_params_different_hash(self):
@@ -200,8 +200,8 @@ class TestAresParamInterfaceCalculateHash:
         params2 = [
             AresParameter(label="param1", value=np.array([3.0, 4.0])),
         ]
-        hash1 = AresParamInterface._calculate_hash(parameters=params1)
-        hash2 = AresParamInterface._calculate_hash(parameters=params2)
+        hash1 = calculate_hash(interface_objects=params1)
+        hash2 = calculate_hash(interface_objects=params2)
         assert hash1 != hash2
 
     def test_calculate_hash_different_labels_different_hash(self):
@@ -211,8 +211,8 @@ class TestAresParamInterfaceCalculateHash:
         params2 = [
             AresParameter(label="param_b", value=np.array([1.0])),
         ]
-        hash1 = AresParamInterface._calculate_hash(parameters=params1)
-        hash2 = AresParamInterface._calculate_hash(parameters=params2)
+        hash1 = calculate_hash(interface_objects=params1)
+        hash2 = calculate_hash(interface_objects=params2)
         assert hash1 != hash2
 
     def test_calculate_hash_multiple_parameters(self):
@@ -220,12 +220,12 @@ class TestAresParamInterfaceCalculateHash:
             AresParameter(label="param1", value=np.array(1.0)),
             AresParameter(label="param2", value=np.array([1.0, 2.0])),
         ]
-        hash_result = AresParamInterface._calculate_hash(parameters=params)
+        hash_result = calculate_hash(interface_objects=params)
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
 
     def test_calculate_hash_empty_parameters_list(self):
-        hash_result = AresParamInterface._calculate_hash(parameters=[])
+        hash_result = calculate_hash(interface_objects=[])
         assert isinstance(hash_result, str)
         assert len(hash_result) == 64
 
