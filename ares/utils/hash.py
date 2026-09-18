@@ -34,7 +34,21 @@ limitations under the License:
 """
 
 import hashlib
+from dataclasses import fields
 from pathlib import Path
+from typing import Any
+
+import numpy as np
+
+from ares.utils.decorators import error_msg
+from ares.utils.decorators import typechecked_dev as typechecked
+from ares.utils.logger import create_logger
+
+ENDIAN_TYPE = "big"
+CHUNK_SIZE = 4096
+BYTE_SIZE = 8
+
+logger = create_logger(name=__name__)
 
 
 def bin_based_hash(file_path: Path) -> str:
@@ -51,19 +65,115 @@ def bin_based_hash(file_path: Path) -> str:
     """
     hasher = hashlib.sha256()
     with open(file_path, "rb") as f:
-        while chunk := f.read(4096):
+        while chunk := f.read(CHUNK_SIZE):
             hasher.update(chunk)
     return hasher.hexdigest()
 
 
-def str_based_hash(input_string: str) -> str:
-    """Calculate a SHA-256 hash from a UTF-8 encoded string.
+@error_msg(
+    exception_msg="Hash of interface objectcould not be calculated.",
+    log=logger,
+    include_args=["file_path", "interface_objects"],
+)
+@typechecked
+def calculate_hash(
+    file_path: Path | None = None,
+    interface_objects: list[Any] | None = None,
+) -> str:
+    """Calculate a hash from a file or a list of interface objects.
 
     Args:
-        input_string (str): The string to hash.
+        file_path (Path | None): Path to the interface object (data/parameter) file to load.
+        interface_objects (list[Any] | None): Interface objects to hash when no file path is provided.
 
     Returns:
-        str: Hexadecimal SHA-256 digest of the encoded string.
+        str: SHA-256 hash string of the content.
     """
-    sha256 = hashlib.sha256(input_string.encode("utf-8"))
-    return sha256.hexdigest()
+    if file_path is not None:
+        return bin_based_hash(file_path=file_path)
+    if interface_objects is not None:
+        return object_based_hash(interface_objects=interface_objects)
+
+    logger.error(
+        "For calculation of hash, either file_path or interface_objects must be provided."
+    )
+    raise
+
+
+@error_msg(
+    exception_msg="Signals hash could not be calculated.",
+    log=logger,
+    include_args=["interface_objects"],
+)
+@typechecked
+def object_based_hash(interface_objects: list[Any]) -> str:
+    """Calculate a SHA-256 hash from a list of interface_objects using streaming binary encoding.
+
+    Streaming ensures memory usage stays bounded independent of data size,
+    with no unnecessary copies of the data or intermediate buffers created.
+
+    Args:
+        interface_objects (list[Any]): List of dataclass instances (e.g. AresSignal or AresParameter) to hash.
+
+    Returns:
+        str: Hexadecimal SHA-256 digest of the encoded signal data.
+    """
+
+    @typechecked
+    def _update_hasher(hasher, data: bytes) -> None:
+        """Update hasher based on given binary data considering length.
+
+        Args:
+            hasher: Open SHA-256 hasher.
+            data (bytes): Raw bytes of the field value.
+        """
+        hasher.update(len(data).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+        hasher.update(data)
+
+    @typechecked
+    def _update_hasher_numpy(hasher, array: np.ndarray) -> None:
+        """Stream a numpy array into the hasher as raw binary data.
+
+        The array is normalized to be C-contiguous using numpy functionality
+        (e.g. ensure row-major for transposed arrays or avoid gaps in array slices).
+        Additionally the byte order is checked (*.isnative compares data order with system)
+        and adapts if necessary.
+        This ensures 'minimal' copy since the hasher gets the current values streamed and only byte order updates
+        need copy operations.
+
+        The shape and dtype are always hashed before the raw buffer so the encoding
+        stays self-delimiting and collision-resistant.
+
+        Args:
+            hasher: Open SHA-256 hasher.
+            array (np.ndarray): Numpy array to hash.
+        """
+        array = np.ascontiguousarray(array)
+        if not array.dtype.isnative:
+            array = array.astype(array.dtype.newbyteorder("="))
+
+        _update_hasher(hasher, str(array.dtype).encode("utf-8"))
+        _update_hasher(hasher, repr(array.shape).encode("utf-8"))
+
+        hasher.update(array.nbytes.to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+        hasher.update(array)
+
+    hasher = hashlib.sha256()
+    hasher.update(len(interface_objects).to_bytes(BYTE_SIZE, byteorder=ENDIAN_TYPE))
+
+    for object in interface_objects:
+        for field in fields(object):
+            value = getattr(object, field.name)
+            if value is None:
+                _update_hasher(hasher, b"")
+            elif isinstance(value, str):
+                _update_hasher(hasher, value.encode("utf-8"))
+            elif isinstance(value, np.ndarray):
+                _update_hasher_numpy(hasher, value)
+            else:
+                logger.error(
+                    f"Cannot hash field '{field.name}' of type {type(value)!r}."
+                )
+                raise
+
+    return hasher.hexdigest()

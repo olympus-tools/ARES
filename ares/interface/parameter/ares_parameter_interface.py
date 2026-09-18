@@ -33,7 +33,6 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
-import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import ClassVar
@@ -43,7 +42,7 @@ from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import str_based_hash
+from ares.utils.hash import calculate_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -90,16 +89,13 @@ class AresParamInterface(ABC):
             object.__setattr__(empty_instance, "hash", "empty_instance_no_hash")
             cls.cache["empty_instance_no_hash"] = empty_instance
             return empty_instance
-
         # Load parameters from file if file_path provided
-        if file_path is not None:
+        elif file_path is not None:
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
-            parameters = temp_instance.get(**kwargs)
-
-        # calculate hash from parameters
-        content_hash = cls._calculate_hash(parameters=parameters, **kwargs)
-
+            content_hash = calculate_hash(file_path=file_path)
+        else:
+            content_hash = calculate_hash(interface_objects=parameters)
         cls.tmp_hash_lists.append(content_hash)
 
         # return cached instance if hash already exists
@@ -249,46 +245,6 @@ class AresParamInterface(ABC):
 
         handler_class = cls._handlers[ext]
         return handler_class(file_path=file_path, **kwargs)
-
-    @staticmethod
-    @error_msg(
-        exception_msg="Hash of ares-parameter-interface could not be calculated.",
-        log=logger,
-        include_args=["parameters"],
-    )
-    @typechecked
-    def _calculate_hash(
-        parameters: list[AresParameter],
-        **kwargs,
-    ) -> str:
-        """Calculate hash from parameter list.
-
-        This method is used for cache lookup. It always calculates hash
-        from a parameter list for consistent hash generation.
-
-        Converts parameters to a normalized dictionary format, then serializes
-        to JSON with sorted keys to ensure consistent hash generation for
-        identical parameter content.
-
-        Args:
-            parameters (list[AresParameter]): List of AresParameter objects
-            **kwargs (Any): Additional format-specific arguments (unused)
-
-        Returns:
-            str: SHA256 hash string of the content
-        """
-        temp_param_dict = {}
-        temp_param_dict["metadata"] = {"type": "AresParamInterface"}
-        for param in parameters:
-            temp_param_dict[param.label] = {
-                "description": param.description
-                if param.description is not None
-                else "",
-                "unit": param.unit if param.unit is not None else "",
-                "value": param.value.tolist(),
-            }
-        param_json = json.dumps(temp_param_dict, sort_keys=True)
-        return str_based_hash(input_string=param_json)
 
     @staticmethod
     @typechecked
