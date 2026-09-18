@@ -80,6 +80,36 @@ def bin_based_hash(file_path: Path) -> str:
 
 
 @error_msg(
+    exception_msg="Hash of interface objectcould not be calculated.",
+    log=logger,
+    include_args=["file_path", "interface_objects"],
+)
+@typechecked
+def calculate_hash(
+    file_path: Path | None = None,
+    interface_objects: list[Any] | None = None,
+) -> str:
+    """Calculate a hash from a file or a list of interface objects.
+
+    Args:
+        file_path (Path | None): Path to the interface object (data/parameter) file to load.
+        interface_objects (list[Any] | None): Interface objects to hash when no file path is provided.
+
+    Returns:
+        str: SHA-256 hash string of the content.
+    """
+    if file_path is not None:
+        return bin_based_hash(file_path=file_path)
+    if interface_objects is not None:
+        return object_based_hash(interface_objects=interface_objects)
+
+    logger.error(
+        "For calculation of hash, either file_path or interface_objects must be provided."
+    )
+    raise
+
+
+@error_msg(
     exception_msg="Signals hash could not be calculated.",
     log=logger,
     include_args=["interface_objects"],

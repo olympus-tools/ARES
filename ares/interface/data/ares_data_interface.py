@@ -47,7 +47,7 @@ from ares.pydantic_models.workflow_model import DataElement, VStackPatternElemen
 from ares.utils.decorators import error_msg
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
-from ares.utils.hash import bin_based_hash, object_based_hash
+from ares.utils.hash import calculate_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -99,9 +99,9 @@ class AresDataInterface(ABC):
         elif file_path is not None:
             temp_instance = object.__new__(cls)
             cls.__init__(temp_instance, file_path=file_path, **kwargs)
-            content_hash = cls._calculate_hash(file_path=file_path)
+            content_hash = calculate_hash(file_path=file_path)
         else:
-            content_hash = cls._calculate_hash(data=data)
+            content_hash = calculate_hash(interface_objects=data)
         cls.tmp_hash_lists.append(content_hash)
 
         # return cached instance if hash already exists
@@ -277,41 +277,6 @@ class AresDataInterface(ABC):
         )
 
     @staticmethod
-    @error_msg(
-        exception_msg="Hash of ares-data-interface could not be calculated.",
-        log=logger,
-        include_args=["file_path", "data"],
-    )
-    @typechecked
-    def _calculate_hash(
-        file_path: Path | None = None,
-        data: list[AresSignal] | None = None,
-    ) -> str:
-        """Calculate hash from signal list.
-
-        This method is used for cache lookup. It always calculates hash
-        from a signal list for consistent hash generation.
-
-        Args:
-            file_path (Path | None): Path to the data file to load. If None, defaults to MF4 handler.
-            data (list[AresSignal] | None): List of AresSignal objects to hash. Used if file_path is None.
-
-        Returns:
-            str: SHA256 hash string of the content
-        """
-        if file_path is not None:
-            return_hash = bin_based_hash(file_path=file_path)
-        elif data is not None:
-            return_hash = object_based_hash(interface_objects=data)
-        else:
-            logger.error(
-                "For calculation of AresDataInterface hash, either file_path or data must be provided."
-            )
-            raise
-
-        return return_hash
-
-    @staticmethod
     @typechecked
     def _filter_deduplicates(data: list[AresSignal]) -> list[AresSignal]:
         """Remove duplicate signals by label, keeping the last occurrence.
@@ -368,6 +333,7 @@ class AresDataInterface(ABC):
             raise
         elif not stepsize:
             logger.error("Resampling requires a valid stepsize.")
+            raise
 
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
