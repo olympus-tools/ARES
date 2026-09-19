@@ -29,7 +29,7 @@ endif
 # Main setup-venv target - uses POSIX shell commands (works with Git Bash on Windows)
 .PHONY: setup-venv
 setup-venv:
-	echo "Syncing project dependencies:"	
+	echo "Syncing project dependencies:"
 	uv sync --all-extras
 
 .PHONY: examples
@@ -60,7 +60,7 @@ format-check: setup-venv
 .PHONY: build-executable
 build-executable: setup-venv
 	@echo "Building executable with PyInstaller..."
-	uv run pyinstaller --onefile --name ares --paths . --paths submodules/dcmi --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --add-data "ares/plugins/merge.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "dcmi" --hidden-import "dcmi.dcmi" ares/__main__.py
+	uv run pyinstaller --onefile --name ares --paths . --paths submodules/dcmi --copy-metadata ares --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --add-data "ares/plugins/merge.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "dcmi" --hidden-import "dcmi.dcmi" ares/__main__.py
 	@echo ""
 	@echo "Executable created in dist/ares"
 
@@ -118,9 +118,9 @@ release: release-checklist release-changelog thirdpartycheck build-executable re
 
 .PHONY: docs
 docs: setup-venv
-	uv run sphinx-build -M html docs docs/_build
+	uv run sphinx-build -M html docs/sphinx docs/sphinx/_build
 	@echo ""
-	@echo "Open docs/_build/html/index.html in your browser."
+	@echo "Open docs/sphinx/_build/html/index.html in your browser."
 
 .PHONY: clean
 clean:
@@ -133,7 +133,7 @@ clean:
 		rm -rf build; \
 		rm -rf dist; \
 		rm -rf examples/output; \
-		rm -rf docs/_build; \
+		rm -rf docs/sphinx/_build; \
 		echo "Project cleaned successfully in mode full."; \
 	else \
 		echo "Clean cancelled."; \

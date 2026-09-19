@@ -16,8 +16,14 @@ orchestrating simulation workflows in automotive embedded development.
    :caption: Project
    :hidden:
 
+   user-guide
+   architecture
+   examples
    contributing
    changelog
+   security
+   code-of-conduct
+   legal
 
 Indices and tables
 ------------------

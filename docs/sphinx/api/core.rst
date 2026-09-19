@@ -10,8 +10,3 @@ Core
    :members:
    :undoc-members:
    :show-inheritance:
-
-.. automodule:: ares.core.version
-   :members:
-   :undoc-members:
-   :show-inheritance:

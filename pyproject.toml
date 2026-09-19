@@ -79,6 +79,7 @@ docs = [
     "furo==2024.8.6",
     "myst-parser==4.0.1",
     "sphinx-autodoc-typehints==3.1.0",
+    "sphinxcontrib-mermaid>=2.1.1",
 ]
 release = [
     "ares[dev]",

@@ -30,7 +30,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: sphinx-docs
-          path: docs/_build/html/
+          path: docs/sphinx/_build/html/
           retention-days: 30
 
       - name: Cleanup ARES Environment
