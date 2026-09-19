@@ -10,7 +10,6 @@
 #   - make build-executable
 #   - make docs
 #   - make clean
-#   - make clean-light
 #   - make release-checklist
 #   - make release-changelog
 #   - make thirdpartycheck
@@ -136,31 +135,4 @@ docs: setup-venv
 
 .PHONY: clean
 clean:
-	@printf "WARNING: This will permanently delete all generated files, caches, and logs. Continue? [y/n] "; \
-	read -r REPLY; \
-	if [ "$$REPLY" = "y" ] || [ "$$REPLY" = "Y" ]; then \
-		echo "Cleaning project in mode full..."; \
-		$(MAKE) clean-light; \
-		rm -rf logs; \
-		rm -rf build; \
-		rm -rf dist; \
-		rm -rf examples/output; \
-		rm -rf docs/sphinx/_build; \
-		echo "Project cleaned successfully in mode full."; \
-	else \
-		echo "Clean cancelled."; \
-	fi
-
-.PHONY: clean-light
-clean-light:
-	echo "Cleaning project in mode light..."; \
-	find . -type f -name "*.pyc" -delete; \
-	find . -type d -name "__pycache__" -exec rm -rf {} +; \
-	find . -type d -name "log" -exec rm -rf {} +; \
-	find . -type d -name ".pytest_cache" -exec rm -rf {} +; \
-	find . -type d -name ".ruff_cache" -exec rm -rf {} +; \
-	find . -type f -name "*.spec" -delete; \
-	rm -f .coverage .coverage.*; \
-	rm -rf htmlcov; \
-	$(MAKE) -C examples/sim_unit clean; \
-	echo "Project cleaned successfully in mode light."; \
+	uv run python scripts/clean.py
