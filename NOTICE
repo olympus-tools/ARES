@@ -160,6 +160,9 @@ BSD-2-Clause License:
   * Sphinx 8.2.3
     URL: https://www.sphinx-doc.org/
 
+  * sphinxcontrib-mermaid 2.1.1
+    URL: https://github.com/mgaitan/sphinxcontrib-mermaid
+
 
 BSD-2-Clause AND Apache-2.0 WITH LLVM-exception License:
 ------------------------------------------------------------------------------
