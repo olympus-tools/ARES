@@ -248,7 +248,7 @@ class AresParamInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _filter_deduplicates(
+    def _filter_duplicates(
         parameters: list[AresParameter],
     ) -> list[AresParameter]:
         """Remove duplicate parameters by label, keeping the last occurrence.
