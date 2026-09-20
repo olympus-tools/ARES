@@ -366,7 +366,18 @@ class MF4Handler(MDF, AresDataInterface):
             comment = "ares"
 
         signals_to_write = []
+        expected_length: int | None = None
+        common_timebase = True
         for signal in data:
+            if expected_length is None:
+                expected_length = signal.shape[0]
+            elif signal.shape[0] != expected_length:
+                common_timebase = False
+                logger.warning(
+                    f"Signal '{signal.label}' has length {signal.shape[0]}, "
+                    f"expected {expected_length} to match previously processed signals."
+                )
+
             source_name = getattr(signal, "source", "ARES_DEFAULT_SOURCE")
 
             source = Source(
@@ -414,5 +425,5 @@ class MF4Handler(MDF, AresDataInterface):
                 )
 
         # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
-        self.append(signals_to_write, comment=comment, common_timebase=True)
+        self.append(signals_to_write, comment=comment, common_timebase=common_timebase)
         [self._available_signals.append(signal.label) for signal in data]

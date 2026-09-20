@@ -35,6 +35,7 @@ limitations under the License:
 
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -173,6 +174,32 @@ def test_ares_mf4handler_add_explicit():
     assert "sig_a" in labels, "sig_a should be present after add()."
     assert "sig_b" in labels, "sig_b should be present after add()."
     assert len(result) == 2, "Exactly two signals should be present."
+
+
+def test_ares_mf4handler_add_unequal_lengths_uses_separate_timebases(caplog):
+    """
+    Test that unequal signal lengths log a warning and disable common_timebase.
+
+    Args:
+        caplog: Pytest fixture capturing log records.
+    """
+    signal_a = AresSignal(
+        label="sig_a",
+        timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
+        value=np.array([10.0, 20.0, 30.0], dtype=np.float64),
+    )
+    signal_b = AresSignal(
+        label="sig_b",
+        timestamps=np.array([0.0, 1.0], dtype=np.float32),
+        value=np.array([1, 2], dtype=np.int32),
+    )
+
+    handler = MF4Handler(file_path=None)
+    with patch.object(handler, "append") as append:
+        handler.add(data=[signal_a, signal_b])
+
+    assert "Signal 'sig_b' has length 2, expected 3" in caplog.text
+    assert append.call_args.kwargs["common_timebase"] is False
 
 
 def test_ares_mf4handler_add_2d_signal():
