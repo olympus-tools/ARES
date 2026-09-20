@@ -357,7 +357,7 @@ class MF4Handler(MDF, AresDataInterface):
                 - ndim == 3: 2D array per time step (shape: cycles, rows, cols)
             **kwargs (Any): Additional arguments passed to asammdf's append() method.
         """
-        data = AresDataInterface._filter_deduplicates(data=data)
+        data = AresDataInterface._filter_deuplicates(data=data)
 
         stepsize = kwargs.pop("stepsize", None)
         if stepsize is not None:

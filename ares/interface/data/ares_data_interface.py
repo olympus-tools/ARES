@@ -278,7 +278,7 @@ class AresDataInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _filter_deduplicates(data: list[AresSignal]) -> list[AresSignal]:
+    def _filter_deuplicates(data: list[AresSignal]) -> list[AresSignal]:
         """Remove duplicate signals by label, keeping the last occurrence.
 
         When multiple signals with the same label exist in the input list,

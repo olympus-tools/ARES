@@ -200,7 +200,7 @@ class DCMHandler(DCMI, AresParamInterface):
             parameters (list[AresParameter]): List of AresParameter objects to add to the interface.
             **kwargs (Any): Additional format-specific arguments (unused).
         """
-        parameters = AresParamInterface._filter_deduplicates(parameters=parameters)
+        parameters = AresParamInterface._filter_deuplicates(parameters=parameters)
         for param in parameters:
             self.parameter[param.label] = {
                 "description": param.description,
