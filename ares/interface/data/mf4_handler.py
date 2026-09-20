@@ -366,7 +366,18 @@ class MF4Handler(MDF, AresDataInterface):
             comment = "ares"
 
         signals_to_write = []
+        expected_length: int | None = None
+        common_timebase = True
         for signal in data:
+            if expected_length is None:
+                expected_length = signal.shape[0]
+            elif signal.shape[0] != expected_length:
+                common_timebase = False
+                logger.warning(
+                    f"Signal '{signal.label}' has length {signal.shape[0]}, "
+                    f"expected {expected_length} to match previously processed signals."
+                )
+
             source_name = getattr(signal, "source", "ARES_DEFAULT_SOURCE")
 
             source = Source(
@@ -391,16 +402,14 @@ class MF4Handler(MDF, AresDataInterface):
                 )
 
             elif signal.ndim in [2, 3]:
-                dtype_str = self.DTYPE_MAP[signal.dtype]
-
                 if signal.ndim == 2:
-                    array_size = signal.shape[1]
-                    dimension_str = f"({array_size},)"
+                    dimension_str = f"({signal.shape[1]},)"
                 else:
-                    rows, cols = signal.shape[1], signal.shape[2]
-                    dimension_str = f"({rows}, {cols})"
+                    dimension_str = f"({signal.shape[1]}, {signal.shape[2]})"
 
-                types = [(signal.label, f"{dimension_str}{dtype_str}")]
+                types = [
+                    (signal.label, f"{dimension_str}{self.DTYPE_MAP[signal.dtype]}")
+                ]
                 samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
 
                 signals_to_write.append(
@@ -420,6 +429,5 @@ class MF4Handler(MDF, AresDataInterface):
                     f"Unsupported signal dimension: {signal.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
                 )
 
-        # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
-        self.append(signals_to_write, comment=comment, common_timebase=True)
+        self.append(signals_to_write, comment=comment, common_timebase=common_timebase)
         [self._available_signals.append(signal.label) for signal in data]
