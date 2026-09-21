@@ -42,5 +42,13 @@ jobs:
         run: |
           make -C examples ARES=../dist/ares.exe
 
+      - name: Upload Windows executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ares-windows-executable
+          path: dist/ares.exe
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Cleanup ARES Environment
         uses: ./.github/workflow-actions/cleanup-ares

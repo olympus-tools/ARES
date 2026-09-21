@@ -1,9 +1,10 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "setuptools_scm[toml]>=8"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "ares"
+version = "0.1.0"
 description = "automated rapid embedded simulation"
 readme = "README.md"
 authors = [
@@ -53,8 +54,6 @@ dependencies = [
     "colorlog==6.9.0",
     "dcmi",
 ]
-dynamic = ["version"]
-
 [project.scripts]
 ares = "ares.cli.ares:cli"
 
@@ -79,6 +78,7 @@ docs = [
     "furo==2024.8.6",
     "myst-parser==4.0.1",
     "sphinx-autodoc-typehints==3.1.0",
+    "sphinxcontrib-mermaid>=2.1.1",
 ]
 release = [
     "ares[dev]",
@@ -103,9 +103,6 @@ include = ["ares*"]
 
 [tool.setuptools.package-data]
 ares = ["py.typed"]
-
-[tool.setuptools_scm]
-write_to = "ares/core/version.py"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]

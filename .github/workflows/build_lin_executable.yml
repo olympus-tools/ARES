@@ -38,5 +38,13 @@ jobs:
         run: |
           make -C examples ARES=../dist/ares
 
+      - name: Upload Linux executable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ares-linux-executable
+          path: dist/ares
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Cleanup ARES Environment
         uses: ./.github/workflow-actions/cleanup-ares

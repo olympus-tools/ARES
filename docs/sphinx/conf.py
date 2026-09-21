@@ -37,7 +37,7 @@ import sys
 from pathlib import Path
 
 # Add project root to path so autodoc can import the package.
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # -- Project information -----------------------------------------------------
 
@@ -54,6 +54,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_autodoc_typehints",
     "myst_parser",
+    "sphinxcontrib.mermaid",
 ]
 
 templates_path = ["_templates"]
@@ -61,13 +62,14 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 # Suppress warnings caused by myst cross-references that are GitHub-relative
 # and not resolvable in Sphinx.
-suppress_warnings = ["myst.xref_missing"]
+suppress_warnings = ["myst.xref_missing", "misc.highlighting_failure"]
 
 # Both .rst and .md files are supported as source files.
 source_suffix = {
     ".rst": "restructuredtext",
     ".md": "markdown",
 }
+myst_fence_as_directive = {"mermaid"}
 
 # -- Napoleon (Google-style docstrings) --------------------------------------
 
