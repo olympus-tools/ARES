@@ -60,7 +60,13 @@ uv sync --all-extras
 
 ARES is primarily used via its Command Line Interface (CLI). The main command is `pipeline`, which executes a simulation workflow defined in a JSON file.
 
-### Basic Command
+The global `-v`/`--version` option prints the installed ARES version:
+
+```bash
+uv run ares --version
+```
+
+### Pipeline Command
 
 ```bash
 uv run ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
@@ -72,7 +78,9 @@ uv run ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 | :--- | :--- | :--- | :--- | :--- |
 | `--workflow` | `-wf` | Path to the workflow JSON file. | Yes | - |
 | `--output` | `-o` | Directory where output files (data, parameter, workflow state) will be saved. If omitted, ARES creates an `output/` subdirectory relative to the workflow file. | No | `<workflow_dir>/output/` |
-| `--log-level` | | Logging verbosity (10=DEBUG, 20=INFO, 30=WARNING, 40=ERROR). | No | 20 (INFO) |
+| `--log-dir` | | Directory where log files are written. | No | `<package>/logs` |
+| `--log-level` | | Logging verbosity (`10=DEBUG`, `20=INFO`, `30=WARNING`, `40=ERROR`, `50=CRITICAL`). | No | `20` (INFO) |
+
 
 ### Example
 
@@ -132,7 +140,7 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
 | `resample_method`  | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling signals. Defaults to `"linear"`. |
 | `resample_tolerance` | No       | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
-| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
+| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x_axis`, and `y_axis`. |
 
 #### Parameter Element (`type="parameter"`)
 
@@ -162,7 +170,7 @@ Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent an
 | `parameter`        | No         | `list[str]` |                     | List of parameter element names.                    |
 | `init`             | No         | `list[str]` |                     | List of elements for initialization.                |
 | `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
-| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
+| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x_axis`, and `y_axis`. |
 | `transpose_parameter` | No | `bool` | `false`, `true` | Optional transposing of 2D parameters. `false` is the default and does not transpose; `true` transposes. |
 | `resample_method`  | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling signals. Defaults to `"linear"`. |
 | `resample_tolerance` | No       | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
@@ -192,7 +200,7 @@ When merging elements with overlapping parameter names or signal labels, later e
 | `data`                     | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Later elements override earlier ones. |
 | `label_filter_data`        | No         | `list[str]` |                     | Filter specific signals by name or pattern when merging data. |
 | `label_filter_parameter`   | No         | `list[str]` |                     | Filter specific parameters by name or pattern when merging parameters. |
-| `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables additional fields: `signal_name`, `x-axis`, and `y-axis`. |
+| `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables additional fields: `signal_name`, `x_axis`, and `y_axis`. |
 | `transpose_parameter` | No         | `bool`       | `false`, `true`            | Optional transposing of 2D parameters. `false` is the default and does not transpose; `true` transposes. |
 | `stepsize`                 | No         | `int`       |                     | Resampling step size in ms applied to merged data.  |
 | `resample_method`          | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling merged signals. Defaults to `"linear"`. |
