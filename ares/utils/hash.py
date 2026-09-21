@@ -51,6 +51,15 @@ BYTE_SIZE = 8
 logger = create_logger(name=__name__)
 
 
+from ares.utils.logger import create_logger
+
+ENDIAN_TYPE = "big"
+CHUNK_SIZE = 4096
+BYTE_SIZE = 8
+
+logger = create_logger(name=__name__)
+
+
 def bin_based_hash(file_path: Path) -> str:
     """Calculate a SHA-256 hash from a binary file's contents.
 
@@ -68,6 +77,36 @@ def bin_based_hash(file_path: Path) -> str:
         while chunk := f.read(CHUNK_SIZE):
             hasher.update(chunk)
     return hasher.hexdigest()
+
+
+@error_msg(
+    exception_msg="Hash of interface objectcould not be calculated.",
+    log=logger,
+    include_args=["file_path", "interface_objects"],
+)
+@typechecked
+def calculate_hash(
+    file_path: Path | None = None,
+    interface_objects: list[Any] | None = None,
+) -> str:
+    """Calculate a hash from a file or a list of interface objects.
+
+    Args:
+        file_path (Path | None): Path to the interface object (data/parameter) file to load.
+        interface_objects (list[Any] | None): Interface objects to hash when no file path is provided.
+
+    Returns:
+        str: SHA-256 hash string of the content.
+    """
+    if file_path is not None:
+        return bin_based_hash(file_path=file_path)
+    if interface_objects is not None:
+        return object_based_hash(interface_objects=interface_objects)
+
+    logger.error(
+        "For calculation of hash, either file_path or interface_objects must be provided."
+    )
+    raise
 
 
 @error_msg(
