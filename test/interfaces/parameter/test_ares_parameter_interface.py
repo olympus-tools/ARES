@@ -231,14 +231,14 @@ class TestAresParamInterfaceCalculateHash:
 
 
 class TestAresParamInterfaceFilterDeduplicates:
-    """Tests for the _filter_deduplicates static method."""
+    """Tests for the _filter_deuplicates static method."""
 
     def test_filter_no_duplicates(self):
         params = [
             AresParameter(label="param1", value=np.array(1.0)),
             AresParameter(label="param2", value=np.array(2.0)),
         ]
-        result = AresParamInterface._filter_deduplicates(params)
+        result = AresParamInterface._filter_deuplicates(params)
         assert len(result) == 2
         assert [p.label for p in result] == ["param1", "param2"]
 
@@ -247,13 +247,13 @@ class TestAresParamInterfaceFilterDeduplicates:
             AresParameter(label="param1", value=np.array(1.0)),
             AresParameter(label="param1", value=np.array(99.0)),
         ]
-        result = AresParamInterface._filter_deduplicates(params)
+        result = AresParamInterface._filter_deuplicates(params)
         assert len(result) == 1
         assert result[0].label == "param1"
         assert np.array_equal(result[0].value, np.array(99.0))
 
     def test_filter_empty_list(self):
-        result = AresParamInterface._filter_deduplicates([])
+        result = AresParamInterface._filter_deuplicates([])
         assert result == []
 
     def test_filter_multiple_duplicates(self):
@@ -264,7 +264,7 @@ class TestAresParamInterfaceFilterDeduplicates:
             AresParameter(label="c", value=np.array(4.0)),
             AresParameter(label="b", value=np.array(5.0)),
         ]
-        result = AresParamInterface._filter_deduplicates(params)
+        result = AresParamInterface._filter_deuplicates(params)
         assert len(result) == 3
         assert [p.label for p in result] == ["a", "b", "c"]
         assert np.array_equal(result[0].value, np.array(3.0))

@@ -40,8 +40,8 @@ import pytest
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
-from ares.utils.hash import calculate_hash
 from ares.pydantic_models.workflow_model import DataElement, VStackPatternElement
+from ares.utils.hash import calculate_hash
 
 
 class ConcreteDataInterface(AresDataInterface):
@@ -260,7 +260,7 @@ class TestAresDataInterfaceCalculateHash:
 
 
 class TestAresDataInterfaceFilterDeduplicates:
-    """Tests for the _filter_deduplicates static method."""
+    """Tests for the _filter_deuplicates static method."""
 
     def test_filter_no_duplicates(self):
         signals = [
@@ -275,7 +275,7 @@ class TestAresDataInterfaceFilterDeduplicates:
                 value=np.array([3, 4], dtype=np.int64),
             ),
         ]
-        result = AresDataInterface._filter_deduplicates(signals)
+        result = AresDataInterface._filter_deuplicates(signals)
         assert len(result) == 2
         assert [s.label for s in result] == ["sig1", "sig2"]
 
@@ -292,13 +292,13 @@ class TestAresDataInterfaceFilterDeduplicates:
                 value=np.array([99, 100], dtype=np.int64),
             ),
         ]
-        result = AresDataInterface._filter_deduplicates(signals)
+        result = AresDataInterface._filter_deuplicates(signals)
         assert len(result) == 1
         assert result[0].label == "sig1"
         assert np.array_equal(result[0].value, np.array([99, 100], dtype=np.int64))
 
     def test_filter_empty_list(self):
-        result = AresDataInterface._filter_deduplicates([])
+        result = AresDataInterface._filter_deuplicates([])
         assert result == []
 
 

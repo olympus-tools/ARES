@@ -370,15 +370,15 @@ def test_ares_signal_wrong_timestamps_type():
 
 def test_ares_signal_wrong_dimension():
     """
-    Test if ValueError is raised for wrong dimension.
+    Test if RuntimeError is raised for wrong dimension.
     """
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         AresSignal(
             label="test_signal",
             timestamps=np.array([[1, 2], [3, 4]], dtype=np.float32),
             value=np.array([1, 2, 3, 4], dtype=np.float32),
         )
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         AresSignal(
             label="test_signal",
             timestamps=np.array([1, 2, 3, 4], dtype=np.float32),
