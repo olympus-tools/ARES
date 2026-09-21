@@ -95,13 +95,19 @@ class AresSignal:
             )
 
         if not np.issubdtype(self.timestamps.dtype, np.floating):
-            raise TypeError("The 'timestamps' array must have a float datatype.")
+            logger.error(
+                f"Signal '{self.label}' has timestamps with dtype {self.timestamps.dtype}, "
+                f"expected a floating-point dtype."
+            )
+            raise
         if self.timestamps.ndim != 1 or (
             self.value.ndim >= 0 and self.timestamps.shape[0] != self.value.shape[0]
         ):
-            raise ValueError(
-                "Both 'timestamps' and 'data' arrays must be at least 1-dimensional."
+            logger.error(
+                f"Signal '{self.label}' has mismatched timestamps and value array shapes: "
+                f"timestamps shape {self.timestamps.shape}, value shape {self.value.shape}."
             )
+            raise
 
     @typechecked
     def _cast(
