@@ -102,7 +102,10 @@ dcmi = { path = "submodules/dcmi", editable = true }
 include = ["ares*"]
 
 [tool.setuptools.package-data]
-ares = ["py.typed"]
+ares = [
+    "py.typed",
+    "plugins/sim_interface.c",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]

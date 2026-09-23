@@ -48,6 +48,13 @@ from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.plugins.sim_interface import (
+    GTYPE,
+    MappingEntry,
+    PROGRESS_CB,
+    SimulationRunner,
+    build_signal_list,
+)
 from ares.pydantic_models.datadictionary_model import (
     DataDictionaryModel,
     ParameterModel,
@@ -76,6 +83,7 @@ class SimUnit:
         "bool": [ctypes.c_bool, np.bool_],
         "int8": [ctypes.c_int8, np.int8],
         "int16": [ctypes.c_int16, np.int16],
+        "short": [ctypes.c_int16, np.int16],
         "int32": [ctypes.c_int32, np.int32],
         "int64": [ctypes.c_int64, np.int64],
         "uint8": [ctypes.c_uint8, np.uint8],
@@ -116,6 +124,13 @@ class SimUnit:
         self._library: ctypes.CDLL = self._load_library()
         self._dll_interface: dict[str, Any] | None = self._setup_c_interface()
         self._setup_sim_function()
+
+        # The C simulation runner steps the whole time series in one ctypes
+        # call. When it cannot be built (no C compiler) it is None and the
+        # per-step Python loop is used instead; both paths produce the same
+        # results.
+        self._sim_runner: SimulationRunner | None = SimulationRunner.load()
+        self._static_input_labels: set[str] = set()
 
     @error_msg(
         exception_msg="Unexpected error loading data dictionary json-file.",
@@ -211,9 +226,17 @@ class SimUnit:
                 size = dd_element_value.size
                 base_ctypes_type = SimUnit.DATATYPES[datatype][0]
 
-                ctypes_type = base_ctypes_type
-                for dimension in reversed(size):
-                    ctypes_type *= dimension
+                if len(size) == 0:
+                    ctypes_type = base_ctypes_type
+                elif len(size) == 1:
+                    ctypes_type = base_ctypes_type * size[0]
+                elif len(size) == 2:
+                    ctypes_type = (base_ctypes_type * size[1]) * size[0]
+                else:
+                    logger.warning(
+                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+                    )
+                    continue
 
                 dll_interface[dd_element_name] = ctypes_type.in_dll(
                     self._library, dd_element_name
@@ -324,6 +347,7 @@ class SimUnit:
         time_steps = len(timestamps) if data else 1
 
         # mapping and casting of signal list
+        self._static_input_labels = set()
         data_dict = self._list_to_dict(data if data else [])
         mapped_data_dict = self._map_sim_input_data(
             data_dict=data_dict, time_steps=time_steps
@@ -357,9 +381,7 @@ class SimUnit:
                 "No input data (time array) provided => executing single time step."
             )
 
-        self._write_base_elements_to_dll(
-            base_element_dict=mapped_parameter_dict, dd_scope=self._dd.parameters or {}
-        )
+        self._write_parameters_to_dll(base_parameter_dict=mapped_parameter_dict)
 
         output_signals = [
             k for k, v in (self._dd.signals or {}).items() if v.type in ["out", "inout"]
@@ -368,7 +390,14 @@ class SimUnit:
         for signal in output_signals:
             size = self._dd.signals[signal].size
             np_dtype = self.DATATYPES[self._dd.signals[signal].datatype][1]
-            value = np.empty((time_steps, *size), dtype=np_dtype)
+            if len(size) == 0:
+                value = np.empty((time_steps,), dtype=np_dtype)
+            elif len(size) == 1:
+                value = np.empty((time_steps, size[0]), dtype=np_dtype)
+            elif len(size) == 2:
+                value = np.empty((time_steps, size[0], size[1]), dtype=np_dtype)
+            else:
+                continue
             sim_result[signal] = AresSignal(
                 label=signal,
                 timestamps=timestamps,
@@ -385,71 +414,32 @@ class SimUnit:
                 sim_function()
 
         # running cyclical functions
-        # TODO: i guess here we can do optimize - move more stuff into C
-        # instead of 'for time_step_idx in range(time_steps):' calling in python we should try to iterate in C
-        # in my head (and more or less some documentation reading):
-        # input_ptr = mapped_input.ctypes.data_as(POINTER(c_double))
-        # output_ptr = sim_result["my_signal"].ctypes.data_as(POINTER(c_double))
-        # self._dll.run_simulation(input_ptr, output_ptr, time_steps)
-        # or via numpy:
-        # c_func.argtypes = [
-        #     np.ctypeslib.ndpointer(dtype=input_data.dtype, ndim=input_data.ndim, flags='C_CONTIGUOUS'),
-        #     np.ctypeslib.ndpointer(dtype=output_buffer.dtype, ndim=output_buffer.ndim, flags='C_CONTIGUOUS'),
-        #     ctypes.c_int
-        # ]
-        # c_func.restype = None
-        # in C
-        # void run_simulation(double* input_data, double* output_buffer, int steps) {
-        #     for(int i = 0; i < steps; i++) {
-        #         // Do the work directly in C
-        #         output_buffer[i] = function_call(input_data[i]);
-        #     }
-        # }
-        # BUG: How to generalise the the function 'run_simulation'? | generate c-code with ares and then call?
-        # concept:
-        #   - use function pointer 'typedef void (*SimFunc)(void);'
-        #   - generic c-function: 'run_simulation(SimFunc simulation_function, int sim_steps, SimInput* input, SimOutput* output)
-        #                           { for (int i=0; i<sim_steps;i++) { simulation_function(); } }'  >> arbitrary function can be called
-        #   - handle inputs/outputs via structs | how to access the data?
-        #                   >> struct "order" for accessing?
-        #
-
-        if self._sim_functions_cyclical:
+        # The whole time series is stepped inside one C call by the simulation
+        # runner (per-step memcpy of the signal mappings + function calls). The
+        # Python loop below is the fully-equivalent fallback used when the
+        # runner cannot be built.
+        if self._sim_runner is not None:
+            logger.info(
+                f"Running cyclical functions in C for {time_steps} time steps..."
+            )
+            self._run_c_loop(
+                sim_result=sim_result,
+                mapped_data_dict=mapped_data_dict,
+                output_signals=output_signals,
+                time_steps=time_steps,
+                timestamps=timestamps,
+                data=data,
+            )
+        else:
             logger.info(f"Running cyclical functions for {time_steps} time steps...")
-            progress_indices = [round(i * (time_steps - 1) / 10) for i in range(11)]
-            progress_step = 0
-            time_real_start = time.perf_counter()
-            time_sim_start = float(timestamps[0]) if data else 0.0
-            for time_step_idx in range(time_steps):
-                self._write_base_elements_to_dll(
-                    base_element_dict=mapped_data_dict,
-                    dd_scope=self._dd.signals or {},
-                    time_step_idx=time_step_idx,
-                )
-                for sim_function in self._sim_functions_cyclical:
-                    sim_function()
-                step_result = self._read_dll_interface()
-                for signal in output_signals:
-                    sim_result[signal].value[time_step_idx] = step_result[signal]
-
-                if time_step_idx >= progress_indices[progress_step]:
-                    time_real_elapsed = time.perf_counter() - time_real_start
-                    time_sim_elapsed = (
-                        float(timestamps[time_step_idx]) - time_sim_start
-                        if data
-                        else 0.0
-                    )
-                    time_speedup_hint = (
-                        f" - speedup factor {time_sim_elapsed / time_real_elapsed:.1f}"
-                        if time_real_elapsed > 0 and time_sim_elapsed > 0
-                        else ""
-                    )
-                    logger.info(
-                        f"Simulation progress: {progress_step * 10}%{time_speedup_hint}"
-                    )
-                    progress_step += 1
-                    time_real_start = time.perf_counter()
-                    time_sim_start = float(timestamps[time_step_idx]) if data else 0.0
+            self._run_python_loop(
+                sim_result=sim_result,
+                mapped_data_dict=mapped_data_dict,
+                output_signals=output_signals,
+                time_steps=time_steps,
+                timestamps=timestamps,
+                data=data,
+            )
 
         self._interface_consistency_check(interface_dict=sim_result, direction="Output")
 
@@ -535,12 +525,12 @@ class SimUnit:
                                 mapped = True
                                 break
                         else:
-                            size = dd_element_value.size
-                            np_dtype = self.DATATYPES[dd_element_value.datatype][1]
-                            static_value = np.full(
-                                (time_steps, *size), alternative_value, dtype=np_dtype
+                            static_value = self._map_sim_input_static(
+                                time_steps=time_steps,
+                                datatype=dd_element_value.datatype,
+                                size=dd_element_value.size,
+                                value=alternative_value,
                             )
-
                             mapped_data_dict[dd_element_name] = AresSignal(
                                 label=dd_element_name,
                                 value=static_value,
@@ -551,16 +541,27 @@ class SimUnit:
                                 f"Data dictionary signal '{dd_element_name}' has been mapped to constant value {alternative_value}.",
                             )
                             mapped = True
+                            self._static_input_labels.add(dd_element_name)
                             break
 
                 if not mapped:
-                    default_init_value = 0
                     size = dd_element_value.size
-                    np_dtype = self.DATATYPES[dd_element_value.datatype][1]
-                    default_value = np.full(
-                        (time_steps, *size), default_init_value, dtype=np_dtype
-                    )
 
+                    if len(size) == 0:
+                        default_init_value = 0
+                    elif len(size) == 1:
+                        default_init_value = [0] * size[0]
+                    elif len(size) == 2:
+                        default_init_value = [[0] * size[1] for _ in range(size[0])]
+                    else:
+                        default_init_value = 0
+
+                    default_value = self._map_sim_input_static(
+                        time_steps=time_steps,
+                        datatype=dd_element_value.datatype,
+                        size=size,
+                        value=default_init_value,
+                    )
                     mapped_data_dict[dd_element_name] = AresSignal(
                         label=dd_element_name,
                         value=default_value,
@@ -570,6 +571,7 @@ class SimUnit:
                     logger.warning(
                         f"Data dictionary signal '{dd_element_name}' could not be mapped. Default constant value 0 has been assigned.",
                     )
+                    self._static_input_labels.add(dd_element_name)
 
             except Exception as e:
                 logger.warning(
@@ -649,10 +651,19 @@ class SimUnit:
                 if not mapped:
                     size = dd_element_value.size
 
+                    if len(size) == 0:
+                        default_init_value = 0
+                    elif len(size) == 1:
+                        default_init_value = [0] * size[0]
+                    elif len(size) == 2:
+                        default_init_value = [[0] * size[1] for _ in range(size[0])]
+                    else:
+                        default_init_value = 0
+
                     np_dtype = self.DATATYPES[dd_element_value.datatype][1]
                     mapped_parameter_dict[dd_element_name] = AresParameter(
                         label=dd_element_name,
-                        value=np.zeros(size, dtype=np_dtype),
+                        value=np.array(default_init_value, dtype=np_dtype),
                         description="Default value: 0",
                     )
                     logger.warning(
@@ -666,6 +677,44 @@ class SimUnit:
 
         logger.debug("Mapping parameter input has been successfully finished.")
         return mapped_parameter_dict
+
+    @safely_run(
+        default_return=None,
+        exception_msg="Mapping static simulation input to data source could not be executed.",
+        log=logger,
+        include_args=["time_steps", "datatype", "size", "value"],
+        instance_el=["file_path", "dd_path"],
+    )
+    @typechecked
+    def _map_sim_input_static(
+        self, time_steps: int, datatype: str, size: list[int], value: Any
+    ) -> np.ndarray:
+        """Creates a NumPy array of a specified size and datatype, filled with a constant value.
+
+        This is used to handle simulation variables that have a static value instead of a signal.
+        The function supports scalar, 1D, and 2D arrays as static values.
+
+        Args:
+            time_steps (int): The total number of simulation steps.
+            datatype (str): The target datatype for the NumPy array (e.g., 'float', 'int').
+            size (list[int]): The size of the simulation variable (e.g., `[1]` for a scalar, `[10]` for an array).
+            value (any): The constant value to assign to the variable.
+
+        Returns:
+            np.ndarray: A NumPy array containing the constant value for all time steps.
+        """
+        np_dtype = self.DATATYPES[datatype][1]
+        if len(size) == 0:
+            return np.full((time_steps,), value, dtype=np_dtype)
+        elif len(size) == 1:
+            return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1))
+        elif len(size) == 2:
+            return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1, 1))
+        else:
+            logger.warning(
+                f"Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
+            )
+            raise
 
     @safely_run(
         default_return=None,
@@ -683,13 +732,13 @@ class SimUnit:
     ) -> None:
         """Core method to write a single value to the DLL interface.
 
-        Handles scalars and arrays with any number of dimensions by writing the
-        appropriate data structure to the ctypes interface.
+        Handles scalar, 1D, and 2D arrays by writing the appropriate data structure
+        to the ctypes interface. Logs warnings if write fails.
 
         Args:
             dd_element_name (str): Name of the variable in the DLL interface.
             input_value (np.ndarray | np.generic): The value to write (numpy array or numpy scalar).
-            size (list[int]): Array shape from the Data Dictionary; an empty list denotes a scalar.
+            size (list[int]): Size specification from Data Dictionary (0=scalar, 1=1D array, 2=2D array).
         """
         if len(size) == 0:
             self._dll_interface[dd_element_name].value = input_value.item()
@@ -697,49 +746,61 @@ class SimUnit:
             np.ctypeslib.as_array(self._dll_interface[dd_element_name])[:] = input_value
 
     @typechecked
-    def _write_base_elements_to_dll(
+    def _write_parameters_to_dll(
         self,
-        base_element_dict: Mapping[str, AresSignal | AresParameter],
-        dd_scope: Mapping[str, SignalElement | ParameterModel],
-        time_step_idx: int | None = None,
-    ):
-        """Writes base elements (parameters or signals) to the DLL interface.
+        base_parameter_dict: Mapping[str, AresParameter],
+    ) -> None:
+        """Writes all parameters to the DLL interface once before the simulation starts.
 
-        This method handles both parameters (no time dimension) and signals (with time
-        dimension). For signals, provide ``time_step_idx`` to index into the value array.
-
-        Args:
-            base_element_dict (dict[str, AresSignal | AresParameter]): Dictionary of
-                AresSignal or AresParameter objects keyed by label.
-            dd_scope (dict[str, SignalElement | ParameterModel]): The corresponding
-                section from the Data Dictionary (signals or parameters).
-            time_step_idx (int | None): Time step index for signal values. Use ``None``
-                for parameters which have no time dimension.
+        Parameters have no time dimension and are written exactly once, before
+        the initialization and cyclical functions run.
         """
-        for dd_element_name, dd_element_value in dd_scope.items():
+        for dd_element_name, dd_element_value in (self._dd.parameters or {}).items():
             try:
-                element_type = getattr(dd_element_value, "type", None)
-                if element_type is not None and element_type not in ["in", "inout"]:
-                    continue
-
-                if dd_element_name in base_element_dict:
-                    raw_value = base_element_dict[dd_element_name].value
-                    input_value = (
-                        raw_value[time_step_idx]
-                        if time_step_idx is not None
-                        else raw_value
-                    )
+                if dd_element_name in base_parameter_dict:
+                    raw_value = base_parameter_dict[dd_element_name].value
                     size = dd_element_value.size
                     self._write_value_to_dll(
                         dd_element_name=dd_element_name,
-                        input_value=input_value,
+                        input_value=raw_value,
                         size=size,
                     )
                 else:
                     logger.warning(
                         f"Element '{dd_element_name}' defined in data dictionary but not provided in input.",
                     )
+            except Exception as e:
+                logger.warning(
+                    f"Warning writing element '{dd_element_name}' to '{self.file_path}' library not possible: {e}",
+                )
 
+    @typechecked
+    def _write_step_input_to_dll(
+        self,
+        mapped_data_dict: Mapping[str, AresSignal],
+        time_step_idx: int,
+    ) -> None:
+        """Writes the values of one time step of every input signal to the DLL globals.
+
+        Used by the Python stepping loop fallback.
+        """
+        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
+            try:
+                if dd_element_value.type not in ["in", "inout"]:
+                    continue
+                if dd_element_name in mapped_data_dict:
+                    size = dd_element_value.size
+                    self._write_value_to_dll(
+                        dd_element_name=dd_element_name,
+                        input_value=mapped_data_dict[dd_element_name].value[
+                            time_step_idx
+                        ],
+                        size=size,
+                    )
+                else:
+                    logger.warning(
+                        f"Element '{dd_element_name}' defined in data dictionary but not provided in input.",
+                    )
             except Exception as e:
                 logger.warning(
                     f"Warning writing element '{dd_element_name}' to '{self.file_path}' library not possible: {e}",
@@ -779,38 +840,159 @@ class SimUnit:
         return sim_input
 
     @typechecked
-    def _read_dll_interface(self) -> dict[str, Any] | None:
-        """Reads the current values of the global C variables from the shared library.
+    def _run_python_loop(
+        self,
+        sim_result: dict[str, AresSignal],
+        mapped_data_dict: dict[str, AresSignal],
+        output_signals: list[str],
+        time_steps: int,
+        timestamps: np.ndarray,
+        data: list[AresSignal] | None,
+    ) -> None:
+        """Steps the whole simulation in Python, one ctypes round-trip per step.
 
-        It only reads from variables marked as `'out'` or `'inout'` in the Data Dictionary.
-
-        Returns:
-            dict[str, Any] | None: A dictionary where keys are the variable names and values are their current
-                values read from the C library for the current time step. Returns `None` if an error occurs.
+        This is the fallback used when the C runner could not be built and is
+        behaviour-identical to :meth:`_run_c_loop`.
         """
-        step_result: dict[str, Any] = {}
-        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
-            try:
-                if dd_element_value.type not in ["out", "inout"]:
-                    continue
+        if not self._sim_functions_cyclical:
+            return
 
-                sim_var = self._dll_interface[dd_element_name]
-                size = dd_element_value.size
-                np_dtype = self.DATATYPES[dd_element_value.datatype][1]
+        progress_indices = [round(i * (time_steps - 1) / 10) for i in range(11)]
+        progress_step = 0
+        time_real_start = time.perf_counter()
+        time_sim_start = float(timestamps[0]) if data else 0.0
 
-                if not size:
-                    step_result[dd_element_name] = np.array(
-                        sim_var.value, dtype=np_dtype
-                    )
+        for time_step_idx in range(time_steps):
+            self._write_step_input_to_dll(
+                mapped_data_dict=mapped_data_dict,
+                time_step_idx=time_step_idx,
+            )
+            for sim_function in self._sim_functions_cyclical:
+                sim_function()
+
+            for signal in output_signals:
+                sim_var = self._dll_interface[signal]
+                size = self._dd.signals[signal].size
+                if len(size) == 0:
+                    sim_result[signal].value[time_step_idx] = sim_var.value
                 else:
-                    step_result[dd_element_name] = np.ctypeslib.as_array(sim_var)
+                    sim_result[signal].value[time_step_idx] = np.ctypeslib.as_array(
+                        sim_var
+                    )
 
-            except Exception as e:
-                logger.warning(
-                    f"Reading output value '{dd_element_name}' from '{self.file_path}' library has not been successful: {e}",
+            if time_step_idx >= progress_indices[progress_step]:
+                time_real_elapsed = time.perf_counter() - time_real_start
+                time_sim_elapsed = (
+                    float(timestamps[time_step_idx]) - time_sim_start if data else 0.0
                 )
+                time_speedup_hint = (
+                    f" - speedup factor {time_sim_elapsed / time_real_elapsed:.1f}"
+                    if time_real_elapsed > 0 and time_sim_elapsed > 0
+                    else ""
+                )
+                logger.info(
+                    f"Simulation progress: {progress_step * 10}%{time_speedup_hint}"
+                )
+                progress_step += 1
+                time_real_start = time.perf_counter()
+                time_sim_start = float(timestamps[time_step_idx]) if data else 0.0
 
-        return step_result
+    @typechecked
+    def _run_c_loop(
+        self,
+        sim_result: dict[str, AresSignal],
+        mapped_data_dict: dict[str, AresSignal],
+        output_signals: list[str],
+        time_steps: int,
+        timestamps: np.ndarray,
+        data: list[AresSignal] | None,
+    ) -> None:
+        """Steps the whole time series inside one C call via the simulation runner.
+
+        Each input/output signal is described by a byte mapping. The runner
+        memcpy's the per-step values in and out of the simulation unit globals
+        and calls the cyclical functions in order; static inputs are written
+        once before the loop.
+        """
+        if self._sim_runner is None or not self._sim_functions_cyclical:
+            return
+
+        input_entries: list[MappingEntry] = []
+        for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
+            if dd_element_value.type not in ["in", "inout"]:
+                continue
+            if dd_element_name not in mapped_data_dict:
+                continue
+            value = np.ascontiguousarray(mapped_data_dict[dd_element_name].value)
+            input_entries.append(
+                MappingEntry(
+                    data_buffer=value.ctypes.data,
+                    target_global=ctypes.addressof(
+                        self._dll_interface[dd_element_name]
+                    ),
+                    num_bytes=self._mapping_num_bytes(value, dd_element_value.size),
+                    write_once=dd_element_name in self._static_input_labels,
+                )
+            )
+
+        output_entries: list[MappingEntry] = []
+        for signal in output_signals:
+            value = np.ascontiguousarray(sim_result[signal].value)
+            output_entries.append(
+                MappingEntry(
+                    data_buffer=value.ctypes.data,
+                    target_global=ctypes.addressof(self._dll_interface[signal]),
+                    num_bytes=self._mapping_num_bytes(
+                        value, self._dd.signals[signal].size
+                    ),
+                )
+            )
+
+        input_list, _ = build_signal_list(input_entries)
+        output_list, _ = build_signal_list(output_entries)
+
+        towards_c_func = (GTYPE * len(self._sim_functions_cyclical))()
+        for i, sim_function in enumerate(self._sim_functions_cyclical):
+            towards_c_func[i] = GTYPE(ctypes.cast(sim_function, ctypes.c_void_p).value)
+
+        time_real_start = time.perf_counter()
+        time_sim_start = float(timestamps[0]) if data else 0.0
+        progress_step = 0
+
+        def progress(step_idx: int) -> None:
+            nonlocal time_real_start, time_sim_start, progress_step
+            time_real_elapsed = time.perf_counter() - time_real_start
+            time_sim_elapsed = (
+                float(timestamps[step_idx]) - time_sim_start if data else 0.0
+            )
+            time_speedup_hint = (
+                f" - speedup factor {time_sim_elapsed / time_real_elapsed:.1f}"
+                if time_real_elapsed > 0 and time_sim_elapsed > 0
+                else ""
+            )
+            logger.info(
+                f"Simulation progress: {progress_step * 10}%{time_speedup_hint}"
+            )
+            progress_step += 1
+            time_real_start = time.perf_counter()
+            time_sim_start = float(timestamps[step_idx]) if data else 0.0
+
+        self._sim_runner.run(
+            functions=towards_c_func,
+            num_functions=len(self._sim_functions_cyclical),
+            sim_steps=time_steps,
+            input_list=input_list,
+            output_list=output_list,
+            progress_cb=PROGRESS_CB(progress),
+        )
+
+    @staticmethod
+    def _mapping_num_bytes(value: np.ndarray, size: list[int]) -> int:
+        """Bytes transferred per time step = ``itemsize * element count``."""
+        element_count = 1
+        for dim in size:
+            element_count *= dim
+        return element_count * value.dtype.itemsize
 
     @typechecked
     def input_keys(
