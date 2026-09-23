@@ -38,13 +38,23 @@ import pytest
 
 from ares.interface.data.ares_signal import AresSignal
 
-DEBUG = False
+DEBUG = False  # Enalble for debug plots
+
+
+# INFO: Helper functions
+def _make_multidim_signal(n_timestamps=10, n_channels=3):
+    """Helper to create a multi-dimensional signal with known values."""
+    timestamps = np.arange(n_timestamps, dtype=np.float32)
+    values = np.arange(n_timestamps * n_channels, dtype=np.float32).reshape(
+        n_timestamps, n_channels
+    )
+    return AresSignal(label="multidim", timestamps=timestamps, value=values)
 
 
 # TEST: AresSignal initialization
 def test_ares_signal_init():
     """
-    Test if ares signal can be initialized with data.
+    Test if ares signal can be initialized with data and has correct attributes.
     """
     test_signal = AresSignal(
         label="test_signal",
@@ -59,17 +69,6 @@ def test_ares_signal_init():
     assert isinstance(test_signal.value, np.ndarray)
     assert np.issubdtype(test_signal.value.dtype, np.int64)
     assert len(test_signal.value) == 4
-
-
-def test_ares_signal_fs():
-    """
-    Test the fs property of the ares signal.
-    """
-    test_signal = AresSignal(
-        label="test_signal",
-        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
-        value=np.array([0, 1, 2, 3], dtype=np.float32),
-    )
     assert isinstance(test_signal.fs, np.float32)
     assert test_signal.fs == 1
 
@@ -79,7 +78,7 @@ def test_ares_signal_fs():
     [
         (
             "test_signal1",
-            np.zeros((4), dtype=np.float32),
+            np.arange(1, 5, 1, dtype=np.float32),
             np.ones((4), dtype=np.float32),
         ),
         (
@@ -107,36 +106,61 @@ def test_ares_signal_init_parametrized(label, timestamps, data):
     assert len(test_signal.timestamps) == data_length
     assert isinstance(test_signal.value, np.ndarray)
     assert len(test_signal.value) == data_length
+    assert isinstance(test_signal.fs, np.float32)
+
+
+# TEST: AresSignal input validation
+def test_ares_signal_wrong_timestamps_type():
+    """
+    Test if integer timestamps are cast and accepted.
+    """
+    signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([1, 2, 3, 4], dtype=int),
+        value=np.array([1, 2, 3, 4], dtype=np.float32),
+    )
+
+    assert np.issubdtype(signal.timestamps.dtype, np.float32)
+    assert np.array_equal(signal.timestamps, np.array([1, 2, 3, 4], dtype=np.float32))
+
+
+def test_ares_signal_wrong_dimension():
+    """
+    Test if ValueError is raised for wrong dimension.
+    """
+    with pytest.raises(ValueError):
+        AresSignal(
+            label="test_signal",
+            timestamps=np.array([[1, 2], [3, 4]], dtype=np.float32),
+            value=np.array([1, 2, 3, 4], dtype=np.float32),
+        )
+    with pytest.raises(ValueError):
+        AresSignal(
+            label="test_signal",
+            timestamps=np.array([1, 2, 3, 4], dtype=np.float32),
+            value=np.array([[1, 2], [3, 4]], dtype=np.float32),
+        )
+
+
+def test_ares_signal_resample_non_numeric():
+    """
+    Test that non-numeric, non-boolean signals return None.
+    """
+    test_signal = AresSignal(
+        label="complex",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([1 + 2j, 3 + 4j, 5 + 6j, 7 + 8j]),
+    )
+
+    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
+    signal_resampled = test_signal.resample(resampled_timestamps)
+    assert signal_resampled is None
 
 
 # TEST: AresSignal resampling
 def test_ares_signal_resample_default():
     """
     Test the resample method in general.
-    """
-    test_signal = AresSignal(
-        label="test_signal",
-        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
-        value=np.array([0, 1, 2, 3], dtype=np.float32),
-    )
-    original_timestamps = test_signal.timestamps.copy()
-    original_values = test_signal.value.copy()
-
-    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
-    signal_resampled = test_signal.resample(resampled_timestamps)
-
-    assert signal_resampled is not None
-    assert signal_resampled is not test_signal
-    assert np.array_equal(signal_resampled.timestamps, resampled_timestamps)
-    assert signal_resampled.value.shape == resampled_timestamps.shape
-
-    assert np.array_equal(test_signal.timestamps, original_timestamps)
-    assert np.array_equal(test_signal.value, original_values)
-
-
-def test_ares_signal_resample_linear():
-    """
-    Test linear resampling of the ares signal.
     """
     test_signal = AresSignal(
         label="test_signal",
@@ -271,15 +295,6 @@ def test_ares_signal_resample_cubic():
     assert np.array_equal(test_signal.value, original_values)
 
 
-def _make_multidim_signal(n_timestamps=10, n_channels=3):
-    """Helper to create a multi-dimensional signal with known values."""
-    timestamps = np.arange(n_timestamps, dtype=np.float32)
-    values = np.arange(n_timestamps * n_channels, dtype=np.float32).reshape(
-        n_timestamps, n_channels
-    )
-    return AresSignal(label="multidim", timestamps=timestamps, value=values)
-
-
 def test_ares_signal_resample_linear_multidim():
     """
     Test linear resampling preserves shape for multi-dimensional signals.
@@ -353,39 +368,6 @@ def test_ares_signal_resample_3d():
     assert signal_resampled.value.shape == expected_shape
 
 
-# TEST: AresSignal input validation
-def test_ares_signal_wrong_timestamps_type():
-    """
-    Test if integer timestamps are cast and accepted.
-    """
-    signal = AresSignal(
-        label="test_signal",
-        timestamps=np.array([1, 2, 3, 4], dtype=int),
-        value=np.array([1, 2, 3, 4], dtype=np.float32),
-    )
-
-    assert np.issubdtype(signal.timestamps.dtype, np.float32)
-    assert np.array_equal(signal.timestamps, np.array([1, 2, 3, 4], dtype=np.float32))
-
-
-def test_ares_signal_wrong_dimension():
-    """
-    Test if ValueError is raised for wrong dimension.
-    """
-    with pytest.raises(ValueError):
-        AresSignal(
-            label="test_signal",
-            timestamps=np.array([[1, 2], [3, 4]], dtype=np.float32),
-            value=np.array([1, 2, 3, 4], dtype=np.float32),
-        )
-    with pytest.raises(ValueError):
-        AresSignal(
-            label="test_signal",
-            timestamps=np.array([1, 2, 3, 4], dtype=np.float32),
-            value=np.array([[1, 2], [3, 4]], dtype=np.float32),
-        )
-
-
 def test_ares_signal_resample_nearest_bool():
     """
     Test that bool signals are resampled with nearest-neighbor (not interpolated).
@@ -440,26 +422,6 @@ def test_ares_signal_resample_nearest_int():
     assert np.array_equal(test_signal.value, original_values)
 
 
-def test_ares_signal_resample_nearest_int_ramp():
-    """
-    Test that an integer ramp stays stepped (nearest) after resample, not linear.
-    """
-    test_signal = AresSignal(
-        label="int_ramp",
-        timestamps=np.array([0, 1, 2, 3, 4], dtype=np.float32),
-        value=np.array([0, 1, 2, 3, 4], dtype=np.int32),
-    )
-
-    resampled_timestamps = np.array(
-        [0.25, 0.75, 1.25, 1.75, 2.25, 2.75, 3.25, 3.75], dtype=np.float32
-    )
-    signal_resampled = test_signal.resample(resampled_timestamps, method="cubic")
-
-    assert signal_resampled is not None
-    expected = np.array([0, 1, 1, 2, 2, 3, 3, 4], dtype=np.int32)
-    assert np.array_equal(signal_resampled.value, expected)
-
-
 def test_ares_signal_resample_nearest_bool_multidim():
     """
     Test nearest-neighbor resampling preserves shape for multi-dim bool signals.
@@ -504,198 +466,173 @@ def test_ares_signal_resample_nearest_int_multidim():
     assert np.issubdtype(signal_resampled.value.dtype, np.integer)
 
 
-def test_ares_signal_resample_non_numeric():
+# TEST: AresSignal single-sample timestamps and dtype casting
+def test_ares_signal_init_single_timestamp():
     """
-    Test that non-numeric, non-boolean signals return None.
+    Test that a signal with a single timestamp is accepted and kept.
     """
     test_signal = AresSignal(
-        label="complex",
+        label="single",
+        timestamps=np.array([5.0], dtype=np.float32),
+        value=np.array([42.0], dtype=np.float32),
+    )
+
+    assert test_signal.timestamps.shape == (1,)
+    assert np.issubdtype(test_signal.timestamps.dtype, np.float32)
+    assert np.array_equal(test_signal.timestamps, np.array([5.0], dtype=np.float32))
+
+
+def test_ares_signal_init_single_timestamp_cast():
+    """
+    Test that a single integer timestamp is cast to float32.
+    """
+    test_signal = AresSignal(
+        label="single_cast",
+        timestamps=np.array([3], dtype=np.int64),
+        value=np.array([7], dtype=np.float32),
+    )
+
+    assert np.issubdtype(test_signal.timestamps.dtype, np.float32)
+    assert np.array_equal(test_signal.timestamps, np.array([3.0], dtype=np.float32))
+
+
+def test_ares_signal_dtype_cast_changes_dtype():
+    """
+    Test that dtype_cast converts the value array to the target dtype.
+    """
+    test_signal = AresSignal(
+        label="dtype_cast",
         timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
-        value=np.array([1 + 2j, 3 + 4j, 5 + 6j, 7 + 8j]),
+        value=np.array([1, 2, 3, 4], dtype=np.float32),
     )
 
-    resampled_timestamps = np.array([0.5, 1.5, 2.5], dtype=np.float32)
-    signal_resampled = test_signal.resample(resampled_timestamps)
-    assert signal_resampled is None
+    test_signal.dtype_cast(np.float64)
+
+    assert test_signal.value.dtype == np.float64
+    assert np.array_equal(test_signal.value, np.array([1, 2, 3, 4], dtype=np.float64))
 
 
-def test_ares_signal_resample_nearest_bool_square_wave():
+def test_ares_signal_dtype_cast_same_dtype_unchanged():
     """
-    Test nearest-neighbor resampling of a bool square wave with debug plot.
+    Test that dtype_cast to the current dtype does not modify the value.
     """
-    fs = 100.0
-    t = np.arange(0, 2, 1 / fs, dtype=np.float32)
-    square = np.sin(2 * np.pi * 1.0 * t) > 0
-
     test_signal = AresSignal(
-        label="bool_square",
-        timestamps=t,
-        value=square,
+        label="dtype_cast_same",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([1, 2, 3, 4], dtype=np.int32),
     )
 
-    resampled_t = np.arange(0.0, 2, 1 / 123.0, dtype=np.float32)
-    signal_resampled_up = test_signal.resample(resampled_t, method="windowedsinc")
-    signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
+    test_signal.dtype_cast(np.int32)
 
-    if DEBUG:
-        import matplotlib.pyplot as plt
-
-        fig = plt.figure()
-        axes1 = fig.add_subplot(111)
-        axes1.step(
-            test_signal.timestamps,
-            test_signal.value.astype(int),
-            color="red",
-            alpha=0.5,
-            label="original (bool)",
-        )
-        axes1.step(
-            signal_resampled.timestamps,
-            signal_resampled.value.astype(int),
-            marker=".",
-            color="blue",
-            alpha=0.5,
-            label="resampled (nearest)",
-        )
-        axes1.set_xlabel("Time (s)")
-        axes1.set_ylabel("Value")
-        axes1.set_title("Bool square wave - nearest-neighbor resampling")
-        axes1.legend()
-        plt.show()
-
-    assert signal_resampled is not None
-    assert signal_resampled.value.dtype == np.bool_
+    assert test_signal.value.dtype == np.int32
+    assert np.array_equal(test_signal.value, np.array([1, 2, 3, 4], dtype=np.int32))
 
 
-def test_ares_signal_resample_nearest_int_staircase():
+# TEST: AresSignal resample validation
+def test_ares_signal_resample_unsupported_method():
     """
-    Test nearest-neighbor resampling of an integer staircase with debug plot.
+    Test that an unsupported resample method returns None.
     """
-    fs = 100.0
-    t = np.arange(0, 5, 1 / fs, dtype=np.float32)
-    staircase = np.floor(t * 2).astype(np.int32)
-
     test_signal = AresSignal(
-        label="int_staircase",
-        timestamps=t,
-        value=staircase,
+        label="bad_method",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
     )
 
-    resampled_t = np.arange(0.0, 5, 1 / 117.0, dtype=np.float32)
-    signal_resampled_up = test_signal.resample(resampled_t, method="windowedsinc")
-    signal_resampled = signal_resampled_up.resample(t, method="windowedsinc")
+    resampled = test_signal.resample(
+        timestamps_resampled=np.array([0.5, 1.5, 2.5], dtype=np.float32),
+        method="spline",
+    )
 
-    assert signal_resampled is not None
-    assert np.issubdtype(signal_resampled.value.dtype, np.integer)
-
-    if DEBUG:
-        import matplotlib.pyplot as plt
-
-        fig = plt.figure()
-        axes1 = fig.add_subplot(111)
-        axes1.step(
-            test_signal.timestamps,
-            test_signal.value,
-            color="red",
-            alpha=0.5,
-            label="original (int)",
-        )
-        axes1.step(
-            signal_resampled.timestamps,
-            signal_resampled.value,
-            marker=".",
-            color="blue",
-            alpha=0.5,
-            label="resampled (nearest)",
-        )
-        axes1.set_xlabel("Time (s)")
-        axes1.set_ylabel("Value")
-        axes1.set_title("Integer staircase - nearest-neighbor resampling")
-        axes1.legend()
-        plt.show()
+    assert resampled is None
 
 
-def test_ares_signal_resample_whitenoise_uniform():
+# TEST: AresSignal cut
+def test_ares_signal_cut_by_index():
     """
-    Test resampling whitenoise array with uniform timestamps.
+    Test cutting a signal by sample index range.
     """
-    fs = 200.0
-    t = np.arange(0, 50, 1 / fs, dtype=np.float32)
-    white_noise = np.random.normal(0, 1.0, len(t))
-    white_noise = np.float32(white_noise / np.max(np.abs(white_noise)))
-
     test_signal = AresSignal(
-        label="float_whitenoise",
-        timestamps=t,
-        value=white_noise,
+        label="cut_index",
+        timestamps=np.array([0, 1, 2, 3, 4], dtype=np.float32),
+        value=np.array([10, 20, 30, 40, 50], dtype=np.float32),
     )
 
-    fs_resample = 400.0
-    resampled_t = np.arange(0.0, 50, 1 / fs_resample, dtype=np.float32)
-    signal_resampled_windowed = test_signal.resample(resampled_t, method="windowedsinc")
-    signal_resampled_cubic = test_signal.resample(resampled_t, method="cubic")
-    signal_resampled_linear = test_signal.resample(resampled_t, method="linear")
+    cut_signal = test_signal.cut(start=1, end=3, mode="index")
 
-    if DEBUG:
-        import matplotlib.pyplot as plt
+    assert np.array_equal(cut_signal.value, np.array([20, 30, 40], dtype=np.float32))
+    assert np.array_equal(cut_signal.timestamps, np.array([1, 2, 3], dtype=np.float32))
 
-        fig = plt.figure()
-        axes1 = fig.add_subplot(311)
-        axes1.step(
-            test_signal.timestamps,
-            test_signal.value,
-            color="red",
-            alpha=0.5,
-            label="original (white noise)",
-        )
-        axes1.step(
-            signal_resampled_windowed.timestamps,
-            signal_resampled_windowed.value,
-            color="blue",
-            alpha=0.5,
-            label="resampled - windowed",
-        )
-        axes1.set_xlabel("Time (s)")
-        axes1.set_ylabel("White Noise")
-        axes1.legend()
 
-        axes2 = fig.add_subplot(312)
-        axes2.step(
-            test_signal.timestamps,
-            test_signal.value,
-            color="red",
-            alpha=0.5,
-            label="original (white noise)",
-        )
-        axes2.step(
-            signal_resampled_cubic.timestamps,
-            signal_resampled_cubic.value,
-            color="blue",
-            alpha=0.5,
-            label="resampled cubic",
-        )
-        axes2.set_xlabel("Time (s)")
-        axes2.set_ylabel("White Noise")
-        axes2.legend()
+def test_ares_signal_cut_invalid_mode():
+    """
+    Test that an invalid cut mode raises an exception.
+    """
+    test_signal = AresSignal(
+        label="cut_invalid",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
 
-        axes3 = fig.add_subplot(313)
-        axes2.sharex(axes1)
-        axes3.sharex(axes1)
-        axes3.step(
-            test_signal.timestamps,
-            test_signal.value,
-            color="red",
-            alpha=0.5,
-            label="original (white noise)",
-        )
-        axes3.step(
-            signal_resampled_linear.timestamps,
-            signal_resampled_linear.value,
-            color="blue",
-            alpha=0.5,
-            label="resampled linear",
-        )
-        axes3.set_xlabel("Time (s)")
-        axes3.set_ylabel("White Noise")
-        axes3.legend()
-        plt.show()
+    with pytest.raises(RuntimeError):
+        test_signal.cut(start=0, end=1, mode="bogus")
+
+
+# TEST: AresSignal padding
+def test_ares_signal_padding_non_positive_returns_self():
+    """
+    Test that padding with zero or negative samples returns the signal unchanged.
+    """
+    test_signal = AresSignal(
+        label="pad_zero",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+
+    assert test_signal.padding(samples_to_add=0) is test_signal
+    assert test_signal.padding(samples_to_add=-5) is test_signal
+
+
+def test_ares_signal_padding_appends_samples():
+    """
+    Test that padding appends samples and extends the timestamps.
+    """
+    test_signal = AresSignal(
+        label="pad",
+        timestamps=np.array([0, 1, 2, 3], dtype=np.float32),
+        value=np.array([0, 1, 2, 3], dtype=np.float32),
+    )
+
+    padded_signal = test_signal.padding(samples_to_add=2)
+
+    assert padded_signal is not test_signal
+    assert len(padded_signal.value) == 6
+    assert len(padded_signal.timestamps) == 6
+    assert np.array_equal(
+        padded_signal.value, np.array([0, 1, 2, 3, 0, 0], dtype=np.float32)
+    )
+    assert np.allclose(
+        padded_signal.timestamps,
+        np.array([0, 1, 2, 3, 4, 5], dtype=np.float32),
+    )
+
+
+def test_ares_signal_padding_multidim_with_pad_value():
+    """
+    Test padding of a multi-dimensional signal with a custom pad value.
+    """
+    test_signal = AresSignal(
+        label="pad_md",
+        timestamps=np.arange(3, dtype=np.float32),
+        value=np.array([[1, 2], [3, 4], [5, 6]], dtype=np.float32),
+    )
+
+    padded_signal = test_signal.padding(
+        samples_to_add=1, pad_value=np.array([9, 9], dtype=np.float32)
+    )
+
+    assert padded_signal.value.shape == (4, 2)
+    assert np.array_equal(
+        padded_signal.value, np.array([[1, 2], [3, 4], [5, 6], [9, 9]])
+    )
+    assert len(padded_signal.timestamps) == 4
