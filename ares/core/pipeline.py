@@ -102,6 +102,7 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     wf_element_value=wf_element_value,
                     input_hash_lists=tmp_data_hash_lists,
                     output_dir=output_dir,
+                    meta_data=meta_data,
                 )
 
             case "parameter":
@@ -109,6 +110,7 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     wf_element_value=wf_element_value,
                     input_hash_lists=tmp_param_hash_lists,
                     output_dir=output_dir,
+                    meta_data=meta_data,
                 )
 
             case "plugin" | "sim_unit" | "merge":
