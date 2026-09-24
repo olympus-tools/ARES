@@ -39,8 +39,9 @@ import logging
 import os
 import sys
 import traceback
+from collections.abc import Callable
 from functools import wraps
-from typing import Any, Callable, Type
+from typing import Any
 
 from ares.utils.logger import create_logger
 
@@ -146,7 +147,7 @@ def safely_run(
 
 def error_msg(
     exception_msg: str,
-    exception_type: Type[Exception] | None = None,
+    exception_type: type[Exception] | None = None,
     exception_map: dict[type[Exception], str] | None = None,
     log: logging.Logger | None = None,
     include_args: list[str] | None = None,
@@ -199,14 +200,15 @@ def error_msg(
                         bound_args.apply_defaults()  # Include default values if arguments weren't passed
 
                         # Filter to only get the arguments requested in include_args
-                        captured = {
-                            k: v
-                            for k, v in bound_args.arguments.items()
-                            if k in include_args
-                        }
+                        if include_args:
+                            captured = {
+                                k: v
+                                for k, v in bound_args.arguments.items()
+                                if k in include_args
+                            }
 
-                        if captured:
-                            input_details = f"| Context:\n|    {captured}"
+                            if captured:
+                                input_details = f"| Context:\n|    {captured}"
 
                         if instance_el:
                             instance = bound_args.arguments.get("self")
