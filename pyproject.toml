@@ -85,6 +85,10 @@ release = [
     "ares[docs]",
 ]
 
+debug = [
+    "debugpy",
+]
+
 [tool.uv.sources]
 dcmi = { path = "submodules/dcmi", editable = true }
 
