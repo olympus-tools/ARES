@@ -194,6 +194,42 @@ def test_safely_run_include_args(caplog):
     pattern = r"\| Context:\s+\| \s+\{'a': 'val_a', 'c': 'val_c'\}"
     assert re.search(pattern, caplog.text)
 
+    fail_with_args("val_a", "val_b")
+
+    pattern = r"\| Context:\s+\| \s+\{'a': 'val_a', 'c': 'default'\}"
+    assert re.search(pattern, caplog.text)
+
+
+def test_safely_run_instance_el(caplog):
+    """
+    Tests that the safely_run decorator includes reqeuested
+    instance-elements in the log message.
+
+    Args:
+        caplog: pytest fixture capturing log records.
+    """
+
+    class test_class_for_decorator:
+        def __init__(self):
+            self.element_str: str = "default"
+            self.element_num: float = 0.5
+
+        @safely_run(default_return="error", instance_el=["element_num", "element_str"])
+        def fail_with_instance(self, input_str: str | None = None):
+            if input_str is not None:
+                self.element_str = input_str
+            raise ValueError("Failed with instances")
+
+    test_class = test_class_for_decorator()
+    test_class.fail_with_instance()
+
+    pattern = r"\| Instance:\s+\| \s+\{'element_num': 0.5, 'element_str': 'default'\}"
+    assert re.search(pattern, caplog.text)
+
+    test_class.fail_with_instance(input_str="test-str")
+    pattern = r"\| Instance:\s+\| \s+\{'element_num': 0.5, 'element_str': 'test-str'\}"
+    assert re.search(pattern, caplog.text)
+
 
 # TEST: error_msg
 def test_error_msg_happy_path():
@@ -280,7 +316,6 @@ def test_error_msg_metadata_preservation():
     @error_msg("Metadata context")
     def meaningful_name():
         """This is a docstring."""
-        pass
 
     assert meaningful_name.__name__ == "meaningful_name"
     assert meaningful_name.__doc__ == "This is a docstring."
@@ -304,3 +339,49 @@ def test_error_msg_include_args(caplog):
     expected_context = "| Context:\n|    {'x': 1, 'z': 3}"
     assert expected_context in str(exc_info.value)
     assert expected_context in caplog.text
+
+
+def test_error_msg_instance_el(caplog):
+    """
+    Tests that the error_msg decorator includes requested instance-elements
+    in the log and exception message.
+
+    Args:
+        caplog: pytest fixture capturing log records.
+    """
+
+    class test_class_for_error_msg:
+        def __init__(self):
+            self.element_str: str = "default"
+            self.element_num: float = 0.5
+
+        @error_msg("Critical error", instance_el=["element_num", "element_str"])
+        def fail_with_instance(self, input_str: str | None = None):
+            if input_str is not None:
+                self.element_str = input_str
+            raise ValueError("Failed with error-message.")
+
+    test_class = test_class_for_error_msg()
+    with pytest.raises(ValueError) as exc_info:
+        test_class.fail_with_instance()
+
+    expected_instance = (
+        "| Instance:\n|    {'element_num': 0.5, 'element_str': 'default'}"
+    )
+
+    assert expected_instance in str(exc_info.value)
+    assert expected_instance in caplog.text
+
+    with pytest.raises(ValueError) as exc_info:
+        test_class.fail_with_instance(input_str="test-str")
+
+    expected_instance = (
+        "| Instance:\n|    {'element_num': 0.5, 'element_str': 'test-str'}"
+    )
+
+    assert expected_instance in str(exc_info.value)
+    assert expected_instance in caplog.text
+
+
+if __name__ == "__main__":
+    test_error_msg_instance_el()

@@ -94,8 +94,6 @@ class AresSignal:
                 self.timestamps, np.float32, input_type="timestamps"
             )
 
-        if not np.issubdtype(self.timestamps.dtype, np.floating):
-            raise TypeError("The 'timestamps' array must have a float datatype.")
         if self.timestamps.ndim != 1 or (
             self.value.ndim >= 0 and self.timestamps.shape[0] != self.value.shape[0]
         ):
