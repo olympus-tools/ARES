@@ -9,7 +9,7 @@ on:
       - master
 
 jobs:
-  docs:
+  build-docs:
     runs-on: ubuntu-latest
 
     steps:
