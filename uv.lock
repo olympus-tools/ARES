@@ -54,6 +54,7 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "build" },
+    { name = "diff-cover" },
     { name = "gitpython" },
     { name = "matplotlib" },
     { name = "pip-licenses" },
@@ -73,6 +74,7 @@ docs = [
 ]
 release = [
     { name = "build" },
+    { name = "diff-cover" },
     { name = "furo" },
     { name = "gitpython" },
     { name = "matplotlib" },
@@ -103,6 +105,7 @@ requires-dist = [
     { name = "click", specifier = "==8.2.1" },
     { name = "colorlog", specifier = "==6.9.0" },
     { name = "dcmi", editable = "submodules/dcmi" },
+    { name = "diff-cover", marker = "extra == 'dev'", specifier = "==9.2.0" },
     { name = "furo", marker = "extra == 'docs'", specifier = "==2024.8.6" },
     { name = "gitpython", marker = "extra == 'dev'", specifier = "==3.1.59" },
     { name = "jsonschema", specifier = "==4.24.0" },
@@ -443,10 +446,10 @@ requires-dist = [
     { name = "dcmi", extras = ["dev"], marker = "extra == 'release'" },
     { name = "dcmi", extras = ["docs"], marker = "extra == 'release'" },
     { name = "dcmi", extras = ["test"], marker = "extra == 'dev'" },
-    { name = "gitpython", marker = "extra == 'dev'", specifier = "==3.1.59" },
+    { name = "gitpython", marker = "extra == 'dev'", specifier = "==3.1.45" },
     { name = "pip-licenses", marker = "extra == 'dev'", specifier = "==5.0.0" },
     { name = "pipdeptree", marker = "extra == 'dev'", specifier = "==2.23.4" },
-    { name = "pytest", marker = "extra == 'test'", specifier = "==9.0.3" },
+    { name = "pytest", marker = "extra == 'test'", specifier = "==8.4.1" },
     { name = "pytest-cov", marker = "extra == 'test'", specifier = "==6.0.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = "==0.12.11" },
     { name = "typeguard", specifier = "==4.4.4" },
@@ -463,6 +466,21 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/5e/315011fbd60c83f064586aae3bd5388204401252c2c26e9cb219cef001e4/deflate-0.9.0-cp311-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cfca14731727716ca0a112e26911a5a94998d31bb04eb5cc4bc268a5a308ba8a", size = 69920, upload-time = "2026-08-24T14:54:16.248Z" },
     { url = "https://files.pythonhosted.org/packages/3a/e8/0b595dc7f0f866aed01ca68f1f16c4e7391974bfecef0f23828a24ab22f5/deflate-0.9.0-cp311-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:03898c0c095d463b3a52900af5b68cb5a5f19ef01d7a3657c425c3be73e1ca52", size = 70243, upload-time = "2026-08-24T14:54:17.891Z" },
     { url = "https://files.pythonhosted.org/packages/8e/55/249c277c4a22db006fd468c7af33cb00fed99d0842441fab38ed409036ff/deflate-0.9.0-cp311-abi3-win_amd64.whl", hash = "sha256:f45b4362d4481317111b1bb5ffedf9f3c8741654095dba51a56ceea170cdb9a9", size = 52608, upload-time = "2026-08-24T14:54:19.933Z" },
+]
+
+[[package]]
+name = "diff-cover"
+version = "9.2.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "chardet" },
+    { name = "jinja2" },
+    { name = "pluggy" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/44/3a/e49ccba052a4dda264fbad4f467739ecc63498f7223bfc03d4bfac23ea95/diff_cover-9.2.0.tar.gz", hash = "sha256:85a0b353ebbb678f9e87ea303f75b545bd0baca38f563219bb72f2ae862bba36", size = 94857, upload-time = "2024-09-08T00:38:06.913Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b4/8a/bddb8e4aea550066559144e72d3566e9ae2f757b8ac154e769c563f48177/diff_cover-9.2.0-py3-none-any.whl", hash = "sha256:1e24edc51c39e810c47dd9986e76c333ed95859655c091f572e590c39cabbdbe", size = 52561, upload-time = "2024-09-08T00:38:04.96Z" },
 ]
 
 [[package]]

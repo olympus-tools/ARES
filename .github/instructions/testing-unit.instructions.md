@@ -81,6 +81,9 @@ environment. Create or sync the environment first with `make setup-venv`
   uv run pytest --cov --cov-report=annotate:cov_annotate
   ```
 
+- Run `make test-coverage` to enforce both the configured total coverage
+  threshold and the same threshold for every measured file.
+
 - To check coverage of a specific module, scope the report, optionally limited
   to its test module:
 
