@@ -20,6 +20,7 @@ docs/sphinx/_build/*
 # coverage
 .coverage
 .coverage.*
+coverage.xml
 htmlcov/
 cov_annotate/
 

@@ -51,7 +51,8 @@ test-requirements: setup-venv
 
 .PHONY: test-coverage
 test-coverage: setup-venv
-	NUMBA_DISABLE_JIT=1 uv run pytest --cov --cov-report=html --cov-report=term-missing
+	NUMBA_DISABLE_JIT=1 uv run pytest --cov --cov-report=html --cov-report=xml:coverage.xml --cov-report=term-missing
+	uv run diff-cover coverage.xml --compare-branch=origin/master --fail-under=90
 
 .PHONY: format
 format: setup-venv
