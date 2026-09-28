@@ -39,26 +39,17 @@ jobs:
         run: |
           make thirdpartycheck
 
-      - name: Compare generated NOTICE with remote master
+      - name: Verify NOTICE is unchanged
         run: |
-          # Ensure local copy of origin/master is up to date
-          git fetch origin master
-
-          # Compare the freshly generated file on disk with the blob from origin/master
-          # Using --no-index to compare a process substitution stream with a physical file
-          if git diff --no-index --exit-code <(git show origin/master:NOTICE) NOTICE > /dev/null 2>&1; then
-            echo "::notice title=NOTICE check::The generated NOTICE matches origin/master."
-          else
-            echo "::error title=NOTICE check::The generated NOTICE differs from origin/master."
-            echo "::group::NOTICE differences"
-
-            # Display the actual diff for debugging purposes
-            git diff --no-index <(git show origin/master:NOTICE) NOTICE
-
+          if ! git diff --quiet -- NOTICE || test -n "$(git ls-files --others --exclude-standard -- NOTICE)"; then
+            echo "::error title=NOTICE check::make thirdpartycheck changed NOTICE. Commit the updated NOTICE."
+            echo "::group::NOTICE changes"
+            git status --short -- NOTICE
+            git diff -- NOTICE
             echo "::endgroup::"
-            # Fail the build
             exit 1
           fi
+          echo "::notice title=NOTICE check::NOTICE is unchanged."
 
       - name: Cleanup ARES Environment
         uses: ./.github/workflow-actions/cleanup-ares
