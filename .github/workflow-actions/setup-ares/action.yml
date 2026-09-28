@@ -11,12 +11,16 @@ runs:
     - name: Print system information
       shell: bash
       run: |
-        echo "Running on Linux"
-        uname -a
-        python --version
+        echo "::group::System information"
+        echo "::notice title=Operating system::Linux."
+        echo "::notice title=Kernel::$(uname -a)."
+        echo "::notice title=Python::$(python --version 2>&1)."
+        echo "::endgroup::"
 
     - name: Setup virtual environment
       shell: bash
       run: |
+        echo "::group::ARES environment setup"
         pipx install uv
         make setup-venv
+        echo "::endgroup::"
