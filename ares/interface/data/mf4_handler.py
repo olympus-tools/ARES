@@ -343,7 +343,8 @@ class MF4Handler(MDF, AresDataInterface):
         """Add AresSignal objects to mf4 file.
 
         Converts AresSignal objects to asammdf Signal format and appends them to the mf4 file.
-        Supports scalar signals (1D), 1D array signals (2D), and 2D array signals (3D).
+        Supports scalar signals (1D) and array signals with any number of
+        dimensions greater than one.
         Optionally adds source information to data for traceability.
 
         Duplicate signal labels are automatically removed, keeping the last occurrence.
@@ -353,8 +354,7 @@ class MF4Handler(MDF, AresDataInterface):
                 All signals in the list must share the exact same time axis (identical
                 timestamps array), as asammdf's append() is called with common_timebase=True.
                 - ndim == 1: Scalar value per time step
-                - ndim == 2: 1D array per time step (shape: cycles, array_size)
-                - ndim == 3: 2D array per time step (shape: cycles, rows, cols)
+                - ndim > 1: Array per time step (shape: cycles, *array_shape)
             **kwargs (Any): Additional arguments passed to asammdf's append() method.
         """
         data = AresDataInterface._filter_deduplicates(data=data)
@@ -390,17 +390,10 @@ class MF4Handler(MDF, AresDataInterface):
                     )
                 )
 
-            elif signal.ndim in [2, 3]:
+            elif signal.ndim > 1:
                 dtype_str = self.DTYPE_MAP[signal.dtype]
 
-                if signal.ndim == 2:
-                    array_size = signal.shape[1]
-                    dimension_str = f"({array_size},)"
-                else:
-                    rows, cols = signal.shape[1], signal.shape[2]
-                    dimension_str = f"({rows}, {cols})"
-
-                types = [(signal.label, f"{dimension_str}{dtype_str}")]
+                types = [(signal.label, f"{signal.shape[1:]}{dtype_str}")]
                 samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
 
                 signals_to_write.append(
@@ -417,7 +410,7 @@ class MF4Handler(MDF, AresDataInterface):
 
             else:
                 logger.warning(
-                    f"Unsupported signal dimension: {signal.ndim}. Supported: 1 (scalar), 2 (1D array/timestep), 3 (2D array/timestep)."
+                    f"Unsupported signal dimensionof signal '{signal.label}': {signal.ndim}."
                 )
 
         # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
