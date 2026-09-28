@@ -1,19 +1,15 @@
-name: Check License Pipeline
+name: Check Dependencies Pipeline
 
 on:
   pull_request:
     branches:
       - master
-    paths-ignore:
-      - 'pyproject.toml'
-      - 'NOTICE'
-      - 'scripts/analyze_dependencies.py'
   push:
     branches:
       - master
 
 jobs:
-  check-license:
+  check-dependencies:
     runs-on: ubuntu-latest
 
     steps:
@@ -25,6 +21,16 @@ jobs:
 
       - name: Setup ARES Environment
         uses: ./.github/workflow-actions/setup-ares
+
+      - name: Verify uv.lock is unchanged
+        shell: bash
+        run: |
+          if ! git diff --quiet -- uv.lock || test -n "$(git ls-files --others --exclude-standard -- uv.lock)"; then
+            echo "uv sync changed uv.lock. Commit the updated lockfile."
+            git status --short -- uv.lock
+            git diff -- uv.lock
+            exit 1
+          fi
 
       - name: Run dependency analysis and generate NOTICE
         run: |
