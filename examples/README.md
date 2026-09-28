@@ -173,10 +173,10 @@ python -m ares pipeline \
 *   **Key Concepts**:
     *   Reading MF4 data files with signals matching specific naming patterns.
     *   Using regex patterns with capturing groups to identify related signals.
-    *   Automatic stacking based on number of groups:
-        *   1-2 groups: Stack 1D signals into 2D arrays (columns).
-        *   3 groups: Stack 1D signals into 3D arrays (matrices with columns and rows).
-    *   Pattern convention: `group(1)` = base name, `group(2)` = column index, `group(3)` = row index.
+    *   Automatic stacking based on regex groups:
+        *   `group(1)` identifies the base name.
+        *   `group(2)` and later groups identify array axes.
+        *   The `axes` list can reorder those groups in the resulting array.
     *   Writing stacked signals to output with simplified naming.
 
 ```mermaid

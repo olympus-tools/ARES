@@ -127,6 +127,52 @@ for row in range(2):
         )
         signal_array2d_list.append(signal)
 
+# 2.5 test_signal_multidim - Create 2x3x4x5x6=720 separate signals
+# Timestamps: 0.0s to 19.5s, step 0.5s (40 samples)
+step_size_multi = 0.5
+signal_name_multi = "test_signal_multidim"
+multi_shape = (2, 3, 4, 5, 6)
+
+timestamps_multi = np.arange(0.0, 20.0, step_size_multi)
+signal_multi_list = []
+for axis_1 in range(multi_shape[0]):
+    for axis_2 in range(multi_shape[1]):
+        for axis_3 in range(multi_shape[2]):
+            for axis_4 in range(multi_shape[3]):
+                for axis_5 in range(multi_shape[4]):
+                    multiplier = (
+                        (
+                            (
+                                (axis_1 * multi_shape[1] + axis_2) * multi_shape[2]
+                                + axis_3
+                            )
+                            * multi_shape[3]
+                            + axis_4
+                        )
+                        * multi_shape[4]
+                        + axis_5
+                        + 1.0
+                    )
+                    samples = np.array(
+                        [i * multiplier for i in range(len(timestamps_multi))],
+                        dtype=np.float64,
+                    )
+                    signal = Signal(
+                        samples=samples,
+                        timestamps=timestamps_multi,
+                        name=(
+                            f"{signal_name_multi}_[{axis_1}][{axis_2}]"
+                            f"[{axis_3}][{axis_4}][{axis_5}]"
+                        ),
+                        unit="N",
+                        source=source_1,
+                        comment=(
+                            f"5D array element [{axis_1}][{axis_2}][{axis_3}]"
+                            f"[{axis_4}][{axis_5}] with step size {step_size_multi}s"
+                        ),
+                    )
+                    signal_multi_list.append(signal)
+
 # 3. Create a new MDF file and append all signals
 mdf = MDF()
 mdf.append(signal_scalar)
@@ -135,6 +181,8 @@ for signal in signal_array1d_list_01:
 for signal in signal_array1d_list_02:
     mdf.append(signal)
 for signal in signal_array2d_list:
+    mdf.append(signal)
+for signal in signal_multi_list:
     mdf.append(signal)
 
 output_dir = Path("examples/data")
