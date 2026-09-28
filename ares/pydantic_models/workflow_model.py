@@ -269,14 +269,17 @@ class BaseElement(BaseModel):
 
 
 class VStackPatternElement(BaseModel):
-    """Pydantic model for a single vstack pattern configuration."""
+    """Pydantic model for a single vstack pattern configuration.
+
+    ``axes`` contains the regex group numbers used as stacking axes, in the
+    order in which they should appear after the time axis.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     pattern: str
     signal_name: str | int | None = None
-    x_axis: int | None = None
-    y_axis: int | None = None
+    axes: list[int] | None = None
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -287,29 +290,19 @@ class VStackPatternElement(BaseModel):
         """
         pattern = re.compile(self.pattern)
 
-        if pattern.groups >= 3:
-            if (
-                isinstance(self.signal_name, str)
-                and any([self.x_axis, self.y_axis])
-                and not all([self.x_axis, self.y_axis])
-            ):
+        if self.axes is not None:
+            expected_axes = pattern.groups - 1
+            if expected_axes < 1 or len(self.axes) != expected_axes:
                 raise ValueError(
-                    "When 'signal_name' is a string, either both 'x_axis' and 'y_axis' must be provided or neither should be provided."
+                    f"'axes' must contain exactly {expected_axes} regex group numbers."
                 )
-            elif any([self.signal_name, self.x_axis, self.y_axis]) and not all(
-                [self.signal_name, self.x_axis, self.y_axis]
-            ):
+            if any(axis < 2 or axis > pattern.groups for axis in self.axes):
                 raise ValueError(
-                    "At least one field of 'signal_name','x_axis','y_axis' was provided. Then for deterministic behaviour all others must be provided."
+                    "Every 'axes' entry must reference a regex group after the signal name."
                 )
-        elif pattern.groups == 2:
-            if self.y_axis:
+            if self.signal_name is None:
                 raise ValueError(
-                    "Only 2 groups are given, field 'y_axis' is only valid with 3 groups."
-                )
-            elif self.x_axis and not self.signal_name:
-                raise ValueError(
-                    "The field of 'x_axis' was provided. Then for deterministic behaviour 'signal_name' must be provided."
+                    "'signal_name' must be provided when 'axes' is provided."
                 )
 
         return self
@@ -355,7 +348,11 @@ class DataElement(BaseElement):
 
         if self.vstack_pattern is not None:
             self.vstack_pattern = [
-                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                VStackPatternElement(
+                    pattern=pattern,
+                    signal_name=1,
+                    axes=list(range(2, re.compile(pattern).groups + 1)) or None,
+                )
                 if isinstance(pattern, str)
                 else pattern
                 for pattern in self.vstack_pattern
@@ -459,7 +456,11 @@ class SimUnitElement(PluginElement):
         )
         if self.vstack_pattern is not None:
             self.vstack_pattern = [
-                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                VStackPatternElement(
+                    pattern=pattern,
+                    signal_name=1,
+                    axes=list(range(2, re.compile(pattern).groups + 1)) or None,
+                )
                 if isinstance(pattern, str)
                 else pattern
                 for pattern in self.vstack_pattern
@@ -499,7 +500,11 @@ class MergeElement(PluginElement):
             self.vstack_pattern_data[0], str
         ):
             self.vstack_pattern_data = [
-                VStackPatternElement(pattern=pattern, signal_name=1, x_axis=2, y_axis=3)
+                VStackPatternElement(
+                    pattern=pattern,
+                    signal_name=1,
+                    axes=list(range(2, re.compile(pattern).groups + 1)) or None,
+                )
                 for pattern in self.vstack_pattern_data
                 if isinstance(pattern, str)
             ]

@@ -40,8 +40,8 @@ import pytest
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
-from ares.utils.hash import calculate_hash
 from ares.pydantic_models.workflow_model import DataElement, VStackPatternElement
+from ares.utils.hash import calculate_hash
 
 
 class ConcreteDataInterface(AresDataInterface):
@@ -374,7 +374,7 @@ class TestAresDataInterfaceVstack:
         assert stacked_signal.label == "data"
         assert stacked_signal.value.shape == (2, 2)
 
-    def test_vstack_1d_to_2d_two_groups_with_x_axis(self):
+    def test_vstack_1d_to_2d_two_groups_with_axis(self):
         signals = [
             AresSignal(
                 label="matrix_0",
@@ -388,7 +388,7 @@ class TestAresDataInterfaceVstack:
             ),
         ]
         pattern = [
-            VStackPatternElement(pattern="(matrix)_(\\d+)", signal_name=1, x_axis=2)
+            VStackPatternElement(pattern="(matrix)_(\\d+)", signal_name=1, axes=[2])
         ]
         result = AresDataInterface._vstack(signals, pattern)
         assert len(result) == 3
@@ -420,13 +420,38 @@ class TestAresDataInterfaceVstack:
         ]
         pattern = [
             VStackPatternElement(
-                pattern="(mat)_(\\d+)_(\\d+)", signal_name=1, x_axis=2, y_axis=3
+                pattern="(mat)_(\\d+)_(\\d+)", signal_name=1, axes=[2, 3]
             )
         ]
         result = AresDataInterface._vstack(signals, pattern)
         assert len(result) == 5
         stacked_signal = result[-1]
         assert stacked_signal.value.shape == (2, 2, 2)
+
+    def test_vstack_multiple_axes(self):
+        """Test stacking signals into an array with three configured axes."""
+        timestamps = np.array([0.0, 1.0], dtype=np.float32)
+        signals = [
+            AresSignal(
+                label=f"cube_{axis_1}_{axis_2}_{axis_3}",
+                timestamps=timestamps,
+                value=np.full(2, axis_1 + axis_2 + axis_3, dtype=np.float32),
+            )
+            for axis_1 in range(2)
+            for axis_2 in range(3)
+            for axis_3 in range(4)
+        ]
+
+        pattern = [
+            VStackPatternElement(
+                pattern=r"(cube)_(\d+)_(\d+)_(\d+)",
+                signal_name=1,
+                axes=[2, 3, 4],
+            )
+        ]
+        result = AresDataInterface._vstack(signals, pattern)
+
+        assert result[-1].value.shape == (2, 2, 3, 4)
 
     def test_vstack_dimension_mismatch_skipped(self):
         signals = [

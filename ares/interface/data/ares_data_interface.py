@@ -426,15 +426,13 @@ class AresDataInterface(ABC):
         data: list[AresSignal], vstack_pattern: list[VStackPatternElement]
     ) -> list[AresSignal]:
         """Vertical stack ares-signals matching given VStackPatternElements.
-        Supports two stacking modes based on number of regex groups:
-        - 1-2 groups: Stack 1D signals to 2D (horizontal concatenation)
-        - 3 groups: Stack 1D signals to 3D matrix using row/column indices
-                    provided by VStackPatternElement
+        The first regex group identifies the resulting signal name. Additional
+        regex groups identify stacking axes. Signals are stacked into an array
+        with time as the first dimension, followed by the configured axes.
 
         The VStackPatternElement consists of the following fields:
             - signal_name: regex pattern used to determine signals for stacking (default: group1)
-            - x_axis: pattern to catch x-axis index (default: group2)
-            - y_axis: pattern to catch y-axis index (default: group3)
+            - axes: regex groups used as stacking axes (default: groups 2 onward)
 
         Args:
             data (list[AresSignal]): List of AresSignal objects
@@ -496,119 +494,60 @@ class AresDataInterface(ABC):
                     )
                     continue
 
-                # 1D
-                if pattern.groups <= 2:
+                if pattern.groups <= 1:
                     logger.debug(
-                        f"Vertical stacking applied, stacking 1D signals to 2D: {signal_name} <-- {[signal.label for signal in signal_matches]}."
+                        f"Vertical stacking applied: {signal_name} <-- {[signal.label for signal in signal_matches]}."
                     )
-
-                    # check for x-axis index
-                    if pattern.groups == 2:
-                        x_axis_idx = (
-                            vstack_element.x_axis
-                            if vstack_element.x_axis is not None
-                            else 2
-                        )
-                        number_columns = len(pattern_matches)
-                        stacked_array = np.full(
-                            (
-                                len(reference_signal.timestamps),
-                                number_columns,
+                    data.append(
+                        AresSignal(
+                            label=signal_name,
+                            timestamps=reference_signal.timestamps,
+                            value=np.stack(
+                                [signal.value for signal in signal_matches], axis=1
                             ),
-                            np.nan,
-                        )
-
-                        for signal, pattern_result in zip(
-                            signal_matches, pattern_matches
-                        ):
-                            column_idx = int(pattern_result.group(x_axis_idx))
-                            if not all(np.isnan(stacked_array[:, column_idx])):
-                                logger.warning(
-                                    f"Vertical stacking for {signal.label} could not be applied correctly. Given pattern-group for x-axis is not monotonic."
-                                )
-
-                            stacked_array[:, column_idx] = signal.value
-                        data.append(
-                            AresSignal(
-                                label=signal_name,
-                                timestamps=reference_signal.timestamps,
-                                value=stacked_array,
-                                description=f"Stacked signal from {[signal.label for signal in signal_matches]}",
-                                source=reference_signal.source,
-                                unit=reference_signal.unit,
-                            )
-                        )
-                        continue
-
-                    # default: stacking
-                    data.append(
-                        AresSignal(
-                            label=signal_name,
-                            timestamps=reference_signal.timestamps,
-                            value=np.vstack(
-                                [signal.value for signal in signal_matches]
-                            ).T,
                             description=f"Stacked signal from {[signal.label for signal in signal_matches]}",
                             source=reference_signal.source,
                             unit=reference_signal.unit,
                         )
                     )
+                    continue
 
-                # 2D
-                elif pattern.groups == 3:
-                    x_axis_idx = (
-                        vstack_element.x_axis
-                        if vstack_element.x_axis is not None
-                        else 2
+                axis_indices = vstack_element.axes or list(range(2, pattern.groups + 1))
+                axis_sizes = [
+                    max(
+                        int(pattern_result.group(axis_idx))
+                        for pattern_result in pattern_matches
                     )
-                    y_axis_idx = (
-                        vstack_element.y_axis
-                        if vstack_element.y_axis is not None
-                        else 3
-                    )
+                    + 1
+                    for axis_idx in axis_indices
+                ]
+                value_shape = reference_signal.value.shape[1:]
+                stacked_array = np.full(
+                    (*axis_sizes, len(reference_signal.timestamps), *value_shape),
+                    np.nan,
+                )
 
-                    number_columns = 0
-                    number_rows = 0
-                    for pattern_result in pattern_matches:
-                        number_columns = max(
-                            number_columns, int(pattern_result.group(x_axis_idx))
+                for signal, pattern_result in zip(signal_matches, pattern_matches):
+                    axis_position = tuple(
+                        int(pattern_result.group(axis_idx)) for axis_idx in axis_indices
+                    )
+                    target = axis_position + (slice(None),)
+                    if not np.all(np.isnan(stacked_array[target])):
+                        logger.warning(
+                            f"Vertical stacking for {signal.label} encountered a duplicate axis position."
                         )
-                        number_rows = max(
-                            number_rows, int(pattern_result.group(y_axis_idx))
-                        )
+                    stacked_array[target] = signal.value
 
-                    stacked_matrix = np.full(
-                        (
-                            number_rows + 1,
-                            number_columns + 1,
-                            len(reference_signal.timestamps),
-                        ),
-                        np.nan,
+                data.append(
+                    AresSignal(
+                        label=signal_name,
+                        timestamps=reference_signal.timestamps,
+                        value=np.moveaxis(stacked_array, len(axis_indices), 0),
+                        description=f"Stacked signal from {[signal.label for signal in signal_matches]}",
+                        source=reference_signal.source,
+                        unit=reference_signal.unit,
                     )
-
-                    for signal, pattern_result in zip(signal_matches, pattern_matches):
-                        column_idx = int(pattern_result.group(x_axis_idx))
-                        row_idx = int(pattern_result.group(y_axis_idx))
-
-                        if not all(np.isnan(stacked_matrix[row_idx, column_idx, :])):
-                            logger.warning(
-                                f"Vertical stacking for {signal.label} could not be applied correctly. Given pattern-group for x-axis,y-axis is not monotonic/unique."
-                            )
-                        stacked_matrix[row_idx, column_idx, :] = signal.value
-
-                    logger.debug(
-                        f"Vertical stacking applied,stacking 2D signals to 3D:{signal_name} <-- {[signal.label for signal in signal_matches]}."
-                    )
-                    data.append(
-                        AresSignal(
-                            label=signal_name,
-                            timestamps=reference_signal.timestamps,
-                            value=stacked_matrix.transpose(2, 1, 0),
-                            description=f"Stacked signal from {[signal.label for signal in signal_matches]}",
-                            source=reference_signal.source,
-                            unit=reference_signal.unit,
-                        )
-                    )
+                )
 
         return data
 

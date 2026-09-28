@@ -335,7 +335,7 @@ def test_ares_mf4handler_get_with_vstack_pattern():
 
     handler = MF4Handler(file_path=None, data=signals)
 
-    vstack = VStackPatternElement(pattern=r"(channel)_(\d+)", signal_name=1, x_axis=2)
+    vstack = VStackPatternElement(pattern=r"(channel)_(\d+)", signal_name=1, axes=[2])
     result = handler.get(vstack_pattern=[vstack])
 
     assert result is not None, "get() with vstack_pattern must return signals."
