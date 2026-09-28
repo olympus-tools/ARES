@@ -204,17 +204,9 @@ class SimUnit:
                 size = dd_element_value.size
                 base_ctypes_type = SimUnit.DATATYPES[datatype][0]
 
-                if len(size) == 0:
-                    ctypes_type = base_ctypes_type
-                elif len(size) == 1:
-                    ctypes_type = base_ctypes_type * size[0]
-                elif len(size) == 2:
-                    ctypes_type = (base_ctypes_type * size[1]) * size[0]
-                else:
-                    logger.warning(
-                        f"Invalid size '{size}' for '{dd_element_name}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
-                    )
-                    continue
+                ctypes_type = base_ctypes_type
+                for dimension in reversed(size):
+                    ctypes_type *= dimension
 
                 dll_interface[dd_element_name] = ctypes_type.in_dll(
                     self._library, dd_element_name
@@ -368,14 +360,7 @@ class SimUnit:
         for signal in output_signals:
             size = self._dd.signals[signal].size
             np_dtype = self.DATATYPES[self._dd.signals[signal].datatype][1]
-            if len(size) == 0:
-                value = np.empty((time_steps,), dtype=np_dtype)
-            elif len(size) == 1:
-                value = np.empty((time_steps, size[0]), dtype=np_dtype)
-            elif len(size) == 2:
-                value = np.empty((time_steps, size[0], size[1]), dtype=np_dtype)
-            else:
-                continue
+            value = np.empty((time_steps, *size), dtype=np_dtype)
             sim_result[signal] = AresSignal(
                 label=signal,
                 timestamps=timestamps,
@@ -513,12 +498,12 @@ class SimUnit:
                                 mapped = True
                                 break
                         else:
-                            static_value = self._map_sim_input_static(
-                                time_steps=time_steps,
-                                datatype=dd_element_value.datatype,
-                                size=dd_element_value.size,
-                                value=alternative_value,
+                            size = dd_element_value.size
+                            np_dtype = self.DATATYPES[dd_element_value.datatype][1]
+                            static_value = np.full(
+                                (time_steps, *size), alternative_value, dtype=np_dtype
                             )
+
                             mapped_data_dict[dd_element_name] = AresSignal(
                                 label=dd_element_name,
                                 value=static_value,
@@ -532,23 +517,13 @@ class SimUnit:
                             break
 
                 if not mapped:
+                    default_init_value = 0
                     size = dd_element_value.size
-
-                    if len(size) == 0:
-                        default_init_value = 0
-                    elif len(size) == 1:
-                        default_init_value = [0] * size[0]
-                    elif len(size) == 2:
-                        default_init_value = [[0] * size[1] for _ in range(size[0])]
-                    else:
-                        default_init_value = 0
-
-                    default_value = self._map_sim_input_static(
-                        time_steps=time_steps,
-                        datatype=dd_element_value.datatype,
-                        size=size,
-                        value=default_init_value,
+                    np_dtype = self.DATATYPES[dd_element_value.datatype][1]
+                    default_value = np.full(
+                        (time_steps, *size), default_init_value, dtype=np_dtype
                     )
+
                     mapped_data_dict[dd_element_name] = AresSignal(
                         label=dd_element_name,
                         value=default_value,
@@ -637,19 +612,10 @@ class SimUnit:
                 if not mapped:
                     size = dd_element_value.size
 
-                    if len(size) == 0:
-                        default_init_value = 0
-                    elif len(size) == 1:
-                        default_init_value = [0] * size[0]
-                    elif len(size) == 2:
-                        default_init_value = [[0] * size[1] for _ in range(size[0])]
-                    else:
-                        default_init_value = 0
-
                     np_dtype = self.DATATYPES[dd_element_value.datatype][1]
                     mapped_parameter_dict[dd_element_name] = AresParameter(
                         label=dd_element_name,
-                        value=np.array(default_init_value, dtype=np_dtype),
+                        value=np.zeros(size, dtype=np_dtype),
                         description="Default value: 0",
                     )
                     logger.warning(
@@ -663,44 +629,6 @@ class SimUnit:
 
         logger.debug("Mapping parameter input has been successfully finished.")
         return mapped_parameter_dict
-
-    @safely_run(
-        default_return=None,
-        exception_msg="Mapping static simulation input to data source could not be executed.",
-        log=logger,
-        include_args=["time_steps", "datatype", "size", "value"],
-        instance_el=["file_path", "dd_path"],
-    )
-    @typechecked
-    def _map_sim_input_static(
-        self, time_steps: int, datatype: str, size: list[int], value: Any
-    ) -> np.ndarray:
-        """Creates a NumPy array of a specified size and datatype, filled with a constant value.
-
-        This is used to handle simulation variables that have a static value instead of a signal.
-        The function supports scalar, 1D, and 2D arrays as static values.
-
-        Args:
-            time_steps (int): The total number of simulation steps.
-            datatype (str): The target datatype for the NumPy array (e.g., 'float', 'int').
-            size (list[int]): The size of the simulation variable (e.g., `[1]` for a scalar, `[10]` for an array).
-            value (any): The constant value to assign to the variable.
-
-        Returns:
-            np.ndarray: A NumPy array containing the constant value for all time steps.
-        """
-        np_dtype = self.DATATYPES[datatype][1]
-        if len(size) == 0:
-            return np.full((time_steps,), value, dtype=np_dtype)
-        elif len(size) == 1:
-            return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1))
-        elif len(size) == 2:
-            return np.tile(np.array(value, dtype=np_dtype), (time_steps, 1, 1))
-        else:
-            logger.warning(
-                f"Invalid size '{size}'. Expected 0 (scalar), 1 (1D), or 2 (2D) dimensions.",
-            )
-            raise
 
     @safely_run(
         default_return=None,
@@ -718,13 +646,13 @@ class SimUnit:
     ) -> None:
         """Core method to write a single value to the DLL interface.
 
-        Handles scalar, 1D, and 2D arrays by writing the appropriate data structure
-        to the ctypes interface. Logs warnings if write fails.
+        Handles scalars and arrays with any number of dimensions by writing the
+        appropriate data structure to the ctypes interface.
 
         Args:
             dd_element_name (str): Name of the variable in the DLL interface.
             input_value (np.ndarray | np.generic): The value to write (numpy array or numpy scalar).
-            size (list[int]): Size specification from Data Dictionary (0=scalar, 1=1D array, 2=2D array).
+            size (list[int]): Array shape from the Data Dictionary; an empty list denotes a scalar.
         """
         if len(size) == 0:
             self._dll_interface[dd_element_name].value = input_value.item()
@@ -833,7 +761,7 @@ class SimUnit:
                 size = dd_element_value.size
                 np_dtype = self.DATATYPES[dd_element_value.datatype][1]
 
-                if len(size) == 0:
+                if not size:
                     step_result[dd_element_name] = np.array(
                         sim_var.value, dtype=np_dtype
                     )
