@@ -44,6 +44,7 @@ from ares.core.workflow import Workflow
 from ares.pydantic_models.workflow_model import (
     BaseElement,
     MergeElement,
+    MergeMode,
     PluginElement,
     SimUnitElement,
 )
@@ -69,6 +70,22 @@ def test_runtime_fields_are_reset_to_model_defaults():
     assert element.element_workflow == []
     assert element.hash_lists_parameter == {}
     assert element.hash_lists_data == {}
+
+
+def test_merge_mode_defaults_to_common_source():
+    """Tests that merge elements use shared-source grouping by default."""
+    element = MergeElement.model_validate({"type": "merge"})
+
+    assert element.merge_mode == MergeMode.COMMON_SOURCE
+
+
+def test_merge_mode_accepts_common_source():
+    """Tests that merge elements accept the shared-source strategy."""
+    element = MergeElement.model_validate(
+        {"type": "merge", "merge_mode": "common_source"}
+    )
+
+    assert element.merge_mode == MergeMode.COMMON_SOURCE
 
 
 @pytest.mark.parametrize(
