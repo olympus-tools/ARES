@@ -140,7 +140,7 @@ Handles time-dependent signal data (e.g., measurement files, time-series). These
 | `stepsize`         | No         | `int`       |                     | Resampling step size in ms.                         |
 | `resample_method`  | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling signals. Defaults to `"linear"`. |
 | `resample_tolerance` | No       | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
-| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x_axis`, and `y_axis`. |
+| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables `signal_name` and `axes`, a list of regex group numbers used as stacking axes. |
 
 #### Parameter Element (`type="parameter"`)
 
@@ -170,7 +170,7 @@ Executes a compiled dynamic library (e.g., `.dll`, `.so`). This can represent an
 | `parameter`        | No         | `list[str]` |                     | List of parameter element names.                    |
 | `init`             | No         | `list[str]` |                     | List of elements for initialization.                |
 | `cancel_condition` | No         | `str`       |                     | Expression to stop simulation early.                |
-| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables additional fields: `signal_name`, `x_axis`, and `y_axis`. |
+| `vstack_pattern` | No | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays. Using the **dict** version enables `signal_name` and `axes`, a list of regex group numbers used as stacking axes. |
 | `transpose_parameter` | No | `bool` | `false`, `true` | Optional transposing of 2D parameters. `false` is the default and does not transpose; `true` transposes. |
 | `resample_method`  | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling signals. Defaults to `"linear"`. |
 | `resample_tolerance` | No       | `int`       |                     | Number of time steps tolerated as maximum deviation during resampling validation. Must be ≥ 0. |
@@ -200,7 +200,7 @@ When merging elements with overlapping parameter names or signal labels, later e
 | `data`                     | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Later elements override earlier ones. |
 | `label_filter_data`        | No         | `list[str]` |                     | Filter specific signals by name or pattern when merging data. |
 | `label_filter_parameter`   | No         | `list[str]` |                     | Filter specific parameters by name or pattern when merging parameters. |
-| `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables additional fields: `signal_name`, `x_axis`, and `y_axis`. |
+| `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables `signal_name` and `axes`, a list of regex group numbers used as stacking axes. |
 | `transpose_parameter` | No         | `bool`       | `false`, `true`            | Optional transposing of 2D parameters. `false` is the default and does not transpose; `true` transposes. |
 | `stepsize`                 | No         | `int`       |                     | Resampling step size in ms applied to merged data.  |
 | `resample_method`          | No         | `str`       | `"linear"`, `"cubic"`, `"windowedsinc"` | Interpolation method used when resampling merged signals. Defaults to `"linear"`. |

@@ -146,7 +146,8 @@ class AresSignal:
 
         Returns:
             tuple: The shape of the underlying numpy array.
-                   () for scalar, (n,) for 1D array, (m, n) for 2D array.
+                   The first axis contains samples; any remaining axes describe
+                   the signal value at each timestamp.
         """
         return self.value.shape
 
@@ -155,8 +156,9 @@ class AresSignal:
         """Returns the number of dimensions of the signal value.
 
         Returns:
-            int: The number of dimensions of the underlying numpy array.
-                 0 for scalar, 1 for 1D array, 2 for 2D array.
+              int: The number of dimensions of the underlying numpy array. The
+                  first axis is the time axis and any additional axes are part
+                  of the value at each timestamp.
         """
         return self.value.ndim
 

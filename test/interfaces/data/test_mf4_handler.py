@@ -221,6 +221,28 @@ def test_ares_mf4handler_add_3d_signal():
     assert result[0].label == "sig_3d", "Label must match the added 3D signal."
 
 
+def test_ares_mf4handler_add_4d_signal():
+    """
+    Test if mf4handler.add() handles arbitrary array dimensions greater than two.
+    """
+    timestamps = np.array([0.0, 1.0], dtype=np.float32)
+    value_4d = np.ones((2, 2, 3, 4), dtype=np.float32)
+
+    signal_4d = AresSignal(
+        label="sig_4d",
+        timestamps=timestamps,
+        value=value_4d,
+    )
+
+    handler = MF4Handler(file_path=None, data=[signal_4d])
+    result = handler.get()
+
+    assert result is not None, "get() must return signals after adding a 4D signal."
+    assert len(result) == 1, "Exactly one signal should be present."
+    assert result[0].label == "sig_4d", "Label must match the added 4D signal."
+    assert result[0].value.shape == value_4d.shape, "Array shape must be preserved."
+
+
 def test_ares_mf4handler_add_deduplication():
     """
     Test if mf4handler.add() deduplicates signals with the same label,
@@ -313,7 +335,7 @@ def test_ares_mf4handler_get_with_vstack_pattern():
 
     handler = MF4Handler(file_path=None, data=signals)
 
-    vstack = VStackPatternElement(pattern=r"(channel)_(\d+)", signal_name=1, x_axis=2)
+    vstack = VStackPatternElement(pattern=r"(channel)_(\d+)", signal_name=1, axes=[2])
     result = handler.get(vstack_pattern=[vstack])
 
     assert result is not None, "get() with vstack_pattern must return signals."

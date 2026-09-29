@@ -122,12 +122,31 @@ signal_array2d = Signal(
     comment=f"2D array signal (2x3 elements) per time step with step size {step_size_array2d}s",
 )
 
+# 2.5 signal_array5d - 5D array with five distinct dimension lengths
+# Use the scalar signal's timestamps so the time base matches another signal.
+signal_name_array5d = "signal_array5d"
+array5d_shape = (2, 3, 4, 5, 6)
+signal_array5d_samples = np.arange(
+    len(timestamps_input) * np.prod(array5d_shape), dtype=np.float64
+).reshape((len(timestamps_input), *array5d_shape))
+
+types_5d = [(signal_name_array5d, "(2, 3, 4, 5, 6)<f8")]
+signal_array5d = Signal(
+    samples=np.rec.fromarrays([signal_array5d_samples], dtype=np.dtype(types_5d)),
+    timestamps=timestamps_input,
+    name=signal_name_array5d,
+    unit="V",
+    source=source_1,
+    comment="5D array signal (2x3x4x5x6 elements) per time step",
+)
+
 # 3. Create a new MDF file and append all signals
 mdf = MDF()
 mdf.append(input_value)
 mdf.append(signal_scalar)
 mdf.append(signal_array1d)
 mdf.append(signal_array2d)
+mdf.append(signal_array5d)
 
 output_dir = Path("examples/data")
 
