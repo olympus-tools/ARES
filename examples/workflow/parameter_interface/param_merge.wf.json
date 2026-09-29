@@ -16,6 +16,7 @@
     },
     "parameter_merge_1": {
         "type": "merge",
+        "merge_mode": "all",
         "parameter": [
             "parameter_in_1",
             "parameter_in_2"
@@ -23,6 +24,7 @@
     },
     "parameter_merge_2": {
         "type": "merge",
+        "merge_mode": "common_source",
         "parameter": [
             "parameter_in_2",
             "parameter_in_1"
