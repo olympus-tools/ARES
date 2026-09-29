@@ -83,6 +83,13 @@ class ResampleMethod(StrEnum):
     WINDOWEDSINC = "windowedsinc"
 
 
+class MergeMode(StrEnum):
+    """Strategies for selecting merge combinations."""
+
+    ALL = "all"
+    COMMON_SOURCE = "common_source"
+
+
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
@@ -479,6 +486,7 @@ class MergeElement(PluginElement):
     )
     data: list[str] | None = []
     parameter: list[str] | None = []
+    merge_mode: MergeMode = MergeMode.COMMON_SOURCE
     label_filter_data: list[str] | None = None
     label_filter_parameter: list[str] | None = None
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
