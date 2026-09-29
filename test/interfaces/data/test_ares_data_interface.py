@@ -40,6 +40,7 @@ import pytest
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
+from ares.plugins.merge import get_origin_hash_combinations
 from ares.pydantic_models.workflow_model import DataElement, VStackPatternElement
 from ares.utils.hash import calculate_hash
 
@@ -618,3 +619,49 @@ class TestAresDataInterfaceIntegration:
         result = instance.get(stepsize=1000)
         assert result is not None
         assert len(result) == 1
+
+    def test_origin_hash_combinations_ignore_unrelated_sources(self):
+        """Test that merge combinations contain only hashes sharing an origin.
+
+        The derived object shares the source hash with the first input, while
+        the remaining inputs represent unrelated data sources and are omitted.
+        """
+        source = ConcreteDataInterface(
+            data=[
+                AresSignal(
+                    label="source",
+                    timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                    value=np.array([1.0, 2.0], dtype=np.float32),
+                )
+            ]
+        )
+        derived = ConcreteDataInterface(
+            data=[
+                AresSignal(
+                    label="derived",
+                    timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                    value=np.array([3.0, 4.0], dtype=np.float32),
+                )
+            ],
+            dependencies=[source.hash],
+        )
+        unrelated = ConcreteDataInterface(
+            data=[
+                AresSignal(
+                    label="unrelated",
+                    timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                    value=np.array([5.0, 6.0], dtype=np.float32),
+                )
+            ]
+        )
+
+        combinations = get_origin_hash_combinations(
+            [
+                [source.hash],
+                [derived.hash],
+                [unrelated.hash],
+            ],
+            AresDataInterface.cache,
+        )
+
+        assert combinations == [[source.hash, derived.hash]]
