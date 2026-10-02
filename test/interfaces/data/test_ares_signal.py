@@ -368,6 +368,39 @@ def test_ares_signal_resample_3d():
     assert signal_resampled.value.shape == expected_shape
 
 
+# TEST: AresSignal input validation
+def test_ares_signal_wrong_timestamps_type():
+    """
+    Test if integer timestamps are cast and accepted.
+    """
+    signal = AresSignal(
+        label="test_signal",
+        timestamps=np.array([1, 2, 3, 4], dtype=int),
+        value=np.array([1, 2, 3, 4], dtype=np.float32),
+    )
+
+    assert np.issubdtype(signal.timestamps.dtype, np.float32)
+    assert np.array_equal(signal.timestamps, np.array([1, 2, 3, 4], dtype=np.float32))
+
+
+def test_ares_signal_wrong_dimension():
+    """
+    Test if RuntimeError is raised for wrong dimension.
+    """
+    with pytest.raises(RuntimeError):
+        AresSignal(
+            label="test_signal",
+            timestamps=np.array([[1, 2], [3, 4]], dtype=np.float32),
+            value=np.array([1, 2, 3, 4], dtype=np.float32),
+        )
+    with pytest.raises(RuntimeError):
+        AresSignal(
+            label="test_signal",
+            timestamps=np.array([1, 2, 3, 4], dtype=np.float32),
+            value=np.array([[1, 2], [3, 4]], dtype=np.float32),
+        )
+
+
 def test_ares_signal_resample_nearest_bool():
     """
     Test that bool signals are resampled with nearest-neighbor (not interpolated).
