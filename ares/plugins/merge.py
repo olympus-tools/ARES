@@ -136,16 +136,16 @@ def ares_plugin(plugin_input: MergeElement):
     hash_lists_parameter: list[list[str]] = plugin_input.hash_lists_parameter
     hash_lists_data: list[list[str]] = plugin_input.hash_lists_data
 
-    if plugin_input.merge_mode == MergeMode.COMMON_SOURCE:
+    if plugin_input.merge_mode == MergeMode.ALL:
+        parameter_dependency_lists = get_hash_combinations(hash_lists_parameter)
+        data_dependency_lists = get_hash_combinations(hash_lists_data)
+    else:
         parameter_dependency_lists = get_origin_hash_combinations(
             hash_lists_parameter, AresParamInterface.cache
         )
         data_dependency_lists = get_origin_hash_combinations(
             hash_lists_data, AresDataInterface.cache
         )
-    else:
-        parameter_dependency_lists = get_hash_combinations(hash_lists_parameter)
-        data_dependency_lists = get_hash_combinations(hash_lists_data)
 
     # create merged parameters and data for each hash combination
     for parameter_dependency_list in parameter_dependency_lists:
