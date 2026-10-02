@@ -72,11 +72,11 @@ def test_runtime_fields_are_reset_to_model_defaults():
     assert element.hash_lists_data == {}
 
 
-def test_merge_mode_defaults_to_common_source():
-    """Tests that merge elements use shared-source grouping by default."""
+def test_merge_mode_defaults_to_none():
+    """Tests that merge elements leave the merge mode unset by default."""
     element = MergeElement.model_validate({"type": "merge"})
 
-    assert element.merge_mode == MergeMode.COMMON_SOURCE
+    assert element.merge_mode is None
 
 
 def test_merge_mode_accepts_common_source():
