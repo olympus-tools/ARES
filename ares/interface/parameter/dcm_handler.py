@@ -100,17 +100,9 @@ class DCMHandler(DCMI, AresParamInterface):
         Args:
             output_path (Path): Absolute path where the dcm file should be written.
             **kwargs (Any): Additional format-specific arguments:
-                - version (str): ARES version written into the file metadata
-                  (default: the installed ares package version).
-                - username (str): Author written into the file metadata
-                  (default: the current system user).
-                - meta_data (dict[str, str]): Full metadata dict; takes precedence
-                  over ``version`` and ``username``.
+                - meta_data (dict[str, str]): Full metadata dict containing information for handler.
         """
-        meta_data = kwargs.get("meta_data") or {
-            "version": kwargs.get("version", "unknown"),
-            "username": kwargs.get("username", "unknown"),
-        }
+        meta_data = kwargs.get("meta_data", {})
         self.write(output_path, meta_data=meta_data)
         logger.info(f"Successfully saved dcm parameter file: {output_path.resolve()}")
 
