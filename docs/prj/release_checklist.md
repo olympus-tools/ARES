@@ -24,6 +24,12 @@
 - [ ] Run `make release` **from the tagged, clean `master` checkout**.
 - [ ] Confirm that tests, examples, formatting, documentation, licenses, and
 	package metadata pass.
+- [ ] Install GitHub CLI and authenticate with `gh auth login`. Confirm the
+	account has **Actions: read** access with `gh auth status`.
+- [ ] Confirm that successful Windows and Linux executable workflow runs exist
+	for the exact commit SHA of `v<version>` on `master`. Workflow artifacts
+	expire after 30 days. `make release` stops with an error if either upload is
+	missing or expired, and it does not use a local executable as a fallback.
 - [ ] Choose `test` in the upload prompt first, verify the TestPyPI package,
 	then use `pypi` for the final upload.
 
@@ -32,12 +38,14 @@ The command creates these files in `dist/`:
 - `ares-<version>-release.zip`: release bundle for GitHub
 - `ares-<version>-py3-none-any.whl`: Python installation package
 - `ares-<version>.tar.gz`: Python source package
-- `ares` or `ares.exe`: available standalone executable
+- `windows/ares.exe`: Windows executable downloaded from the matching workflow
+- `linux/ares`: Linux executable downloaded from the matching workflow
 - `SHA256SUMS.txt`: checksums for the bundle contents
 
 The ZIP is created locally by `make release`; it is not uploaded to the Git
-repository. A Windows executable is included automatically when it is present
-in `dist/`. Otherwise, upload the Windows CI artefact separately.
+repository. It contains both executables in separate platform directories,
+along with the Python packages, documentation, and checksums. The Linux
+executable retains its executable permission in the ZIP.
 
 ### 3. Create the GitHub release
 
