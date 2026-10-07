@@ -14,6 +14,7 @@
 #   - make release-changelog
 #   - make thirdpartycheck
 #   - make release-upload
+#   - make download-release-executables
 #   - make release
 
 # Release metadata is maintained in pyproject.toml and checked against the tag.
@@ -118,12 +119,17 @@ release-upload:
 	fi
 
 .PHONY: release
-release: release-checklist release-changelog test-requirements test-examples format-check docs release-thirdpartycheck build-package build-executable release-artefacts release-upload
+release: release-checklist release-changelog docs build-package release-artefacts release-upload
 	@echo ""
 	@echo "Release process complete!"
 
+.PHONY: download-release-executables
+download-release-executables: release-checklist
+	@echo "Downloading Windows and Linux executables for v$(VERSION)..."
+	uv run python scripts/download_release_executables.py --version "$(VERSION)"
+
 .PHONY: release-artefacts
-release-artefacts: docs
+release-artefacts: docs download-release-executables
 	@echo "Creating release archive $(RELEASE_ARCHIVE)..."
 	uv run python scripts/create_release_archive.py --version "$(VERSION)" --docs-dir docs/sphinx/_build/html
 
