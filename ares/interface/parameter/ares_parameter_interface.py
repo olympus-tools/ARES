@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from pathlib import Path
 from typing import ClassVar
 
@@ -133,6 +134,37 @@ class AresParamInterface(ABC):
         )
         object.__setattr__(self, "_label_filter", label_filter)
         object.__setattr__(self, "_transpose", transpose)
+
+    @typechecked
+    def get_origin_hashes(
+        self,
+        cache: Mapping[str, "AresParamInterface"],
+        visited: set[str] | None = None,
+    ) -> set[str]:
+        """Return the source hashes in this object's parameter dependency tree.
+
+        Args:
+            cache (dict[str, AresParamInterface]): Cache used to resolve parameter dependencies.
+            visited (set[str] | None): Hashes already visited during recursion.
+
+        Returns:
+            set[str]: Hashes of the root parameter objects in the dependency tree.
+        """
+        visited = set() if visited is None else visited
+        if self.hash in visited:
+            return set()
+        visited.add(self.hash)
+
+        dependencies = [
+            cache[dependency] for dependency in self.dependencies if dependency in cache
+        ]
+        if not dependencies:
+            return {self.hash}
+
+        origin_hashes: set[str] = set()
+        for dependency in dependencies:
+            origin_hashes.update(dependency.get_origin_hashes(cache, visited))
+        return origin_hashes
 
     @classmethod
     @typechecked
@@ -248,7 +280,7 @@ class AresParamInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _filter_deduplicates(
+    def _filter_duplicates(
         parameters: list[AresParameter],
     ) -> list[AresParameter]:
         """Remove duplicate parameters by label, keeping the last occurrence.

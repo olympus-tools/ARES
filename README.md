@@ -198,6 +198,7 @@ When merging elements with overlapping parameter names or signal labels, later e
 | `type`                     | Yes        | `str`       | `"merge"`           | Unique identifier for the element type.             |
 | `parameter`                | No         | `list[str]` |                     | List of parameter element names to merge. All combinations are generated. Later elements override earlier ones. |
 | `data`                     | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Later elements override earlier ones. |
+| `merge_mode`               | No         | `str`       | `"all"`, `"common_source"` | Combination strategy. `"all"` generates the cartesian product of all inputs. `"common_source"` merges only variants sharing a source hash. Defaults to `"common_source"`. |
 | `label_filter_data`        | No         | `list[str]` |                     | Filter specific signals by name or pattern when merging data. |
 | `label_filter_parameter`   | No         | `list[str]` |                     | Filter specific parameters by name or pattern when merging parameters. |
 | `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables `signal_name` and `axes`, a list of regex group numbers used as stacking axes. |
