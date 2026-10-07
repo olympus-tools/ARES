@@ -41,7 +41,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 def get_release_files(dist_dir: Path, docs_dir: Path) -> list[tuple[Path, str]]:
     """Return release files and their paths inside the archive."""
-    patterns = ("*.whl", "*.tar.gz", "ares", "ares.exe")
+    patterns = ("*.whl", "*.tar.gz")
     artifacts = sorted(
         {path for pattern in patterns for path in dist_dir.glob(pattern)}
     )
@@ -51,6 +51,14 @@ def get_release_files(dist_dir: Path, docs_dir: Path) -> list[tuple[Path, str]]:
         raise FileNotFoundError(f"Documentation directory not found: {docs_dir}")
 
     release_files = [(path, path.name) for path in artifacts]
+    for platform, executable_name in (("windows", "ares.exe"), ("linux", "ares")):
+        executable = dist_dir / platform / executable_name
+        if not executable.is_file():
+            raise FileNotFoundError(
+                f"Release executable not found: {executable}. "
+                "Download the tagged workflow artifacts first."
+            )
+        release_files.append((executable, str(Path(platform) / executable_name)))
     release_files.extend(
         (path, str(Path("docs") / path.relative_to(docs_dir)))
         for path in sorted(path for path in docs_dir.rglob("*") if path.is_file())
