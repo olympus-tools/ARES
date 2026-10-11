@@ -118,7 +118,7 @@ addopts = [
 # The maximum line length.
 line-length = 88
 # The target Python version.
-target-version = "py312"
+target-version = "py313"
 # Excluded files and directories.
 exclude = [
     "ares/core/version.py",
