@@ -357,7 +357,7 @@ class MF4Handler(MDF, AresDataInterface):
                 - ndim > 1: Array per time step (shape: cycles, *array_shape)
             **kwargs (Any): Additional arguments passed to asammdf's append() method.
         """
-        data = AresDataInterface._filter_deduplicates(data=data)
+        data = AresDataInterface._filter_duplicates(data=data)
 
         stepsize = kwargs.pop("stepsize", None)
         if stepsize is not None:
@@ -366,7 +366,18 @@ class MF4Handler(MDF, AresDataInterface):
             comment = "ares"
 
         signals_to_write = []
+        expected_length: int | None = None
+        common_timebase = True
         for signal in data:
+            if expected_length is None:
+                expected_length = signal.shape[0]
+            elif signal.shape[0] != expected_length:
+                common_timebase = False
+                logger.warning(
+                    f"Unequal signal length detected for '{signal.label}': "
+                    f"got {signal.shape[0]}, expected {expected_length}."
+                )
+
             source_name = getattr(signal, "source", "ARES_DEFAULT_SOURCE")
 
             source = Source(
@@ -414,5 +425,5 @@ class MF4Handler(MDF, AresDataInterface):
                 )
 
         # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
-        self.append(signals_to_write, comment=comment, common_timebase=True)
+        self.append(signals_to_write, comment=comment, common_timebase=common_timebase)
         [self._available_signals.append(signal.label) for signal in data]

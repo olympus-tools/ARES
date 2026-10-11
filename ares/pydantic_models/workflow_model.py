@@ -83,6 +83,13 @@ class ResampleMethod(StrEnum):
     WINDOWEDSINC = "windowedsinc"
 
 
+class MergeMode(StrEnum):
+    """Strategies for selecting merge combinations."""
+
+    ALL = "all"
+    COMMON_SOURCE = "common_source"
+
+
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
@@ -438,7 +445,7 @@ class SimUnitElement(PluginElement):
     init: list[str] | None = []
     cancel_condition: str | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
-    transpose_parameter: bool | None = False
+    transpose_parameter: bool | None = None
     resample_method: ResampleMethod | None = None
     resample_tolerance: int | None = Field(default=None, ge=0)
     parameter_obj: list[Any] | None = None
@@ -479,10 +486,11 @@ class MergeElement(PluginElement):
     )
     data: list[str] | None = []
     parameter: list[str] | None = []
+    merge_mode: MergeMode | None = None
     label_filter_data: list[str] | None = None
     label_filter_parameter: list[str] | None = None
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
-    transpose_parameter: bool | None = False
+    transpose_parameter: bool | None = None
     stepsize: int | None = None
     resample_method: ResampleMethod | None = None
     resample_tolerance: int | None = Field(default=None, ge=0)
