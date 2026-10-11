@@ -319,9 +319,43 @@ class TestAresParamInterfaceWfElementHandler:
 
         AresParamInterface.wf_element_handler(
             wf_element,
-            input_hash_list=[[output_hash]],
+            input_hash_lists=[[output_hash]],
             output_dir=output_dir,
         )
+
+    def test_wf_element_handler_forwards_meta_data_to_save(self, tmp_path, monkeypatch):
+        ConcreteParamInterface.register(".json", ConcreteParamInterface)
+        param = AresParameter(
+            label="test_param",
+            value=np.array(42.0),
+            description="test",
+            unit="m/s",
+        )
+        instance = ConcreteParamInterface(parameters=[param])
+        output_hash = instance.hash
+
+        wf_element = ParameterElement(
+            mode="write",
+            parameter=["test"],
+            output_format="json",
+        )
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        received = {}
+
+        def recording_save(self, output_path, **kwargs):
+            received.update(kwargs)
+
+        monkeypatch.setattr(ConcreteParamInterface, "_save", recording_save)
+
+        AresParamInterface.wf_element_handler(
+            wf_element,
+            input_hash_lists=[[output_hash]],
+            output_dir=output_dir,
+            meta_data={"username": "ci", "version": "0.0.1"},
+        )
+        assert received["meta_data"] == {"username": "ci", "version": "0.0.1"}
 
 
 class TestAresParamInterfaceAbstractMethods:

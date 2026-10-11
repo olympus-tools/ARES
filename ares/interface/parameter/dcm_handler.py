@@ -99,9 +99,11 @@ class DCMHandler(DCMI, AresParamInterface):
 
         Args:
             output_path (Path): Absolute path where the dcm file should be written.
-            **kwargs (Any): Additional format-specific arguments (unused).
+            **kwargs (Any): Additional format-specific arguments:
+                - meta_data (dict[str, str]): Full metadata dict containing information for handler.
         """
-        self.write(output_path)
+        meta_data = kwargs.get("meta_data", {})
+        self.write(output_path, meta_data=meta_data)
         logger.info(f"Successfully saved dcm parameter file: {output_path.resolve()}")
 
     @override
