@@ -39,19 +39,11 @@ limitations under the License:
  * ARES orchestrates embedded-style simulation units: plain C shared
  * libraries whose simulation functions read and write *global variables*.
  * A global is the unit's interface: ARES copies the next time step's
- * input values into the input globals, calls the simulation function(s),
+ * input values (from some input source) into the input globals,
+ * calls the simulation function(s),
  * then copies the output globals out into an output buffer.
  *
- * Stepping that loop in Python costs one interpreter round-trip per time
- * step and per signal. This library moves the entire loop into C so a
- * whole simulation runs inside a single ctypes call. The per-step data
- * transfer cannot be removed entirely - the simulation functions only know
- * their globals - but it becomes one memcpy per signal inside the loop.
  *
- * The copy model is deliberately type-agnostic: every mapping describes its
- * own byte width per time step (`num_bytes` = itemsize * element count), so
- * scalar, 1D, 2D, integer, float, bool and fixed-size multi-dimensional
- * signals are all handled by the same memcpy with no dtype switch.
  */
 
 #include "sim_interface.h"
@@ -60,17 +52,16 @@ int run_global_simulation(GlobalSimFunc *functions, int num_functions, int sim_s
                           SignalList *input, SignalList *output, ProgressCb progress_callback) {
     // validate inputs
     if (functions == NULL || num_functions <= 0 || sim_steps <= 0 || input == NULL ||
-        output == NULL || progress_callback == NULL) {
+        output == NULL) {
         return 1;
     }
 
-    // TODO: do we need this?
-    // write_once signals
+    // write_once signals (signals not found in mapping / mapped with constant)
     if (input != NULL) {
         for (int j = 0; j < input->num_signals; j++) {
             SignalMapping *m = &input->signals[j]; // get signal pointer
-            (m->write_once && m->data_buffer != NULL &&
-             m->target_global != NULL) { // validate signal data
+            if (m->write_once && m->data_buffer != NULL &&
+                m->target_global != NULL) { // validate signal data
                 memcpy(m->target_global, m->data_buffer, m->num_bytes);
             }
         }
@@ -112,8 +103,10 @@ int run_global_simulation(GlobalSimFunc *functions, int num_functions, int sim_s
         }
 
         // progress callback |
-        if (progress_idx <= 10 && boundaries[progress_idx]) {
+        if (progress_callback != NULL && progress_idx <= 10 &&
+            i >= boundaries[progress_idx]) {
             progress_callback(i);
+            progress_idx++;
         }
     }
 
