@@ -37,6 +37,7 @@ import ctypes
 import os
 import shutil
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -45,6 +46,12 @@ from ares.utils.hash import bin_based_hash
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
+
+# environment variables to adapt behavior
+OVERRIDE_ENV = "ARES_SIM_RUNNER"
+CACHE_ENV = "ARES_SIM_RUNNER_CACHE"
+COMPILER_ENV = "ARES_CC"
+COMPILER_CANDIDATES = ("cc", "gcc", "clang")
 
 # ctypes prototypes mirroring the C types declared in `sim_interface.h`.
 GFUNCTYPE = ctypes.CFUNCTYPE(None)  # GlobalSimFunc
@@ -125,53 +132,6 @@ def build_signal_list(entries: list[PSignalMapping]) -> tuple[CSignalList, objec
     return (signal_list, array)
 
 
-def _library_suffix() -> str:
-    """Platform-specific suffix expected by ``ctypes.CDLL``."""
-    if os.name == "nt":
-        return ".dll"
-    return ".so"
-
-
-# environment variables to adapt behavior
-_OVERRIDE_ENV = "ARES_SIM_RUNNER"
-_CACHE_ENV = "ARES_SIM_RUNNER_CACHE"
-_COMPILER_ENV = "ARES_CC"
-_COMPILER_CANDIDATES = ("cc", "gcc", "clang")
-
-
-def _cache_dir() -> Path:
-    """Get cache directory of system to save compiled simulation interface.
-
-    It exist different options to define the cache directory:
-        override:
-            - environment variable 'ARES_SIM_RUNNER_CACHE' is used
-        - default:
-            -   'XDG_CACHE_HOME' / '~/.cache' / %LOCALAPPDATA%
-    """
-    override = os.environ.get(_CACHE_ENV)
-    if override:
-        return Path(override).expanduser()
-    if os.name == "nt":
-        base = Path(os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local"))
-    else:
-        base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-    return base / "ares"
-
-
-def _compiler() -> str | None:
-    """Locate a C compiler, honouring the ``ARES_CC`` override first."""
-    candidates = []
-    configured = os.environ.get(_COMPILER_ENV)
-    if configured:
-        candidates.append(configured)
-    candidates.extend(_COMPILER_CANDIDATES)
-    for candidate in candidates:
-        compiler_path = shutil.which(candidate)
-        if compiler_path:
-            return compiler_path
-    return None
-
-
 class SnmulationRunner:
     """Builds and loads the generic C simulation runner.
 
@@ -181,7 +141,7 @@ class SnmulationRunner:
 
     def __init__(self, library: ctypes.CDLL):
         self._library = library
-        # TODO: make this configurable
+        # INFO: hard coded mapping to 'sim_interface.c'
         self._run_global_simulation = library.run_global_simulation
         self._run_global_simulation.argtypes = [
             ctypes.POINTER(GFUNCTYPE),
@@ -202,7 +162,7 @@ class SnmulationRunner:
         digest = bin_based_hash(sharedlibpath)[
             :16
         ]  # magic numer: 16 to keep filename somewhat short
-        return _cache_dir() / f"sim_interface-{digest}{_library_suffix()}"
+        return cls._cache_dir() / f"sim_interface-{digest}{cls._library_suffix()}"
 
     @staticmethod
     @safely_run(
@@ -221,21 +181,21 @@ class SnmulationRunner:
     #     log=logger,
     # )
     def _compile(cls, out_path: Path, source: Path) -> bool:
-        compiler = _compiler()
+        compiler = cls._compiler()
         if compiler is None:
             logger.warning(
                 "No C compiler found to build the simulation runner (tried %s).",
                 ", ".join(
-                    [os.environ["ARES_CC"]] + list(_COMPILER_CANDIDATES)
-                    if os.environ.get("ARES_CC")
-                    else _COMPILER_CANDIDATES
+                    [os.environ.get(COMPILER_ENV)] + list(COMPILER_CANDIDATES)
+                    if os.environ.get(COMPILER_ENV)
+                    else COMPILER_CANDIDATES
                 ),
             )
             return False
 
-        if os.name == "nt":
+        if os.name == "nt":  # windows
             flags = ["-shared", "-O2"]
-        else:
+        else:  # linux
             flags = ["-shared", "-fPIC", "-O2"]
 
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -268,7 +228,7 @@ class SnmulationRunner:
             A ready-to-use :class:`SimulationRunner`, or ``None`` when the
             Python stepping loop should be used instead.
         """
-        override = os.environ.get(_OVERRIDE_ENV, "").strip().lower()
+        override = os.environ.get(OVERRIDE_ENV, "").strip().lower()
         force_python = override == "python"
         force_crunner = override == "crunner"
 
@@ -288,7 +248,7 @@ class SnmulationRunner:
         if library is None:
             if force_crunner:
                 logger.error(
-                    "ARES_SIM_RUNNER=runner but the simulation crunner could not "
+                    "ARES_SIM_RUNNER=runner but the simulation runner could not "
                     f"be built from '{source}'."
                 )
                 raise
@@ -307,7 +267,7 @@ class SnmulationRunner:
         sim_steps: int,
         input_list: CSignalList | None,
         output_list: CSignalList | None,
-        progress_cb: PROGRESS_CB | None = None,
+        progress_cb: Callable[[int], None] | None = None,
     ) -> int:
         """Execute the simulation in C.
 
@@ -332,3 +292,35 @@ class SnmulationRunner:
             ctypes.byref(output_list) if output_list is not None else None,
             progress_cb,
         )
+
+    @staticmethod
+    def _library_suffix() -> str:
+        if os.name == "nt":
+            return ".dll"
+        return ".so"
+
+    @staticmethod
+    def _cache_dir() -> Path:
+        override = os.environ.get(CACHE_ENV)
+        if override:
+            return Path(override).expanduser()
+        if os.name == "nt":
+            base = Path(
+                os.environ.get("LOCALAPPDATA", Path.home() / "AppData" / "Local")
+            )
+        else:
+            base = Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+        return base / "ares"
+
+    @staticmethod
+    def _compiler() -> str | None:
+        candidates = []
+        configured = os.environ.get(COMPILER_ENV)
+        if configured:
+            candidates.append(configured)
+        candidates.extend(COMPILER_CANDIDATES)
+        for candidate in candidates:
+            compiler_path = shutil.which(candidate)
+            if compiler_path:
+                return compiler_path
+        return None

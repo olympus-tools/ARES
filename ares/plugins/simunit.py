@@ -49,8 +49,8 @@ from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.plugins.sim_interface import (
-    GTYPE,
-    MappingEntry,
+    GFUNCTYPE,
+    PSignalMapping,
     PROGRESS_CB,
     SimulationRunner,
     build_signal_list,
@@ -917,7 +917,7 @@ class SimUnit:
         if self._sim_runner is None or not self._sim_functions_cyclical:
             return
 
-        input_entries: list[MappingEntry] = []
+        input_entries: list[PSignalMapping] = []
         for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
             if dd_element_value.type not in ["in", "inout"]:
                 continue
@@ -925,7 +925,7 @@ class SimUnit:
                 continue
             value = np.ascontiguousarray(mapped_data_dict[dd_element_name].value)
             input_entries.append(
-                MappingEntry(
+                PSignalMapping(
                     data_buffer=value.ctypes.data,
                     target_global=ctypes.addressof(
                         self._dll_interface[dd_element_name]
@@ -935,11 +935,11 @@ class SimUnit:
                 )
             )
 
-        output_entries: list[MappingEntry] = []
+        output_entries: list[PSignalMapping] = []
         for signal in output_signals:
             value = np.ascontiguousarray(sim_result[signal].value)
             output_entries.append(
-                MappingEntry(
+                PSignalMapping(
                     data_buffer=value.ctypes.data,
                     target_global=ctypes.addressof(self._dll_interface[signal]),
                     num_bytes=self._mapping_num_bytes(
@@ -951,9 +951,9 @@ class SimUnit:
         input_list, _ = build_signal_list(input_entries)
         output_list, _ = build_signal_list(output_entries)
 
-        towards_c_func = (GTYPE * len(self._sim_functions_cyclical))()
+        towards_c_func = (GFUNCTYPE * len(self._sim_functions_cyclical))()
         for i, sim_function in enumerate(self._sim_functions_cyclical):
-            towards_c_func[i] = GTYPE(ctypes.cast(sim_function, ctypes.c_void_p).value)
+            towards_c_func[i] = GFUNCTYPE(ctypes.cast(sim_function, ctypes.c_void_p).value)
 
         time_real_start = time.perf_counter()
         time_sim_start = float(timestamps[0]) if data else 0.0

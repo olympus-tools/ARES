@@ -39,19 +39,11 @@ limitations under the License:
  * ARES orchestrates embedded-style simulation units: plain C shared
  * libraries whose simulation functions read and write *global variables*.
  * A global is the unit's interface: ARES copies the next time step's
- * input values into the input globals, calls the simulation function(s),
+ * input values (from some input source) into the input globals,
+ * calls the simulation function(s),
  * then copies the output globals out into an output buffer.
  *
- * Stepping that loop in Python costs one interpreter round-trip per time
- * step and per signal. This library moves the entire loop into C so a
- * whole simulation runs inside a single ctypes call. The per-step data
- * transfer cannot be removed entirely - the simulation functions only know
- * their globals - but it becomes one memcpy per signal inside the loop.
  *
- * The copy model is deliberately type-agnostic: every mapping describes its
- * own byte width per time step (`num_bytes` = itemsize * element count), so
- * scalar, 1D, 2D, integer, float, bool and fixed-size multi-dimensional
- * signals are all handled by the same memcpy with no dtype switch.
  */
 
 #include "sim_interface.h"

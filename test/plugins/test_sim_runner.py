@@ -41,7 +41,7 @@ import numpy as np
 import pytest
 
 from ares.interface.data.ares_signal import AresSignal
-from ares.plugins.sim_interface import _compiler
+from ares.plugins.sim_interface import SimulationRunner
 from ares.plugins.simunit import SimUnit
 
 C_SIM_UNIT = r"""
@@ -96,7 +96,7 @@ DD = {
 @pytest.fixture
 def built_sim_unit(tmp_path: Path) -> Path:
     """Compiles a tiny simulation unit next to its Data Dictionary."""
-    compiler = _compiler()
+    compiler = SimulationRunner._compiler()
     if compiler is None:
         pytest.skip("No C compiler available to build the simulation unit.")
 
