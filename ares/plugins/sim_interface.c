@@ -54,113 +54,68 @@ limitations under the License:
  * signals are all handled by the same memcpy with no dtype switch.
  */
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <string.h>
+#include "sim_interface.h"
 
-/* A simulation function exported by a simulation unit, e.g. `ares_simunit`. */
-typedef void (*GlobalSimFunc)(void);
-
-/* Optional progress callback, fired at each 10% boundary of the step range. */
-typedef void (*ProgressCb)(int step_idx);
-
-/*
- * One byte-copy between ARES (numpy) memory and a simulation unit global.
- *
- * input:  `data_buffer` is the time-indexed input series; `target_global`
- *         receives its copy.
- * output: `target_global` is copied back into the time-indexed `data_buffer`
- *         (function has already modified it).
- */
-typedef struct {
-  void *data_buffer;   /* ARES buffer, C-contiguous, time is the first axis   */
-  void *target_global; /* address of the simulation unit's global variable    */
-  size_t num_bytes;    /* bytes transferred per time step = itemsize * count  */
-  bool write_once;     /* copy once before the loop instead of every step     */
-} SignalMapping;
-
-/* An ordered list of signal mappings. */
-typedef struct {
-  SignalMapping *signals;
-  int num_signals;
-} SignalList;
-
-/*
- * Runs `functions` (in order) for every time step.
- *
- * `write_once` inputs are copied into their globals once before the loop.
- * For every step: input row `i` is copied into each input global, every
- * function is called, then each output global is copied into output row `i`.
- * `progress`, when not NULL, is called at the 10%-of-range boundaries
- * (including step 0 and the final step).
- *
- * Returns 0 on success, non-zero when the arguments are invalid.
- */
-int run_global_simulation(GlobalSimFunc *functions, int num_functions,
-                          int sim_steps, SignalList *input, SignalList *output,
-                          ProgressCb progress);
-
-int run_global_simulation(GlobalSimFunc *functions, int num_functions,
-                          int sim_steps, SignalList *input, SignalList *output,
-                          ProgressCb progress) {
-  if (functions == NULL || num_functions <= 0 || sim_steps <= 0) {
-    return 1;
-  }
-
-  /* constant (write_once) inputs: one copy before the loop */
-  if (input != NULL) {
-    for (int j = 0; j < input->num_signals; j++) {
-      SignalMapping *m = &input->signals[j];
-      if (m->write_once && m->data_buffer != NULL && m->target_global != NULL) {
-        memcpy(m->target_global, m->data_buffer, m->num_bytes);
-      }
+int run_global_simulation(GlobalSimFunc *functions, int num_functions, int sim_steps,
+                          SignalList *input, SignalList *output, ProgressCb progress_callback) {
+    // validate inputs
+    if (functions == NULL || num_functions <= 0 || sim_steps <= 0 || input == NULL ||
+        output == NULL || progress_callback == NULL) {
+        return 1;
     }
-  }
 
-  /* progress boundaries mirror the Python loop's rounding of k*(steps-1)/10 */
-  int boundaries[11] = {0};
-  if (progress != NULL && sim_steps > 1) {
-    for (int k = 0; k <= 10; k++) {
-      boundaries[k] = (int)((double)k * (sim_steps - 1) / 10.0 + 0.5);
-    }
-  }
-  int progress_idx = 0;
-
-  for (int i = 0; i < sim_steps; i++) {
+    // TODO: do we need this?
+    // write_once signals
     if (input != NULL) {
-      for (int j = 0; j < input->num_signals; j++) {
-        SignalMapping *m = &input->signals[j];
-        if (!m->write_once && m->data_buffer != NULL && m->target_global != NULL) {
-          memcpy(m->target_global,
-                 (char *)m->data_buffer + (size_t)i * m->num_bytes, m->num_bytes);
+        for (int j = 0; j < input->num_signals; j++) {
+            SignalMapping *m = &input->signals[j]; // get signal pointer
+            (m->write_once && m->data_buffer != NULL &&
+             m->target_global != NULL) { // validate signal data
+                memcpy(m->target_global, m->data_buffer, m->num_bytes);
+            }
         }
-      }
     }
 
-    for (int n = 0; n < num_functions; n++) {
-      functions[n]();
-    }
-
-    if (output != NULL) {
-      for (int j = 0; j < output->num_signals; j++) {
-        SignalMapping *m = &output->signals[j];
-        if (m->data_buffer != NULL && m->target_global != NULL) {
-          memcpy((char *)m->data_buffer + (size_t)i * m->num_bytes,
-                 m->target_global, m->num_bytes);
+    /* progress boundaries mirror the Python loop's rounding of k*(steps-1)/10 */
+    // init progress bar array, 10% steps
+    int boundaries[11] = {0};
+    if (sim_steps > 1) {
+        for (int k = 0; k <= 10; k++) {
+            boundaries[k] = (int)((double)k * (sim_steps - 1) / 10.0f + 0.5f);
         }
-      }
     }
 
-    if (progress != NULL) {
-      while (progress_idx <= 10 && boundaries[progress_idx] <= i) {
-        if (boundaries[progress_idx] == i) {
-          progress(i);
+    // simulation loop
+    int progress_idx = 0;
+    for (int i = 0; i < sim_steps; i++) {
+        // input copy loop | ares-input -> *.so/*.dll
+        for (int j = 0; j < input->num_signals; j++) {
+            SignalMapping *m = &input->signals[j];
+            if (!m->write_once && m->data_buffer != NULL && m->target_global != NULL) {
+                memcpy(m->target_global, (char *)m->data_buffer + (size_t)i * m->num_bytes,
+                       m->num_bytes);
+            }
         }
-        progress_idx++;
-      }
-    }
-  }
 
-  return 0;
+        // looping over all functions
+        for (int n = 0; n < num_functions; n++) {
+            functions[n]();
+        }
+
+        // output copy loop | *.so/*.dll -> ares-output
+        for (int j = 0; j < output->num_signals; j++) {
+            SignalMapping *m = &output->signals[j];
+            if (m->data_buffer != NULL && m->target_global != NULL) {
+                memcpy((char *)m->data_buffer + (size_t)i * m->num_bytes, m->target_global,
+                       m->num_bytes);
+            }
+        }
+
+        // progress callback |
+        if (progress_idx <= 10 && boundaries[progress_idx]) {
+            progress_callback(i);
+        }
+    }
+
+    return 0;
 }
