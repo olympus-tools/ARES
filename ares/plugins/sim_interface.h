@@ -45,7 +45,6 @@ typedef void (*GlobalSimFunc)(void);
 // Progress callback to python instance, fired every 10%
 typedef void (*ProgressCb)(int step_idx);
 
-// TODO: update comment
 /*
  * Struct connecting ARES data memory and a simulation unit input global.
  *

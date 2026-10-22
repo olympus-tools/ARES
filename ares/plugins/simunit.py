@@ -49,9 +49,9 @@ from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.plugins.sim_interface import (
-    GTYPE,
-    MappingEntry,
+    GFUNCTYPE,
     PROGRESS_CB,
+    PSignalMapping,
     SimulationRunner,
     build_signal_list,
 )
@@ -68,6 +68,9 @@ from ares.utils.logger import create_logger
 logger = create_logger(name=__name__)
 
 AresBaseType = TypeVar("AresBaseType", AresSignal, AresParameter)
+
+# globals
+DEFAULT_SIMFUNCTION = "ares_simunit"
 
 
 class SimUnit:
@@ -176,21 +179,14 @@ class SimUnit:
         """Loads a shared library file using `ctypes`.
 
         This makes the symbols (variables and functions) from the C library accessible in Python.
+        Only necessary for the python simulation runner.
 
         Returns:
             ctypes.CDLL: The loaded `ctypes.CDLL` object.
         """
         library = ctypes.CDLL(self.file_path)
-        # XXX: according to:
-        # https://numpy.org/doc/stable/reference/routines.ctypeslib.html
-        # https://numpy.org/devdocs/user/c-info.python-as-glue.html#index-2
-        # https://chan-y-park.github.io/blog/numpy_ctypeslib.html
-        # using ctypes via numpy holds the "advanctage" that we can transfer pointers to C
-        # library = np.ctypeslib.load_library(self.file_path)
-        # Test?
 
-        # sumunit should be always a void void function
-        # TODO: linter is throwing warning here - reportAttributeAccessIssue - i.O.?
+        # simunit should be always a void void function
         library.argtypes = []
         library.restype = None
 
@@ -276,7 +272,7 @@ class SimUnit:
 
         Reads the execution_order from the Data Dictionary and sets up function lists for
         initialization and cyclical execution phases. If no execution_order is defined,
-        defaults to using 'ares_simunit' as the cyclical function.
+        defaults to using DEFAULT_SIMFUNCTION as the cyclical function.
 
         For each function, it sets the argument types (`argtypes`) and return type (`restype`)
         to ensure correct function calls via `ctypes`.
@@ -285,11 +281,11 @@ class SimUnit:
         if self._dd.execution_order:
             function_names_init = self._dd.execution_order.initialization
             function_names_cyclical = self._dd.execution_order.cyclical or [
-                "ares_simunit"
+                DEFAULT_SIMFUNCTION
             ]
         else:
             function_names_init = []
-            function_names_cyclical = ["ares_simunit"]
+            function_names_cyclical = [DEFAULT_SIMFUNCTION]
 
         if function_names_init:
             for function_name in function_names_init:
@@ -917,7 +913,7 @@ class SimUnit:
         if self._sim_runner is None or not self._sim_functions_cyclical:
             return
 
-        input_entries: list[MappingEntry] = []
+        input_entries: list[PSignalMapping] = []
         for dd_element_name, dd_element_value in (self._dd.signals or {}).items():
             if dd_element_value.type not in ["in", "inout"]:
                 continue
@@ -925,7 +921,7 @@ class SimUnit:
                 continue
             value = np.ascontiguousarray(mapped_data_dict[dd_element_name].value)
             input_entries.append(
-                MappingEntry(
+                PSignalMapping(
                     data_buffer=value.ctypes.data,
                     target_global=ctypes.addressof(
                         self._dll_interface[dd_element_name]
@@ -935,11 +931,11 @@ class SimUnit:
                 )
             )
 
-        output_entries: list[MappingEntry] = []
+        output_entries: list[PSignalMapping] = []
         for signal in output_signals:
             value = np.ascontiguousarray(sim_result[signal].value)
             output_entries.append(
-                MappingEntry(
+                PSignalMapping(
                     data_buffer=value.ctypes.data,
                     target_global=ctypes.addressof(self._dll_interface[signal]),
                     num_bytes=self._mapping_num_bytes(
@@ -951,14 +947,17 @@ class SimUnit:
         input_list, _ = build_signal_list(input_entries)
         output_list, _ = build_signal_list(output_entries)
 
-        towards_c_func = (GTYPE * len(self._sim_functions_cyclical))()
+        c_func_adress_array = (GFUNCTYPE * len(self._sim_functions_cyclical))()
         for i, sim_function in enumerate(self._sim_functions_cyclical):
-            towards_c_func[i] = GTYPE(ctypes.cast(sim_function, ctypes.c_void_p).value)
+            c_func_adress_array[i] = GFUNCTYPE(
+                ctypes.cast(sim_function, ctypes.c_void_p).value
+            )
 
         time_real_start = time.perf_counter()
         time_sim_start = float(timestamps[0]) if data else 0.0
         progress_step = 0
 
+        # INFO: helper - callback function for c-interface to get simulation status
         def progress(step_idx: int) -> None:
             nonlocal time_real_start, time_sim_start, progress_step
             time_real_elapsed = time.perf_counter() - time_real_start
@@ -978,7 +977,7 @@ class SimUnit:
             time_sim_start = float(timestamps[step_idx]) if data else 0.0
 
         self._sim_runner.run(
-            functions=towards_c_func,
+            functions=c_func_adress_array,
             num_functions=len(self._sim_functions_cyclical),
             sim_steps=time_steps,
             input_list=input_list,

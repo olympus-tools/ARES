@@ -35,13 +35,14 @@ limitations under the License:
 
 import json
 import subprocess
+import time
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from ares.interface.data.ares_signal import AresSignal
-from ares.plugins.sim_interface import _compiler
+from ares.plugins.sim_interface import SimulationRunner
 from ares.plugins.simunit import SimUnit
 
 C_SIM_UNIT = r"""
@@ -96,7 +97,7 @@ DD = {
 @pytest.fixture
 def built_sim_unit(tmp_path: Path) -> Path:
     """Compiles a tiny simulation unit next to its Data Dictionary."""
-    compiler = _compiler()
+    compiler = SimulationRunner._get_compiler()
     if compiler is None:
         pytest.skip("No C compiler available to build the simulation unit.")
 
@@ -130,19 +131,58 @@ def _inputs(n_steps: int) -> list[AresSignal]:
 
 
 def _run(
-    monkeypatch, tmp_path: Path, lib_path: Path, force: str
+    monkeypatch, tmp_path: Path, lib_path: Path, force: str, n_steps: int = 11
 ) -> dict[str, np.ndarray]:
     monkeypatch.setenv("ARES_SIM_RUNNER", force)
     monkeypatch.setenv("ARES_SIM_RUNNER_CACHE", str(tmp_path / "cache"))
     sim_unit = SimUnit(file_path=lib_path, dd_path=lib_path.with_suffix(".dd.json"))
-    results = sim_unit.run(data=_inputs(n_steps=11), parameters=[])
+    if force != "python" and sim_unit._sim_runner == None:
+        pytest.fail(
+            "C runner not active; test would compare the Python loop with itself."
+        )
+    results = sim_unit.run(data=_inputs(n_steps=n_steps), parameters=[])
     return {signal.label: signal.value for signal in results}
 
 
 def test_runner_and_python_loop_are_equivalent(monkeypatch, tmp_path, built_sim_unit):
     python_result = _run(monkeypatch, tmp_path, built_sim_unit, force="python")
-    runner_result = _run(monkeypatch, tmp_path, built_sim_unit, force="runner")
+    runner_result = _run(monkeypatch, tmp_path, built_sim_unit, force="crunner")
 
     assert python_result.keys() == runner_result.keys()
     for label, python_value in python_result.items():
         np.testing.assert_array_equal(python_value, runner_result[label])
+
+
+def test_native_runner_is_faster_than_python_loop(
+    monkeypatch, tmp_path, built_sim_unit
+):
+    """Compares both runner modes on the same workload.
+
+    ARES_SIM_RUNNER=crunner steps the whole series inside one C call, while
+    ARES_SIM_RUNNER=python performs a ctypes round-trip per step. The margin is
+    deliberately loose so loaded machines do not turn this into a flaky test.
+    """
+    monkeypatch.setenv("ARES_SIM_RUNNER", "crunner")
+    monkeypatch.setenv("ARES_SIM_RUNNER_CACHE", str(tmp_path / "cache"))
+    assert SimulationRunner.load() is not None
+
+    n_steps = 10_000
+    start = time.perf_counter()
+    python_result = _run(
+        monkeypatch, tmp_path, built_sim_unit, force="python", n_steps=n_steps
+    )
+    python_elapsed = time.perf_counter() - start
+
+    start = time.perf_counter()
+    runner_result = _run(
+        monkeypatch, tmp_path, built_sim_unit, force="crunner", n_steps=n_steps
+    )
+    runner_elapsed = time.perf_counter() - start
+
+    assert python_result.keys() == runner_result.keys()
+    for label, python_value in python_result.items():
+        np.testing.assert_array_equal(python_value, runner_result[label])
+
+    assert python_elapsed > runner_elapsed * 3, (
+        f"python={python_elapsed:.3f}s, crunner={runner_elapsed:.3f}s"
+    )
