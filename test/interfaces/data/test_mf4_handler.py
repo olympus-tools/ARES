@@ -39,6 +39,7 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
+from asammdf import MDF, Signal
 from asammdf.blocks.utils import MdfException
 
 from ares.interface.data.ares_signal import AresSignal
@@ -345,6 +346,50 @@ def test_ares_mf4handler_duplicate_labels_survive_save_and_load(tmp_path: Path):
     assert by_key[("scalar", "source_b")].tolist() == [3.0, 4.0]
     assert np.array_equal(by_key[("array", "source_a")], np.zeros((2, 2, 3)))
     assert np.array_equal(by_key[("array", "source_b")], np.ones((2, 2, 3)))
+
+
+def test_ares_mf4handler_get_reads_single_and_duplicate_channels(tmp_path: Path):
+    """Tests that a filter returns single channels and every duplicate occurrence."""
+    file_path = tmp_path / "duplicate_channels.mf4"
+    mdf = MDF(version="4.10")
+    mdf.append(
+        [
+            Signal(
+                samples=np.array([7.0, 8.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                name="single_signal",
+            ),
+            Signal(
+                samples=np.array([1.0, 2.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                name="dup_signal",
+            ),
+        ]
+    )
+    mdf.append(
+        [
+            Signal(
+                samples=np.array([99.0, 100.0, 101.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
+                name="dup_signal",
+            )
+        ]
+    )
+    mdf.save(file_path)
+    mdf.close()
+
+    handler = MF4Handler(file_path=file_path)
+    result = handler.get(label_filter=["single_signal", "dup_signal"])
+    handler.close()
+
+    assert result is not None
+    assert len(result) == 3
+    single_signal = next(signal for signal in result if signal.label == "single_signal")
+    duplicate_signals = [
+        signal.value.tolist() for signal in result if signal.label == "dup_signal"
+    ]
+    assert single_signal.value.tolist() == [7.0, 8.0]
+    assert duplicate_signals == [[1.0, 2.0], [99.0, 100.0, 101.0]]
 
 
 def test_ares_mf4handler_get_no_match_returns_none():

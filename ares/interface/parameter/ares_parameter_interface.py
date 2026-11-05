@@ -166,6 +166,16 @@ class AresParamInterface(ABC):
             origin_hashes.update(dependency.get_origin_hashes(cache, visited))
         return origin_hashes
 
+    @typechecked
+    def get_sources(self) -> set[str | None]:
+        """Return the distinct source fields of all available parameters.
+
+        Returns:
+            set[str | None]: Unique source values, including None for parameters
+                without a source; empty if no parameters are available.
+        """
+        return {parameter.source for parameter in (self.get() or [])}
+
     @classmethod
     @typechecked
     def register(

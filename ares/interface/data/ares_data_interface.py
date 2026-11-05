@@ -180,6 +180,16 @@ class AresDataInterface(ABC):
             origin_hashes.update(dependency.get_origin_hashes(cache, visited))
         return origin_hashes
 
+    @typechecked
+    def get_sources(self) -> set[str | None]:
+        """Return the distinct source fields of all available signals.
+
+        Returns:
+            set[str | None]: Unique source values, including None for signals
+                without a source; empty if no signals are available.
+        """
+        return {signal.source for signal in (self.get() or [])}
+
     @classmethod
     @typechecked
     def register(cls, extension: str, handler_class: type["AresDataInterface"]) -> None:
