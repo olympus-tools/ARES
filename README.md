@@ -227,14 +227,13 @@ Allows users to execute custom Python scripts within the workflow. Plugins can d
 
 Merges data and parameters from multiple workflow elements by creating all possible combinations (cartesian product) of the inputs. This is useful for combining results from different simulation units or data sources, generating all permutations of parameter sets and data sources.
 
-When merging elements with overlapping parameter names or signal labels, later elements in the list take precedence and override values from earlier elements.
-
 | Field                      | Required   | Type        | Supported Values    | Description                                         |
 | :------------------------- | :--------- | :---------- | :------------------ | :-------------------------------------------------- |
 | `type`                     | Yes        | `str`       | `"merge"`           | Unique identifier for the element type.             |
 | `parameter`                | No         | `list[str]` |                     | List of parameter element names to merge. All combinations are generated. Later elements override earlier ones. |
-| `data`                     | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Later elements override earlier ones. |
+| `data`                     | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Signals with the same label are retained unless `allow_duplicates_data` is `false`. |
 | `merge_mode`               | No         | `str`       | `"all"`, `"common_source"` | Combination strategy. `"all"` generates the cartesian product of all inputs. `"common_source"` merges only variants sharing a source hash. Defaults to `"common_source"`. |
+| `allow_duplicates_data`    | No         | `bool`      | `false`, `true` | Whether to retain signals with the same label from different data elements. Defaults to `true`; with `false`, later elements override earlier ones. |
 | `label_filter_data`        | No         | `list[str]` |                     | Filter specific signals by name or pattern when merging data. |
 | `label_filter_parameter`   | No         | `list[str]` |                     | Filter specific parameters by name or pattern when merging parameters. |
 | `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables `signal_name` and `axes`, a list of regex group numbers used as stacking axes. |
