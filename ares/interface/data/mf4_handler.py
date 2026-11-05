@@ -347,7 +347,9 @@ class MF4Handler(MDF, AresDataInterface):
         dimensions greater than one.
         Optionally adds source information to data for traceability.
 
-        Duplicate signal labels are automatically removed, keeping the last occurrence.
+        Signals sharing a label are all written (e.g. the same signal from different
+        sources). Resolving duplicate labels is the responsibility of the caller,
+        e.g. the merge plugin via ``allow_duplicates_data``.
 
         Args:
             data (list[AresSignal]): List of AresSignal objects to append to mf4 file.
@@ -357,8 +359,6 @@ class MF4Handler(MDF, AresDataInterface):
                 - ndim > 1: Array per time step (shape: cycles, *array_shape)
             **kwargs (Any): Additional arguments passed to asammdf's append() method.
         """
-        data = AresDataInterface._filter_duplicates(data=data)
-
         stepsize = kwargs.pop("stepsize", None)
         if stepsize is not None:
             comment = f"{stepsize}ms ares"
@@ -426,4 +426,8 @@ class MF4Handler(MDF, AresDataInterface):
 
         # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
         self.append(signals_to_write, comment=comment, common_timebase=common_timebase)
-        [self._available_signals.append(signal.label) for signal in data]
+        # get() resolves every occurrence of a label via whereis(), so each label
+        # must only be listed once to avoid returning occurrences multiple times.
+        for label in dict.fromkeys(signal.label for signal in data):
+            if label not in self._available_signals:
+                self._available_signals.append(label)

@@ -38,7 +38,7 @@ from pathlib import Path
 from typing import ClassVar
 
 import pytest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from ares.core.workflow import Workflow
 from ares.pydantic_models.workflow_model import (
@@ -73,10 +73,31 @@ def test_runtime_fields_are_reset_to_model_defaults():
 
 
 def test_merge_mode_defaults_to_none():
-    """Tests that merge elements leave the merge mode unset by default."""
+    """Tests that merge mode and the duplicate-data option are unset by default."""
     element = MergeElement.model_validate({"type": "merge"})
 
     assert element.merge_mode is None
+    assert element.allow_duplicates_data is None
+
+
+def test_merge_element_allows_duplicate_options():
+    """Tests that merge elements accept the boolean duplicate-data option."""
+    element = MergeElement.model_validate(
+        {
+            "type": "merge",
+            "allow_duplicates_data": True,
+        }
+    )
+
+    assert element.allow_duplicates_data is True
+
+
+def test_merge_element_rejects_duplicate_parameter_option():
+    """Tests that parameters cannot be configured to retain duplicate labels."""
+    with pytest.raises(ValidationError):
+        MergeElement.model_validate(
+            {"type": "merge", "allow_duplicates_parameter": True}
+        )
 
 
 def test_merge_mode_accepts_common_source():
