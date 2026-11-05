@@ -37,6 +37,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pytest
 
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
@@ -95,6 +96,8 @@ def test_ares_plugin_all_mode_creates_parameter_and_data_outputs():
         hash_lists_parameter=[["parameter"]],
         hash_lists_data=[["data"]],
         merge_mode=MergeMode.ALL,
+        allow_duplicates_parameter=False,
+        allow_duplicates_data=False,
         label_filter_parameter=None,
         transpose_parameter=None,
         label_filter_data=None,
@@ -119,12 +122,71 @@ def test_ares_plugin_all_mode_creates_parameter_and_data_outputs():
     create_data.assert_called_once()
 
 
+@pytest.mark.parametrize(
+    "allow_duplicates, expected_count",
+    [(None, 1), (False, 1), (True, 2)],
+)
+def test_ares_plugin_handles_duplicate_options(allow_duplicates, expected_count):
+    """Tests that unset and false options deduplicate while true retains duplicates."""
+    parameters = [
+        AresParameter(label="p", value=np.array([1.0])),
+        AresParameter(label="p", value=np.array([2.0])),
+    ]
+    signals = [
+        AresSignal(
+            label="s",
+            timestamps=np.array([0.0]),
+            value=np.array([1.0]),
+        ),
+        AresSignal(
+            label="s",
+            timestamps=np.array([0.0]),
+            value=np.array([2.0]),
+        ),
+    ]
+    parameter_sources = {
+        "parameter_1": MagicMock(get=MagicMock(return_value=[parameters[0]])),
+        "parameter_2": MagicMock(get=MagicMock(return_value=[parameters[1]])),
+    }
+    data_sources = {
+        "data_1": MagicMock(stepsize=None, get=MagicMock(return_value=[signals[0]])),
+        "data_2": MagicMock(stepsize=None, get=MagicMock(return_value=[signals[1]])),
+    }
+    plugin_input = SimpleNamespace(
+        hash_lists_parameter=[["parameter_1"], ["parameter_2"]],
+        hash_lists_data=[["data_1"], ["data_2"]],
+        merge_mode=MergeMode.ALL,
+        allow_duplicates_parameter=allow_duplicates,
+        allow_duplicates_data=allow_duplicates,
+        label_filter_parameter=None,
+        transpose_parameter=None,
+        label_filter_data=None,
+        vstack_pattern_data=None,
+        stepsize=None,
+        resample_method=None,
+        resample_tolerance=None,
+    )
+
+    with (
+        patch("ares.plugins.merge.AresParamInterface.cache", parameter_sources),
+        patch("ares.plugins.merge.AresDataInterface.cache", data_sources),
+        patch("ares.plugins.merge.AresParamInterface.create") as create_parameter,
+        patch("ares.plugins.merge.AresDataInterface.create") as create_data,
+    ):
+        ares_plugin(plugin_input)
+
+    assert len(create_parameter.call_args.kwargs["parameters"]) == expected_count
+    assert len(create_data.call_args.kwargs["data"]) == expected_count
+
+
 def test_ares_plugin_common_source_mode_uses_common_source_helpers():
     """Tests that non-ALL mode delegates combination selection to common-source helpers."""
     plugin_input = SimpleNamespace(
         hash_lists_parameter=[["parameter"]],
         hash_lists_data=[["data"]],
         merge_mode=MergeMode.COMMON_SOURCE,
+        allow_duplicates_parameter=False,
+        allow_duplicates_data=False,
         label_filter_parameter=None,
         transpose_parameter=None,
         label_filter_data=None,

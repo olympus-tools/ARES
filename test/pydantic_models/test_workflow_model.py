@@ -73,10 +73,26 @@ def test_runtime_fields_are_reset_to_model_defaults():
 
 
 def test_merge_mode_defaults_to_none():
-    """Tests that merge elements leave the merge mode unset by default."""
+    """Tests that merge mode is unset and duplicate labels are disallowed by default."""
     element = MergeElement.model_validate({"type": "merge"})
 
     assert element.merge_mode is None
+    assert element.allow_duplicates_data is None
+    assert element.allow_duplicates_parameter is None
+
+
+def test_merge_element_allows_duplicate_options():
+    """Tests that merge elements accept boolean duplicate-label options."""
+    element = MergeElement.model_validate(
+        {
+            "type": "merge",
+            "allow_duplicates_data": True,
+            "allow_duplicates_parameter": True,
+        }
+    )
+
+    assert element.allow_duplicates_data is True
+    assert element.allow_duplicates_parameter is True
 
 
 def test_merge_mode_accepts_common_source():

@@ -42,6 +42,7 @@ from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.workflow_model import MergeElement, MergeMode
+from ares.utils.get_labels import get_labels
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
@@ -147,6 +148,15 @@ def ares_plugin(plugin_input: MergeElement):
             hash_lists_data, AresDataInterface.cache
         )
 
+    logger.info(
+        "Merging with the following configuration: "
+        f"  Parameter combinations: {len(parameter_dependency_lists)} "
+        f"  Data combinations: {len(data_dependency_lists)} "
+        f"  Merge mode: {plugin_input.merge_mode} "
+        f"  Allow duplicate parameters: {plugin_input.allow_duplicates_parameter} "
+        f"  Allow duplicate data: {plugin_input.allow_duplicates_data}"
+    )
+
     # create merged parameters and data for each hash combination
     for parameter_dependency_list in parameter_dependency_lists:
         logger.debug(
@@ -154,13 +164,25 @@ def ares_plugin(plugin_input: MergeElement):
         )  # TODO: offering a better log message
 
         merge_parameters: list[AresParameter] = []
-        for parameter_hash in parameter_dependency_list:
-            params = AresParamInterface.cache[parameter_hash].get(
+        for parameter_hash in reversed(parameter_dependency_list):
+            parameters = AresParamInterface.cache[parameter_hash].get(
                 label_filter=plugin_input.label_filter_parameter,
                 transpose=plugin_input.transpose_parameter,
             )
-            if params is not None:
-                merge_parameters.extend(params)
+            if parameters is not None:
+                if plugin_input.allow_duplicates_parameter:
+                    parameters_cleared = parameters
+                else:
+                    parameter_labels = get_labels(base_type_list=parameters)
+                    merge_parameter_labels = get_labels(base_type_list=merge_parameters)
+                    new_labels = set(parameter_labels) - set(merge_parameter_labels)
+                    parameters_cleared = [
+                        parameter
+                        for parameter in parameters
+                        if parameter.label in new_labels
+                    ]
+
+                merge_parameters.extend(parameters_cleared)
 
         AresParamInterface.create(
             parameters=merge_parameters,
@@ -186,7 +208,7 @@ def ares_plugin(plugin_input: MergeElement):
             ):
                 stepsize = AresDataInterface.cache[data_hash].stepsize
 
-        for data_hash in data_dependency_list:
+        for data_hash in reversed(data_dependency_list):
             data = AresDataInterface.cache[data_hash].get(
                 stepsize=stepsize,
                 label_filter=plugin_input.label_filter_data,
@@ -195,7 +217,17 @@ def ares_plugin(plugin_input: MergeElement):
                 resample_tolerance=plugin_input.resample_tolerance,
             )
             if data is not None:
-                merge_data.extend(data)
+                if plugin_input.allow_duplicates_data:
+                    data_cleared = data
+                else:
+                    data_labels = get_labels(base_type_list=data)
+                    merge_data_labels = get_labels(base_type_list=merge_data)
+                    new_labels = set(data_labels) - set(merge_data_labels)
+                    data_cleared = [
+                        signal for signal in data if signal.label in new_labels
+                    ]
+
+                merge_data.extend(data_cleared)
 
         AresDataInterface.create(
             data=merge_data,

@@ -487,6 +487,8 @@ class MergeElement(PluginElement):
     data: list[str] | None = []
     parameter: list[str] | None = []
     merge_mode: MergeMode | None = None
+    allow_duplicates_data: bool | None = None
+    allow_duplicates_parameter: bool | None = None
     label_filter_data: list[str] | None = None
     label_filter_parameter: list[str] | None = None
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
