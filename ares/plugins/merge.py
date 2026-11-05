@@ -42,9 +42,36 @@ from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.workflow_model import MergeElement, MergeMode
+from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
+
+
+@typechecked
+def select_elements_for_merge(
+    elements: list[AresSignal | AresParameter],
+    existing_elements: list[AresSignal | AresParameter],
+    allow_duplicates: bool | None,
+) -> list[AresSignal | AresParameter]:
+    """Return merge elements according to the duplicate-label configuration.
+
+    Args:
+        elements (list[AresSignal | AresParameter]): Signals or parameters to merge.
+        existing_elements (list[AresSignal | AresParameter]): Signals or parameters
+            already merged.
+        allow_duplicates (bool | None): Whether elements with existing labels are
+            allowed.
+
+    Returns:
+        list[AresSignal | AresParameter]: Original elements when duplicates are
+            allowed; otherwise elements with new labels, preserving input order.
+    """
+    if allow_duplicates is False:
+        existing_labels = {element.label for element in existing_elements}
+        return [element for element in elements if element.label not in existing_labels]
+    else:
+        return elements
 
 
 def get_all_hash_combinations(
@@ -142,6 +169,15 @@ def ares_plugin(plugin_input: MergeElement):
             hash_lists_data, AresDataInterface.cache
         )
 
+    logger.info(
+        "Merging with the following configuration: "
+        f"  Parameter combinations: {len(parameter_dependency_lists)} "
+        f"  Data combinations: {len(data_dependency_lists)} "
+        f"  Merge mode: {plugin_input.merge_mode} "
+        f"  Allow duplicate parameters: {plugin_input.allow_duplicates_parameter} "
+        f"  Allow duplicate data: {plugin_input.allow_duplicates_data}"
+    )
+
     # create merged parameters and data for each hash combination
     for parameter_dependency_list in parameter_dependency_lists:
         logger.debug(
@@ -149,13 +185,19 @@ def ares_plugin(plugin_input: MergeElement):
         )  # TODO: offering a better log message
 
         merge_parameters: list[AresParameter] = []
-        for parameter_hash in parameter_dependency_list:
-            params = AresParamInterface.cache[parameter_hash].get(
+        for parameter_hash in reversed(parameter_dependency_list):
+            parameters = AresParamInterface.cache[parameter_hash].get(
                 label_filter=plugin_input.label_filter_parameter,
                 transpose=plugin_input.transpose_parameter,
             )
-            if params is not None:
-                merge_parameters.extend(params)
+            if parameters is not None:
+                parameters_cleared = select_elements_for_merge(
+                    elements=parameters,
+                    existing_elements=merge_parameters,
+                    allow_duplicates=plugin_input.allow_duplicates_parameter,
+                )
+
+                merge_parameters.extend(parameters_cleared)
 
         AresParamInterface.create(
             parameters=merge_parameters,
@@ -181,7 +223,7 @@ def ares_plugin(plugin_input: MergeElement):
             ):
                 stepsize = AresDataInterface.cache[data_hash].stepsize
 
-        for data_hash in data_dependency_list:
+        for data_hash in reversed(data_dependency_list):
             data = AresDataInterface.cache[data_hash].get(
                 stepsize=stepsize,
                 label_filter=plugin_input.label_filter_data,
@@ -190,7 +232,13 @@ def ares_plugin(plugin_input: MergeElement):
                 resample_tolerance=plugin_input.resample_tolerance,
             )
             if data is not None:
-                merge_data.extend(data)
+                data_cleared = select_elements_for_merge(
+                    elements=data,
+                    existing_elements=merge_data,
+                    allow_duplicates=plugin_input.allow_duplicates_data,
+                )
+
+                merge_data.extend(data_cleared)
 
         AresDataInterface.create(
             data=merge_data,

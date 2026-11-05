@@ -29,6 +29,13 @@
             "../../data/data_example_6.mf4"
         ]
     },
+    "data_in_5": {
+        "type": "data",
+        "mode": "read",
+        "file_path": [
+            "../../data/data_example_7.mf4"
+        ]
+    },
     "data_merge_1": {
         "type": "merge",
         "data": [
@@ -45,7 +52,10 @@
         "data_dictionary": "../../sim_unit/lowpassfilterfirstorder/lowpassfilterfirstorder.dd.json",
         "stepsize": 1000,
         "parameter": ["parameterset_in_1"],
-        "data": ["data_in_1"]
+        "data": [
+            "data_in_1",
+            "data_in_5"
+    ]
     },
     "parameterset_in_1": {
         "type": "parameter",
@@ -74,13 +84,33 @@
             "data_in_4"
         ]
     },
+    "data_merge_4": {
+        "type": "merge",
+        "merge_mode": "common_source",
+        "allow_duplicates_data": false,
+        "data": [
+            "simunit_1",
+            "data_in_5"
+        ]
+    },
+    "data_merge_5": {
+        "type": "merge",
+        "merge_mode": "common_source",
+        "allow_duplicates_data": false,
+        "data": [
+            "data_in_5",
+            "simunit_1"
+        ]
+    },
     "data_out_1": {
         "type": "data",
         "mode": "write",
         "data": [
             "data_merge_1",
             "data_merge_2",
-            "data_merge_3"
+            "data_merge_3",
+            "data_merge_4",
+            "data_merge_5"
         ],
         "output_format": "mf4"
     }
