@@ -198,6 +198,9 @@ When merging elements with overlapping parameter names or signal labels, later e
 | `type`                     | Yes        | `str`       | `"merge"`           | Unique identifier for the element type.             |
 | `parameter`                | No         | `list[str]` |                     | List of parameter element names to merge. All combinations are generated. Later elements override earlier ones. |
 | `data`                     | No         | `list[str]` |                     | List of data element names to merge. All combinations are generated. Later elements override earlier ones. |
+| `merge_mode`               | No         | `str`       | `"all"`, `"common_source"` | Combination strategy. `"all"` generates the cartesian product of all inputs. `"common_source"` merges only variants sharing a source hash. Defaults to `"common_source"`. |
+| `allow_duplicates_parameter` | No       | `bool \| null` | `false`, `true`, `null` | Whether to retain duplicate parameter labels. Defaults to `null`, which keeps only unique labels. |
+| `allow_duplicates_data`    | No         | `bool \| null` | `false`, `true`, `null` | Whether to retain duplicate signal labels. Defaults to `null`, which keeps only unique labels. |
 | `label_filter_data`        | No         | `list[str]` |                     | Filter specific signals by name or pattern when merging data. |
 | `label_filter_parameter`   | No         | `list[str]` |                     | Filter specific parameters by name or pattern when merging parameters. |
 | `vstack_pattern_data`      | No         | <nobr>`list[str] \| list[dict]`</nobr> | | List of regular expressions to stack signals into arrays for data. Using the **dict** version enables `signal_name` and `axes`, a list of regex group numbers used as stacking axes. |
@@ -283,4 +286,3 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-

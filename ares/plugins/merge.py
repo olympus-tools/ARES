@@ -33,19 +33,22 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+from collections.abc import Mapping
 from itertools import product
+from typing import cast
 
 from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
-from ares.pydantic_models.workflow_model import MergeElement
+from ares.pydantic_models.workflow_model import MergeElement, MergeMode
+from ares.utils.get_labels import get_labels
 from ares.utils.logger import create_logger
 
 logger = create_logger(name=__name__)
 
 
-def get_hash_combinations(
+def get_all_hash_combinations(
     hash_lists: list[list[str]],
 ) -> list[list[str]]:
     """Generate all hash combinations from cartesian product of hash lists.
@@ -66,6 +69,57 @@ def get_hash_combinations(
     return hash_combinations
 
 
+def get_common_source_hash_combinations(
+    hash_lists: list[list[str]],
+    cache: Mapping[str, AresParamInterface] | Mapping[str, AresDataInterface],
+) -> list[list[str]]:
+    """Generate combinations whose hashes share a common source hash.
+
+    Args:
+        hash_lists (list[list[str]]): Hashes grouped by merge input.
+        cache (Mapping[str, AresParamInterface] | Mapping[str, AresDataInterface]):
+            Cache for the interface type being merged.
+
+    Returns:
+        list[list[str]]: Unique combinations from at least two merge inputs that
+            share an origin hash.
+    """
+    origin_candidates: dict[str, dict[int, list[str]]] = {}
+    for input_index, hash_list in enumerate(hash_lists):
+        for hash in hash_list:
+            instance = cache.get(hash)
+            if instance is None:
+                continue
+            if isinstance(instance, AresDataInterface):
+                origin_hashes = instance.get_origin_hashes(
+                    cast(Mapping[str, AresDataInterface], cache)
+                )
+            else:
+                origin_hashes = instance.get_origin_hashes(
+                    cast(Mapping[str, AresParamInterface], cache)
+                )
+            for origin_hash in origin_hashes:
+                origin_candidates.setdefault(origin_hash, {}).setdefault(
+                    input_index, []
+                ).append(hash)
+
+    combinations: list[list[str]] = []
+    for candidates_by_input in origin_candidates.values():
+        if len(candidates_by_input) < 2:
+            continue
+
+        input_candidates = [
+            candidates_by_input[input_index]
+            for input_index in sorted(candidates_by_input)
+        ]
+        for combination in product(*input_candidates):
+            combination_list = list(combination)
+            if combination_list not in combinations:
+                combinations.append(combination_list)
+
+    return combinations
+
+
 def ares_plugin(plugin_input: MergeElement):
     """ARES plugin that merges multiple ARES outputs into a single combined output.
 
@@ -83,9 +137,25 @@ def ares_plugin(plugin_input: MergeElement):
     hash_lists_parameter: list[list[str]] = plugin_input.hash_lists_parameter
     hash_lists_data: list[list[str]] = plugin_input.hash_lists_data
 
-    # generate all hash combinations using cartesian product
-    parameter_dependency_lists = get_hash_combinations(hash_lists_parameter)
-    data_dependency_lists = get_hash_combinations(hash_lists_data)
+    if plugin_input.merge_mode == MergeMode.ALL:
+        parameter_dependency_lists = get_all_hash_combinations(hash_lists_parameter)
+        data_dependency_lists = get_all_hash_combinations(hash_lists_data)
+    else:
+        parameter_dependency_lists = get_common_source_hash_combinations(
+            hash_lists_parameter, AresParamInterface.cache
+        )
+        data_dependency_lists = get_common_source_hash_combinations(
+            hash_lists_data, AresDataInterface.cache
+        )
+
+    logger.info(
+        "Merging with the following configuration: "
+        f"  Parameter combinations: {len(parameter_dependency_lists)} "
+        f"  Data combinations: {len(data_dependency_lists)} "
+        f"  Merge mode: {plugin_input.merge_mode} "
+        f"  Allow duplicate parameters: {plugin_input.allow_duplicates_parameter} "
+        f"  Allow duplicate data: {plugin_input.allow_duplicates_data}"
+    )
 
     # create merged parameters and data for each hash combination
     for parameter_dependency_list in parameter_dependency_lists:
@@ -94,13 +164,25 @@ def ares_plugin(plugin_input: MergeElement):
         )  # TODO: offering a better log message
 
         merge_parameters: list[AresParameter] = []
-        for parameter_hash in parameter_dependency_list:
-            params = AresParamInterface.cache[parameter_hash].get(
+        for parameter_hash in reversed(parameter_dependency_list):
+            parameters = AresParamInterface.cache[parameter_hash].get(
                 label_filter=plugin_input.label_filter_parameter,
                 transpose=plugin_input.transpose_parameter,
             )
-            if params is not None:
-                merge_parameters.extend(params)
+            if parameters is not None:
+                if plugin_input.allow_duplicates_parameter:
+                    parameters_cleared = parameters
+                else:
+                    parameter_labels = get_labels(base_type_list=parameters)
+                    merge_parameter_labels = get_labels(base_type_list=merge_parameters)
+                    new_labels = set(parameter_labels) - set(merge_parameter_labels)
+                    parameters_cleared = [
+                        parameter
+                        for parameter in parameters
+                        if parameter.label in new_labels
+                    ]
+
+                merge_parameters.extend(parameters_cleared)
 
         AresParamInterface.create(
             parameters=merge_parameters,
@@ -126,7 +208,7 @@ def ares_plugin(plugin_input: MergeElement):
             ):
                 stepsize = AresDataInterface.cache[data_hash].stepsize
 
-        for data_hash in data_dependency_list:
+        for data_hash in reversed(data_dependency_list):
             data = AresDataInterface.cache[data_hash].get(
                 stepsize=stepsize,
                 label_filter=plugin_input.label_filter_data,
@@ -135,7 +217,17 @@ def ares_plugin(plugin_input: MergeElement):
                 resample_tolerance=plugin_input.resample_tolerance,
             )
             if data is not None:
-                merge_data.extend(data)
+                if plugin_input.allow_duplicates_data:
+                    data_cleared = data
+                else:
+                    data_labels = get_labels(base_type_list=data)
+                    merge_data_labels = get_labels(base_type_list=merge_data)
+                    new_labels = set(data_labels) - set(merge_data_labels)
+                    data_cleared = [
+                        signal for signal in data if signal.label in new_labels
+                    ]
+
+                merge_data.extend(data_cleared)
 
         AresDataInterface.create(
             data=merge_data,

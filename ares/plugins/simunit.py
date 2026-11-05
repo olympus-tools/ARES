@@ -63,6 +63,60 @@ logger = create_logger(name=__name__)
 AresBaseType = TypeVar("AresBaseType", AresSignal, AresParameter)
 
 
+@typechecked
+def _select_signals_by_source_priority(
+    sim_data: list[AresSignal],
+    source_priority: list[str],
+) -> list[AresSignal]:
+    """Keep the highest-priority signal for each label.
+
+    Args:
+        sim_data (list[AresSignal]): Signals retrieved for a simulation.
+        source_priority (list[str]): Source names ordered from highest to
+            lowest priority.
+
+    Returns:
+        list[AresSignal]: At most one signal per label, selected using the
+            configured source priority.
+    """
+    signals_by_label: dict[str, list[AresSignal]] = {}
+    for signal in sim_data:
+        if signal.label not in signals_by_label:
+            signals_by_label[signal.label] = []
+        signals_by_label[signal.label].append(signal)
+
+    selected_signals: list[AresSignal] = []
+    for label, candidates in signals_by_label.items():
+        if len(candidates) == 1:
+            selected_signals.append(candidates[0])
+            continue
+
+        selected_signal = next(
+            (
+                signal
+                for source in source_priority
+                for signal in candidates
+                if signal.source == source
+            ),
+            None,
+        )
+        if selected_signal is None:
+            selected_signal = candidates[0]
+            available_sources = []
+            for signal in candidates:
+                if signal.source not in available_sources:
+                    available_sources.append(signal.source)
+            logger.warning(
+                f"No signal for label '{label}' matched source priority "
+                f"{source_priority}. Available sources: {available_sources}. "
+                f"Using the first signal from source '{selected_signal.source}'."
+            )
+
+        selected_signals.append(selected_signal)
+
+    return selected_signals
+
+
 class SimUnit:
     """Wrapper for a C shared library simulation unit that manages the full simulation lifecycle.
 
@@ -891,14 +945,24 @@ def ares_plugin(plugin_input: SimUnitElement):
                 for data_obj in data_list:
                     dependencies = [parameter_obj.hash, data_obj.hash]
 
+                    sim_data = data_obj.get(
+                        stepsize=plugin_input.stepsize,
+                        label_filter=label_filter_signal,
+                        vstack_pattern=plugin_input.vstack_pattern,
+                        resample_method=plugin_input.resample_method,
+                        resample_tolerance=plugin_input.resample_tolerance,
+                    )
+                    if (
+                        sim_data is not None
+                        and plugin_input.source_priority is not None
+                    ):
+                        sim_data = _select_signals_by_source_priority(
+                            sim_data=sim_data,
+                            source_priority=plugin_input.source_priority,
+                        )
+
                     sim_result = sim_unit.run(
-                        data=data_obj.get(
-                            stepsize=plugin_input.stepsize,
-                            label_filter=label_filter_signal,
-                            vstack_pattern=plugin_input.vstack_pattern,
-                            resample_method=plugin_input.resample_method,
-                            resample_tolerance=plugin_input.resample_tolerance,
-                        ),
+                        data=sim_data,
                         parameters=parameter_obj.get(
                             label_filter=label_filter_parameter,
                             transpose=plugin_input.transpose_parameter,

@@ -35,9 +35,11 @@ limitations under the License:
 
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
+from asammdf import MDF, Signal
 from asammdf.blocks.utils import MdfException
 
 from ares.interface.data.ares_signal import AresSignal
@@ -175,6 +177,34 @@ def test_ares_mf4handler_add_explicit():
     assert len(result) == 2, "Exactly two signals should be present."
 
 
+def test_ares_mf4handler_add_unequal_lengths_uses_separate_timebases(caplog):
+    """
+    Test that unequal signal lengths log a warning and disable common_timebase.
+
+    Args:
+        caplog: Pytest fixture capturing log records.
+    """
+    signal_a = AresSignal(
+        label="sig_a",
+        timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
+        value=np.array([10.0, 20.0, 30.0], dtype=np.float64),
+    )
+    signal_b = AresSignal(
+        label="sig_b",
+        timestamps=np.array([0.0, 1.0], dtype=np.float32),
+        value=np.array([1, 2], dtype=np.int32),
+    )
+
+    handler = MF4Handler(file_path=None)
+    with patch.object(handler, "append") as append:
+        handler.add(data=[signal_a, signal_b])
+
+    assert (
+        "Unequal signal length detected for 'sig_b': got 2, expected 3." in caplog.text
+    )
+    assert append.call_args.kwargs["common_timebase"] is False
+
+
 def test_ares_mf4handler_add_2d_signal():
     """
     Test if mf4handler.add() correctly handles 2D signals (1D array per timestep).
@@ -268,6 +298,50 @@ def test_ares_mf4handler_add_deduplication():
     assert np.array_equal(dup_signals[0].value, signal_last.value), (
         "The last occurrence of the duplicate signal must be kept."
     )
+
+
+def test_ares_mf4handler_get_reads_single_and_duplicate_channels(tmp_path: Path):
+    """Tests that a filter returns single channels and every duplicate occurrence."""
+    file_path = tmp_path / "duplicate_channels.mf4"
+    mdf = MDF(version="4.10")
+    mdf.append(
+        [
+            Signal(
+                samples=np.array([7.0, 8.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                name="single_signal",
+            ),
+            Signal(
+                samples=np.array([1.0, 2.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                name="dup_signal",
+            ),
+        ]
+    )
+    mdf.append(
+        [
+            Signal(
+                samples=np.array([99.0, 100.0, 101.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
+                name="dup_signal",
+            )
+        ]
+    )
+    mdf.save(file_path)
+    mdf.close()
+
+    handler = MF4Handler(file_path=file_path)
+    result = handler.get(label_filter=["single_signal", "dup_signal"])
+    handler.close()
+
+    assert result is not None
+    assert len(result) == 3
+    single_signal = next(signal for signal in result if signal.label == "single_signal")
+    duplicate_signals = [
+        signal.value.tolist() for signal in result if signal.label == "dup_signal"
+    ]
+    assert single_signal.value.tolist() == [7.0, 8.0]
+    assert duplicate_signals == [[1.0, 2.0], [99.0, 100.0, 101.0]]
 
 
 def test_ares_mf4handler_get_no_match_returns_none():

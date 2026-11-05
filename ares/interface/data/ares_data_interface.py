@@ -37,6 +37,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Mapping
 from pathlib import Path
 from typing import ClassVar
 
@@ -147,6 +148,37 @@ class AresDataInterface(ABC):
         object.__setattr__(self, "_vstack_pattern", vstack_pattern)
         object.__setattr__(self, "_resample_method", resample_method)
         object.__setattr__(self, "_resample_tolerance", resample_tolerance)
+
+    @typechecked
+    def get_origin_hashes(
+        self,
+        cache: Mapping[str, "AresDataInterface"],
+        visited: set[str] | None = None,
+    ) -> set[str]:
+        """Return the source hashes in this object's data dependency tree.
+
+        Args:
+            cache (dict[str, AresDataInterface]): Cache used to resolve data dependencies.
+            visited (set[str] | None): Hashes already visited during recursion.
+
+        Returns:
+            set[str]: Hashes of the root data objects in the dependency tree.
+        """
+        visited = set() if visited is None else visited
+        if self.hash in visited:
+            return set()
+        visited.add(self.hash)
+
+        dependencies = [
+            cache[dependency] for dependency in self.dependencies if dependency in cache
+        ]
+        if not dependencies:
+            return {self.hash}
+
+        origin_hashes: set[str] = set()
+        for dependency in dependencies:
+            origin_hashes.update(dependency.get_origin_hashes(cache, visited))
+        return origin_hashes
 
     @classmethod
     @typechecked
@@ -278,7 +310,7 @@ class AresDataInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _filter_deduplicates(data: list[AresSignal]) -> list[AresSignal]:
+    def _filter_duplicates(data: list[AresSignal]) -> list[AresSignal]:
         """Remove duplicate signals by label, keeping the last occurrence.
 
         When multiple signals with the same label exist in the input list,
