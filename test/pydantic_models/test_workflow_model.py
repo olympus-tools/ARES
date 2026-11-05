@@ -104,6 +104,21 @@ def test_merge_mode_accepts_common_source():
     assert element.merge_mode == MergeMode.COMMON_SOURCE
 
 
+def test_sim_unit_resets_user_defined_source_priority():
+    """Tests that source priority is runtime state, not taken from workflow JSON."""
+    element = SimUnitElement.model_validate(
+        {
+            "type": "sim_unit",
+            "file_path": "unit.so",
+            "stepsize": 1,
+            "data_dictionary": "data.json",
+            "source_priority": ["primary", "secondary"],
+        }
+    )
+
+    assert element.source_priority is None
+
+
 @pytest.mark.parametrize(
     "element_type, data",
     [

@@ -260,12 +260,16 @@ class MF4Handler(MDF, AresDataInterface):
         return list(set(signal_list))
 
     @typechecked
-    def _get_signals(self, label_filter: list[str], **kwargs) -> list[AresSignal]:
+    def _get_signals(
+        self,
+        label_filter: list[str],
+        **kwargs,
+    ) -> list[AresSignal]:
         """Helper function for get() that handles multiple occurrences of signals in mf4 files.
 
-        Uses asammdf's whereis() function to locate signals and selects the signal
-        with the most samples when multiple occurrences exist. Missing signals are
-        skipped with a warning instead of causing errors.
+        Uses asammdf's whereis() function to locate signals and selects all
+        occurrences when a signal name appears multiple times. Unmatched signals
+        are skipped.
 
         Note:
             Per default asammdf's select() with raw=True is used to get the original timestamps, values.
@@ -277,39 +281,26 @@ class MF4Handler(MDF, AresDataInterface):
 
         Returns:
             list[AresSignal]: List of AresSignal objects extracted from the mf4 file.
-                Only contains signals that were actually found.
+                Contains every occurrence of each signal that was found.
         """
 
         raw = kwargs.pop("raw", True)
 
-        found_signals: list[Signal] = []
-        single_signals: list[str] = []
+        selected_channels: list[tuple[None, int, int]] = []
 
         for channel_name in label_filter:
             occurrence = self.whereis(channel_name)
-
-            if len(occurrence) == 1:  # single ocurrence: combined select() call
+            if occurrence:
                 logger.debug(
-                    f"Signal '{channel_name}' has single occurrence in mf4 data file."
-                )
-                single_signals.append(channel_name)
-
-            elif len(occurrence) >= 2:  # multi ocurrence: one select() call per signal
-                logger.warning(
                     f"Signal '{channel_name}' has {len(occurrence)} occurrences in mf4 data file."
                 )
-                sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurrence]
-                all_occurrences = super().select(sel_signal, raw=raw)
-                len_samples = [len(s.samples) for s in all_occurrences]
-                idx = len_samples.index(max(len_samples))
-                logger.debug(
-                    f"Selected occurrence {idx} with {len_samples[idx]} samples for '{channel_name}'."
+                selected_channels.extend(
+                    (None, gp_idx, cn_idx) for gp_idx, cn_idx in occurrence
                 )
-                found_signals.append(all_occurrences[idx])
 
-        # single ocurrence: combined select()
-        if single_signals:
-            found_signals.extend(super().select(single_signals, raw=raw))
+        found_signals = (
+            super().select(selected_channels, raw=raw) if selected_channels else []
+        )
 
         ares_signals = []
         for signal in found_signals:

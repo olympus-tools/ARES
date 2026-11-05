@@ -433,6 +433,10 @@ class SimUnitElement(PluginElement):
     """Pydantic model for a simulation unit workflow element."""
 
     model_config = ConfigDict(extra="forbid")
+    _resettable_runtime_fields: ClassVar[tuple[str, ...]] = (
+        *PluginElement._resettable_runtime_fields,
+        "source_priority",
+    )
     type: Literal["sim_unit"] = "sim_unit"
     plugin_path: Path = Field(
         default_factory=lambda: Path(__file__).parent.parent / "plugins" / "simunit.py"
@@ -444,6 +448,7 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
+    source_priority: list[str] | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
     transpose_parameter: bool | None = None
     resample_method: ResampleMethod | None = None
