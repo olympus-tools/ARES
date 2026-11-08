@@ -113,6 +113,7 @@
             ],
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
+            "preLaunchTask": "prepare-simunit-all",
             "postDebugTask": "clean-light"
         },
         {
