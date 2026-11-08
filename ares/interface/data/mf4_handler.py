@@ -145,6 +145,7 @@ class MF4Handler(MDF, AresDataInterface):
             **kwargs (Any): Additional arguments passed to MDF.save().
         """
 
+        kwargs.pop("meta_data", None)
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.header.comment = f"File last saved on: {timestamp}"
         result_path = self.save(output_path, **kwargs)
