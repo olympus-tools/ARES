@@ -57,6 +57,9 @@ from ares.pydantic_models.workflow_model import SimUnitElement
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from ares.utils.select_signals_by_source_priority import (
+    select_signals_by_source_priority,
+)
 
 logger = create_logger(name=__name__)
 
@@ -891,14 +894,24 @@ def ares_plugin(plugin_input: SimUnitElement):
                 for data_obj in data_list:
                     dependencies = [parameter_obj.hash, data_obj.hash]
 
+                    sim_data = data_obj.get(
+                        stepsize=plugin_input.stepsize,
+                        label_filter=label_filter_signal,
+                        vstack_pattern=plugin_input.vstack_pattern,
+                        resample_method=plugin_input.resample_method,
+                        resample_tolerance=plugin_input.resample_tolerance,
+                    )
+                    if (
+                        sim_data is not None
+                        and plugin_input.source_priority is not None
+                    ):
+                        sim_data = select_signals_by_source_priority(
+                            sim_data=sim_data,
+                            source_priority=plugin_input.source_priority,
+                        )
+
                     sim_result = sim_unit.run(
-                        data=data_obj.get(
-                            stepsize=plugin_input.stepsize,
-                            label_filter=label_filter_signal,
-                            vstack_pattern=plugin_input.vstack_pattern,
-                            resample_method=plugin_input.resample_method,
-                            resample_tolerance=plugin_input.resample_tolerance,
-                        ),
+                        data=sim_data,
                         parameters=parameter_obj.get(
                             label_filter=label_filter_parameter,
                             transpose=plugin_input.transpose_parameter,

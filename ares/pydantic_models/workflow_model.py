@@ -83,6 +83,13 @@ class ResampleMethod(StrEnum):
     WINDOWEDSINC = "windowedsinc"
 
 
+class MergeMode(StrEnum):
+    """Strategies for selecting merge combinations."""
+
+    ALL = "all"
+    COMMON_SOURCE = "common_source"
+
+
 class BaseElement(BaseModel):
     """Base model for all workflow elements."""
 
@@ -426,6 +433,10 @@ class SimUnitElement(PluginElement):
     """Pydantic model for a simulation unit workflow element."""
 
     model_config = ConfigDict(extra="forbid")
+    _resettable_runtime_fields: ClassVar[tuple[str, ...]] = (
+        *PluginElement._resettable_runtime_fields,
+        "source_priority",
+    )
     type: Literal["sim_unit"] = "sim_unit"
     plugin_path: Path = Field(
         default_factory=lambda: Path(__file__).parent.parent / "plugins" / "simunit.py"
@@ -437,8 +448,9 @@ class SimUnitElement(PluginElement):
     data_dictionary: Path
     init: list[str] | None = []
     cancel_condition: str | None = None
+    source_priority: list[str] | None = None
     vstack_pattern: list[VStackPatternElement | str] | None = None
-    transpose_parameter: bool | None = False
+    transpose_parameter: bool | None = None
     resample_method: ResampleMethod | None = None
     resample_tolerance: int | None = Field(default=None, ge=0)
     parameter_obj: list[Any] | None = None
@@ -479,10 +491,13 @@ class MergeElement(PluginElement):
     )
     data: list[str] | None = []
     parameter: list[str] | None = []
+    merge_mode: MergeMode | None = None
+    allow_duplicates_data: bool | None = None
+    allow_duplicates_parameter: bool | None = None
     label_filter_data: list[str] | None = None
     label_filter_parameter: list[str] | None = None
     vstack_pattern_data: list[VStackPatternElement] | list[str] | None = None
-    transpose_parameter: bool | None = False
+    transpose_parameter: bool | None = None
     stepsize: int | None = None
     resample_method: ResampleMethod | None = None
     resample_tolerance: int | None = Field(default=None, ge=0)
