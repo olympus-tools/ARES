@@ -4,6 +4,7 @@
 #   - make examples
 #   - make test-examples
 #   - make test-requirements
+#   - make sim-interface
 #   - make test-coverage
 #   - make format
 #   - make format-check
@@ -50,6 +51,10 @@ test-examples: setup-venv
 test-requirements: setup-venv
 	uv run pytest
 
+.PHONY: sim-interface
+sim-interface: setup-venv
+	uv run python -c "from ares.plugins.sim_interface import SimulationRunner; SimulationRunner.load()"
+
 .PHONY: test-coverage
 test-coverage: setup-venv
 	NUMBA_DISABLE_JIT=1 uv run pytest --cov --cov-report=html --cov-report=term-missing
@@ -65,7 +70,7 @@ format-check: setup-venv
 .PHONY: build-executable
 build-executable: setup-venv
 	@echo "Building executable with PyInstaller..."
-	uv run pyinstaller --onefile --name ares --paths . --paths submodules/dcmi --copy-metadata ares --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --add-data "ares/plugins/merge.py$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "dcmi" --hidden-import "dcmi.dcmi" ares/__main__.py
+	uv run pyinstaller --onefile --name ares --paths . --paths submodules/dcmi --copy-metadata ares --add-data "ares/plugins/simunit.py$(PATHSEP)ares/plugins" --add-data "ares/plugins/merge.py$(PATHSEP)ares/plugins" --add-data "ares/plugins/sim_interface.c$(PATHSEP)ares/plugins" --hidden-import "ares.pydantic_models.datadictionary_model" --hidden-import "dcmi" --hidden-import "dcmi.dcmi" ares/__main__.py
 	@echo ""
 	@echo "Executable created in dist/ares"
 
