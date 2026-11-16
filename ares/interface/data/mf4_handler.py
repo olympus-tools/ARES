@@ -106,10 +106,7 @@ class MF4Handler(MDF, AresDataInterface):
             file_path=file_path,
             dependencies=kwargs.pop("dependencies", None),
             vstack_pattern=vstack_pattern,
-            stepsize=stepsize,
             label_filter=label_filter,
-            resample_method=resample_method,
-            resample_tolerance=resample_tolerance,
         )
 
         if file_path is None:
@@ -194,17 +191,6 @@ class MF4Handler(MDF, AresDataInterface):
         )
 
         label_filter = self._label_filter if label_filter is None else label_filter
-
-        stepsize = self.stepsize if stepsize is None else stepsize
-
-        resample_tolerance = (
-            self._resample_tolerance
-            if resample_tolerance is None
-            else resample_tolerance
-        )
-        resample_method = (
-            self._resample_method if resample_method is None else resample_method
-        )
 
         tmp_data = (
             self._get_signals(label_filter=self._available_signals, **kwargs)

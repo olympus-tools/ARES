@@ -928,7 +928,6 @@ def ares_plugin(plugin_input: SimUnitElement):
                         AresDataInterface.create(
                             data=sim_result,
                             dependencies=dependencies,
-                            stepsize=plugin_input.stepsize,
                         )
                     else:
                         logger.warning(
