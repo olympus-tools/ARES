@@ -323,7 +323,13 @@ class MF4Handler(MDF, AresDataInterface):
         Converts AresSignal objects to asammdf Signal format and appends them to the mf4 file.
         Supports scalar signals (1D) and array signals with any number of
         dimensions greater than one.
-        Optionally adds source information to data for traceability.
+
+        asammdf requires all signals of one channel group to share a single time axis.
+        Therefore the signals are grouped by source name and exact timestamps array.
+        Each group is written with its own append() call (common_timebase=True, so no
+        resampling happens) and gets its own Source. Groups of the same source share
+        the source name; the Source comment holds a per-source time axis index and a
+        description of the time axis. The channel group comment equals the Source comment.
 
         Signals sharing a label are all written (e.g. the same signal from different
         sources). Resolving duplicate labels is the responsibility of the caller,
@@ -331,64 +337,92 @@ class MF4Handler(MDF, AresDataInterface):
 
         Args:
             data (list[AresSignal]): List of AresSignal objects to append to mf4 file.
-                All signals in the list must share the exact same time axis (identical
-                timestamps array), as asammdf's append() is called with common_timebase=True.
+                Signals may have different time axes.
                 - ndim == 1: Scalar value per time step
                 - ndim > 1: Array per time step (shape: cycles, *array_shape)
-            **kwargs (Any): Additional arguments passed to asammdf's append() method.
+            **kwargs (Any): Not used, accepted for interface compatibility.
         """
-        stepsize = kwargs.pop("stepsize", None)
-        if stepsize is not None:
-            comment = f"{stepsize}ms ares"
-        else:
-            comment = "ares"
-
-        signals_to_write = []
-        expected_length: int | None = None
-        common_timebase = True
+        # 1. Group signals by source name and exact time axis (order of first occurrence)
+        signal_groups: list[dict] = []
         for signal in data:
-            if expected_length is None:
-                expected_length = signal.shape[0]
-            elif signal.shape[0] != expected_length and common_timebase:
+            if signal.ndim < 1:
                 logger.warning(
-                    "Unequal signal lengths detected. "
-                    "Signals will be written with individual timestamps."
+                    f"Unsupported signal dimension of signal '{signal.label}': {signal.ndim}."
                 )
-                common_timebase = False
+                continue
 
-            source_name = getattr(signal, "source", "ARES_DEFAULT_SOURCE")
+            source_name = signal.source or "ARES_DEFAULT_SOURCE"
+
+            matching_group = None
+            for group in signal_groups:
+                same_source = group["source_name"] == source_name
+                same_timestamps = np.array_equal(group["timestamps"], signal.timestamps)
+                if same_source and same_timestamps:
+                    matching_group = group
+                    break
+
+            if matching_group is None:
+                matching_group = {
+                    "source_name": source_name,
+                    "timestamps": signal.timestamps,
+                    "fs": signal.fs,
+                    "signals": [],
+                }
+                signal_groups.append(matching_group)
+
+            matching_group["signals"].append(signal)
+
+        # 2. Write each group as its own channel group with its own Source
+        time_axis_count_per_source: dict[str, int] = {}
+        for group in signal_groups:
+            source_name = group["source_name"]
+            timestamps = group["timestamps"]
+            fs = group["fs"]
+
+            time_axis_index = time_axis_count_per_source.get(source_name, 0) + 1
+            time_axis_count_per_source[source_name] = time_axis_index
+            time_axis_description = (
+                f"{len(timestamps)} samples"
+                f", t=[{float(timestamps[0]):g}, {float(timestamps[-1]):g}] s"
+                f", fs={fs:g} Hz"
+            )
+
+            comment = (
+                f"Data source: {source_name} | "
+                f"time axis {time_axis_index}: {time_axis_description}"
+            )
 
             source = Source(
                 name=source_name,
                 path=source_name,
-                comment=f"Data source: {source_name}",
+                comment=comment,
                 source_type=1,
                 bus_type=1,
             )
 
-            if signal.ndim == 1:
-                signals_to_write.append(
-                    Signal(
-                        samples=signal.value,
-                        timestamps=signal.timestamps,
-                        name=signal.label,
-                        unit=signal.unit if signal.unit else "",
-                        comment=signal.description if signal.description else "",
-                        source=source,
-                        encoding="utf-8",
+            signals_to_write = []
+            for signal in group["signals"]:
+                # guard: append() is called with common_timebase=True
+                if not np.array_equal(signal.timestamps, timestamps):
+                    error_text = (
+                        f"Signal '{signal.label}' does not match the time axis of its "
+                        f"signal group (source '{source_name}'). asammdf requires a "
+                        "uniform time axis within one signal group."
                     )
-                )
+                    logger.error(error_text)
+                    raise ValueError(error_text)
 
-            elif signal.ndim > 1:
-                dtype_str = self.DTYPE_MAP[signal.dtype]
-
-                types = [(signal.label, f"{signal.shape[1:]}{dtype_str}")]
-                samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
+                if signal.ndim == 1:
+                    samples = signal.value
+                else:
+                    dtype_str = self.DTYPE_MAP[signal.dtype]
+                    types = [(signal.label, f"{signal.shape[1:]}{dtype_str}")]
+                    samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
 
                 signals_to_write.append(
                     Signal(
                         samples=samples,
-                        timestamps=signal.timestamps,
+                        timestamps=timestamps,
                         name=signal.label,
                         unit=signal.unit if signal.unit else "",
                         comment=signal.description if signal.description else "",
@@ -397,15 +431,8 @@ class MF4Handler(MDF, AresDataInterface):
                     )
                 )
 
-            else:
-                logger.warning(
-                    f"Unsupported signal dimensionof signal '{signal.label}': {signal.ndim}."
-                )
+            self.append(signals_to_write, comment=comment, common_timebase=True)
 
-        # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
-        self.append(signals_to_write, comment=comment, common_timebase=common_timebase)
-        # get() resolves every occurrence of a label via whereis(), so each label
-        # must only be listed once to avoid returning occurrences multiple times.
         for label in dict.fromkeys(signal.label for signal in data):
             if label not in self._available_signals:
                 self._available_signals.append(label)
