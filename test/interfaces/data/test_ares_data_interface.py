@@ -55,7 +55,6 @@ class ConcreteDataInterface(AresDataInterface):
         data=None,
         dependencies=None,
         vstack_pattern=None,
-        stepsize=None,
         label_filter=None,
         **kwargs,
     ):
@@ -63,7 +62,6 @@ class ConcreteDataInterface(AresDataInterface):
             file_path=file_path,
             dependencies=dependencies,
             vstack_pattern=vstack_pattern,
-            stepsize=stepsize,
             label_filter=label_filter,
         )
         self._data = data if data else []
@@ -136,7 +134,6 @@ class TestAresDataInterfaceInit:
         instance = ConcreteDataInterface()
         assert instance._file_path is None
         assert instance.dependencies == []
-        assert instance.stepsize is None
         assert instance._label_filter is None
         assert instance._vstack_pattern is None
 
@@ -149,12 +146,10 @@ class TestAresDataInterfaceInit:
             file_path=test_file,
             dependencies=deps,
             vstack_pattern=vstack,
-            stepsize=100,
             label_filter=["signal1"],
         )
         assert instance._file_path == test_file
         assert instance.dependencies == deps
-        assert instance.stepsize == 100
         assert instance._label_filter == ["signal1"]
         assert instance._vstack_pattern == vstack
 

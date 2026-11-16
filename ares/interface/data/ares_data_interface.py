@@ -122,10 +122,7 @@ class AresDataInterface(ABC):
         file_path: Path | None = None,
         dependencies: list[str] | None = None,
         vstack_pattern: list[VStackPatternElement] | None = None,
-        stepsize: int | None = None,
         label_filter: list[str] | None = None,
-        resample_method: str | None = None,
-        resample_tolerance: int | None = None,
     ):
         """Initialize base attributes for all data handlers.
 
@@ -135,20 +132,14 @@ class AresDataInterface(ABC):
             file_path (Path | None): Path to the data file to load
             dependencies (list[str] | None): List of dependencies for this data handler
             vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
-            stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
             label_filter (list[str] | None): List of signal names to filter when retrieving data
-            resample_method (str | None): Resampling method for signals. Defaults to None.
-            resample_tolerance (int | None): Tolerance for resampling signals. Defaults to None.
         """
         object.__setattr__(self, "_file_path", file_path)
         object.__setattr__(
             self, "dependencies", dependencies if dependencies is not None else []
         )
-        object.__setattr__(self, "stepsize", stepsize)
         object.__setattr__(self, "_label_filter", label_filter)
         object.__setattr__(self, "_vstack_pattern", vstack_pattern)
-        object.__setattr__(self, "_resample_method", resample_method)
-        object.__setattr__(self, "_resample_tolerance", resample_tolerance)
 
     @typechecked
     def get_origin_hashes(
@@ -240,10 +231,7 @@ class AresDataInterface(ABC):
                         cls.create(
                             file_path=file_path,
                             label_filter=wf_element_value.label_filter,
-                            stepsize=wf_element_value.stepsize,
                             vstack_pattern=wf_element_value.vstack_pattern,
-                            resample_method=wf_element_value.resample_method,
-                            resample_tolerance=wf_element_value.resample_tolerance,
                         )
                         progress.advance()
 

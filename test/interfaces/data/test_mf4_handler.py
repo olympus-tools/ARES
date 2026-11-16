@@ -177,13 +177,8 @@ def test_ares_mf4handler_add_explicit():
     assert len(result) == 2, "Exactly two signals should be present."
 
 
-def test_ares_mf4handler_add_unequal_lengths_uses_separate_timebases(caplog):
-    """
-    Test that unequal signal lengths log a warning and disable common_timebase.
-
-    Args:
-        caplog: Pytest fixture capturing log records.
-    """
+def test_ares_mf4handler_add_unequal_lengths_uses_separate_timebases():
+    """Test that unequal signal lengths are written on separate timebases."""
     signal_a = AresSignal(
         label="sig_a",
         timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
@@ -199,10 +194,8 @@ def test_ares_mf4handler_add_unequal_lengths_uses_separate_timebases(caplog):
     with patch.object(handler, "append") as append:
         handler.add(data=[signal_a, signal_b])
 
-    assert (
-        "Unequal signal length detected for 'sig_b': got 2, expected 3." in caplog.text
-    )
-    assert append.call_args.kwargs["common_timebase"] is False
+    assert append.call_count == 2
+    assert all(call.kwargs["common_timebase"] is True for call in append.call_args_list)
 
 
 def test_ares_mf4handler_add_2d_signal():
