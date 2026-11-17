@@ -145,7 +145,8 @@ class AresParamInterface(ABC):
         """Return the source hashes in this object's parameter dependency tree.
 
         Args:
-            cache (dict[str, AresParamInterface]): Cache used to resolve parameter dependencies.
+            cache (Mapping[str, AresParamInterface]): Cache used to resolve parameter
+                dependencies.
             visited (set[str] | None): Hashes already visited during recursion.
 
         Returns:
@@ -336,7 +337,8 @@ class AresParamInterface(ABC):
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            list[AresParameter]: List of all AresParameter objects stored in the interface
+            list[AresParameter] | None: Parameters stored in the interface, or ``None``
+                if no parameters are available.
         """
         pass
 

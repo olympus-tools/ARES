@@ -94,10 +94,13 @@ class MF4Handler(MDF, AresDataInterface):
             file_path (Path | None): Path to the mf4 file to load or write.
             data (list[AresSignal] | None): Optional list of AresSignal objects to initialize with
             vstack_pattern ( list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
-            stepsize (int | None): Optional step size for resampling signals when reading.
+            stepsize (int | None): Accepted for compatibility; pass to ``get()`` to
+                resample signals.
             label_filter (list[str] | None): Optional list of signal names or patterns to filter
-            resample_method (str | None): Optional resampling method for reading signals.
-            resample_tolerance (int | None): Optional tolerance for resampling signals.
+            resample_method (str | None): Accepted for compatibility; pass to ``get()``
+                to select the resampling method.
+            resample_tolerance (int | None): Accepted for compatibility; pass to
+                ``get()`` to set the resampling tolerance.
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
 

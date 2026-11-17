@@ -147,7 +147,7 @@ def test_runtime_field_registry_is_inherited_by_element_subclasses(
 
     Args:
         element_type (type[BaseModel]): Element model under test.
-        data (dict): Minimal valid element input.
+        data (dict[str, object]): Minimal valid element input.
     """
     data.update(
         {

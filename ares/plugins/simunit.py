@@ -680,9 +680,9 @@ class SimUnit:
         dimension). For signals, provide ``time_step_idx`` to index into the value array.
 
         Args:
-            base_element_dict (dict[str, AresSignal | AresParameter]): Dictionary of
+            base_element_dict (Mapping[str, AresSignal | AresParameter]): Mapping of
                 AresSignal or AresParameter objects keyed by label.
-            dd_scope (dict[str, SignalElement | ParameterModel]): The corresponding
+            dd_scope (Mapping[str, SignalElement | ParameterModel]): The corresponding
                 section from the Data Dictionary (signals or parameters).
             time_step_idx (int | None): Time step index for signal values. Use ``None``
                 for parameters which have no time dimension.
@@ -839,7 +839,7 @@ class SimUnit:
         dtypes are skipped as they cannot represent these special values.
 
         Args:
-            interface_dict (dict[str, AresSignal | AresParameter]): Dictionary of
+            interface_dict (Mapping[str, AresSignal | AresParameter]): Mapping of
                 AresSignal or AresParameter objects to validate.
             direction (Literal["Input", "Output"]): Direction context used in warning
                 messages to indicate whether the affected variable is an input or output.

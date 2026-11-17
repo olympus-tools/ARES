@@ -150,7 +150,8 @@ class AresDataInterface(ABC):
         """Return the source hashes in this object's data dependency tree.
 
         Args:
-            cache (dict[str, AresDataInterface]): Cache used to resolve data dependencies.
+            cache (Mapping[str, AresDataInterface]): Cache used to resolve data
+                dependencies.
             visited (set[str] | None): Hashes already visited during recursion.
 
         Returns:
