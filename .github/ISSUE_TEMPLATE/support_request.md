@@ -1,7 +1,7 @@
 ---
 name: Support Request
 about: Got a question or need help?
-title: 'Support Request'
+title: Support Request
 labels: support
 assignees: ''
 
