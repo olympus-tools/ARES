@@ -94,10 +94,13 @@ class MF4Handler(MDF, AresDataInterface):
             file_path (Path | None): Path to the mf4 file to load or write.
             data (list[AresSignal] | None): Optional list of AresSignal objects to initialize with
             vstack_pattern ( list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
-            stepsize (int | None): Optional step size for resampling signals when reading.
+            stepsize (int | None): Accepted for compatibility; pass to ``get()`` to
+                resample signals.
             label_filter (list[str] | None): Optional list of signal names or patterns to filter
-            resample_method (str | None): Optional resampling method for reading signals.
-            resample_tolerance (int | None): Optional tolerance for resampling signals.
+            resample_method (str | None): Accepted for compatibility; pass to ``get()``
+                to select the resampling method.
+            resample_tolerance (int | None): Accepted for compatibility; pass to
+                ``get()`` to set the resampling tolerance.
             **kwargs (Any): Additional arguments passed to asammdf's MDF constructor.
         """
 
@@ -106,10 +109,7 @@ class MF4Handler(MDF, AresDataInterface):
             file_path=file_path,
             dependencies=kwargs.pop("dependencies", None),
             vstack_pattern=vstack_pattern,
-            stepsize=stepsize,
             label_filter=label_filter,
-            resample_method=resample_method,
-            resample_tolerance=resample_tolerance,
         )
 
         if file_path is None:
@@ -145,6 +145,7 @@ class MF4Handler(MDF, AresDataInterface):
             **kwargs (Any): Additional arguments passed to MDF.save().
         """
 
+        kwargs.pop("meta_data", None)
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.header.comment = f"File last saved on: {timestamp}"
         result_path = self.save(output_path, **kwargs)
@@ -193,17 +194,6 @@ class MF4Handler(MDF, AresDataInterface):
         )
 
         label_filter = self._label_filter if label_filter is None else label_filter
-
-        stepsize = self.stepsize if stepsize is None else stepsize
-
-        resample_tolerance = (
-            self._resample_tolerance
-            if resample_tolerance is None
-            else resample_tolerance
-        )
-        resample_method = (
-            self._resample_method if resample_method is None else resample_method
-        )
 
         tmp_data = (
             self._get_signals(label_filter=self._available_signals, **kwargs)
@@ -260,12 +250,16 @@ class MF4Handler(MDF, AresDataInterface):
         return list(set(signal_list))
 
     @typechecked
-    def _get_signals(self, label_filter: list[str], **kwargs) -> list[AresSignal]:
+    def _get_signals(
+        self,
+        label_filter: list[str],
+        **kwargs,
+    ) -> list[AresSignal]:
         """Helper function for get() that handles multiple occurrences of signals in mf4 files.
 
-        Uses asammdf's whereis() function to locate signals and selects the signal
-        with the most samples when multiple occurrences exist. Missing signals are
-        skipped with a warning instead of causing errors.
+        Uses asammdf's whereis() function to locate signals and selects all
+        occurrences when a signal name appears multiple times. Unmatched signals
+        are skipped.
 
         Note:
             Per default asammdf's select() with raw=True is used to get the original timestamps, values.
@@ -277,39 +271,26 @@ class MF4Handler(MDF, AresDataInterface):
 
         Returns:
             list[AresSignal]: List of AresSignal objects extracted from the mf4 file.
-                Only contains signals that were actually found.
+                Contains every occurrence of each signal that was found.
         """
 
         raw = kwargs.pop("raw", True)
 
-        found_signals: list[Signal] = []
-        single_signals: list[str] = []
+        selected_channels: list[tuple[None, int, int]] = []
 
         for channel_name in label_filter:
             occurrence = self.whereis(channel_name)
-
-            if len(occurrence) == 1:  # single ocurrence: combined select() call
+            if occurrence:
                 logger.debug(
-                    f"Signal '{channel_name}' has single occurrence in mf4 data file."
-                )
-                single_signals.append(channel_name)
-
-            elif len(occurrence) >= 2:  # multi ocurrence: one select() call per signal
-                logger.warning(
                     f"Signal '{channel_name}' has {len(occurrence)} occurrences in mf4 data file."
                 )
-                sel_signal = [(None, gp_idx, cn_idx) for gp_idx, cn_idx in occurrence]
-                all_occurrences = super().select(sel_signal, raw=raw)
-                len_samples = [len(s.samples) for s in all_occurrences]
-                idx = len_samples.index(max(len_samples))
-                logger.debug(
-                    f"Selected occurrence {idx} with {len_samples[idx]} samples for '{channel_name}'."
+                selected_channels.extend(
+                    (None, gp_idx, cn_idx) for gp_idx, cn_idx in occurrence
                 )
-                found_signals.append(all_occurrences[idx])
 
-        # single ocurrence: combined select()
-        if single_signals:
-            found_signals.extend(super().select(single_signals, raw=raw))
+        found_signals = (
+            super().select(selected_channels, raw=raw) if selected_channels else []
+        )
 
         ares_signals = []
         for signal in found_signals:
@@ -345,61 +326,106 @@ class MF4Handler(MDF, AresDataInterface):
         Converts AresSignal objects to asammdf Signal format and appends them to the mf4 file.
         Supports scalar signals (1D) and array signals with any number of
         dimensions greater than one.
-        Optionally adds source information to data for traceability.
 
-        Duplicate signal labels are automatically removed, keeping the last occurrence.
+        asammdf requires all signals of one channel group to share a single time axis.
+        Therefore the signals are grouped by source name and exact timestamps array.
+        Each group is written with its own append() call (common_timebase=True, so no
+        resampling happens) and gets its own Source. Groups of the same source share
+        the source name; the Source comment holds a per-source time axis index and a
+        description of the time axis. The channel group comment equals the Source comment.
+
+        Signals sharing a label are all written (e.g. the same signal from different
+        sources). Resolving duplicate labels is the responsibility of the caller,
+        e.g. the merge plugin via ``allow_duplicates_data``.
 
         Args:
             data (list[AresSignal]): List of AresSignal objects to append to mf4 file.
-                All signals in the list must share the exact same time axis (identical
-                timestamps array), as asammdf's append() is called with common_timebase=True.
+                Signals may have different time axes.
                 - ndim == 1: Scalar value per time step
                 - ndim > 1: Array per time step (shape: cycles, *array_shape)
-            **kwargs (Any): Additional arguments passed to asammdf's append() method.
+            **kwargs (Any): Not used, accepted for interface compatibility.
         """
-        data = AresDataInterface._filter_deduplicates(data=data)
-
-        stepsize = kwargs.pop("stepsize", None)
-        if stepsize is not None:
-            comment = f"{stepsize}ms ares"
-        else:
-            comment = "ares"
-
-        signals_to_write = []
+        # 1. Group signals by source name and exact time axis (order of first occurrence)
+        signal_groups: list[dict] = []
         for signal in data:
-            source_name = getattr(signal, "source", "ARES_DEFAULT_SOURCE")
+            if signal.ndim < 1:
+                logger.warning(
+                    f"Unsupported signal dimension of signal '{signal.label}': {signal.ndim}."
+                )
+                continue
+
+            source_name = signal.source or "ARES_DEFAULT_SOURCE"
+
+            matching_group = None
+            for group in signal_groups:
+                same_source = group["source_name"] == source_name
+                same_timestamps = np.array_equal(group["timestamps"], signal.timestamps)
+                if same_source and same_timestamps:
+                    matching_group = group
+                    break
+
+            if matching_group is None:
+                matching_group = {
+                    "source_name": source_name,
+                    "timestamps": signal.timestamps,
+                    "fs": signal.fs,
+                    "signals": [],
+                }
+                signal_groups.append(matching_group)
+
+            matching_group["signals"].append(signal)
+
+        # 2. Write each group as its own channel group with its own Source
+        time_axis_count_per_source: dict[str, int] = {}
+        for group in signal_groups:
+            source_name = group["source_name"]
+            timestamps = group["timestamps"]
+            fs = group["fs"]
+
+            time_axis_index = time_axis_count_per_source.get(source_name, 0) + 1
+            time_axis_count_per_source[source_name] = time_axis_index
+            time_axis_description = (
+                f"{len(timestamps)} samples"
+                f", t=[{float(timestamps[0]):g}, {float(timestamps[-1]):g}] s"
+                f", fs={fs:g} Hz"
+            )
+
+            comment = (
+                f"Data source: {source_name} | "
+                f"time axis {time_axis_index}: {time_axis_description}"
+            )
 
             source = Source(
                 name=source_name,
                 path=source_name,
-                comment=f"Data source: {source_name}",
+                comment=comment,
                 source_type=1,
                 bus_type=1,
             )
 
-            if signal.ndim == 1:
-                signals_to_write.append(
-                    Signal(
-                        samples=signal.value,
-                        timestamps=signal.timestamps,
-                        name=signal.label,
-                        unit=signal.unit if signal.unit else "",
-                        comment=signal.description if signal.description else "",
-                        source=source,
-                        encoding="utf-8",
+            signals_to_write = []
+            for signal in group["signals"]:
+                # guard: append() is called with common_timebase=True
+                if not np.array_equal(signal.timestamps, timestamps):
+                    error_text = (
+                        f"Signal '{signal.label}' does not match the time axis of its "
+                        f"signal group (source '{source_name}'). asammdf requires a "
+                        "uniform time axis within one signal group."
                     )
-                )
+                    logger.error(error_text)
+                    raise ValueError(error_text)
 
-            elif signal.ndim > 1:
-                dtype_str = self.DTYPE_MAP[signal.dtype]
-
-                types = [(signal.label, f"{signal.shape[1:]}{dtype_str}")]
-                samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
+                if signal.ndim == 1:
+                    samples = signal.value
+                else:
+                    dtype_str = self.DTYPE_MAP[signal.dtype]
+                    types = [(signal.label, f"{signal.shape[1:]}{dtype_str}")]
+                    samples = np.rec.fromarrays([signal.value], dtype=np.dtype(types))
 
                 signals_to_write.append(
                     Signal(
                         samples=samples,
-                        timestamps=signal.timestamps,
+                        timestamps=timestamps,
                         name=signal.label,
                         unit=signal.unit if signal.unit else "",
                         comment=signal.description if signal.description else "",
@@ -408,11 +434,8 @@ class MF4Handler(MDF, AresDataInterface):
                     )
                 )
 
-            else:
-                logger.warning(
-                    f"Unsupported signal dimensionof signal '{signal.label}': {signal.ndim}."
-                )
+            self.append(signals_to_write, comment=comment, common_timebase=True)
 
-        # without the flag common_timebase I had the problem that for some reason the signals got resampled (3 times more samples than expected)
-        self.append(signals_to_write, comment=comment, common_timebase=True)
-        [self._available_signals.append(signal.label) for signal in data]
+        for label in dict.fromkeys(signal.label for signal in data):
+            if label not in self._available_signals:
+                self._available_signals.append(label)

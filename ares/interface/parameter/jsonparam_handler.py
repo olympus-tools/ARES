@@ -112,7 +112,7 @@ class JSONParamHandler(AresParamInterface):
         """Write parameters to JSON file.
 
         Args:
-            output_path (str): Absolute path where the JSON file should be written
+            output_path (Path): Absolute path where the JSON file should be written.
             **kwargs (Any): Additional format-specific arguments
                 - indent (int): Number of spaces for indentation (default: 2)
                 - ensure_ascii (bool): Escape non-ASCII characters (default: False)
@@ -226,7 +226,7 @@ class JSONParamHandler(AresParamInterface):
             parameters (list[AresParameter]): List of AresParameter objects to add to the interface
             **kwargs (Any): Additional format-specific arguments (unused)
         """
-        parameters = AresParamInterface._filter_deduplicates(parameters=parameters)
+        parameters = AresParamInterface._filter_duplicates(parameters=parameters)
         for param in parameters:
             self.parameter[param.label] = {
                 "description": param.description,

@@ -118,11 +118,14 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
                     wf_element_value.model_copy()
                 )
 
-                if wf_element_value.type == "sim_unit":
+                if isinstance(plugin_input, SimUnitElement):
                     plugin_input.plugin_path = (
                         Path(__file__).parent.parent / "plugins" / "simunit.py"
                     )
-                elif wf_element_value.type == "merge":
+                    plugin_input.source_priority = list(
+                        reversed(wf_element_value.element_workflow)
+                    )
+                elif isinstance(plugin_input, MergeElement):
                     plugin_input.plugin_path = (
                         Path(__file__).parent.parent / "plugins" / "merge.py"
                     )

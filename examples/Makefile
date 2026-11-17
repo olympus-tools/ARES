@@ -60,6 +60,7 @@ data_caching:
 .PHONY: data_merge
 data_merge:
 	@echo "Running data_merge example..."
+	$(MAKE) -C sim_unit lowpassfilterfirstorder
 	@$(ARES) pipeline \
 		-wf workflow/data_interface/data_merge.wf.json \
 		--output output/ \
