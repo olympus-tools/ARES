@@ -47,6 +47,7 @@ from ares.pydantic_models.workflow_model import (
 )
 from ares.utils.decorators import error_msg
 from ares.utils.logger import create_logger, logger_workflow_element
+from ares.utils.progress import AresProgress
 
 logger = create_logger(name=__name__)
 
@@ -79,92 +80,100 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
     param_storage: dict[str, AresParamInterface] = AresParamInterface.cache
     data_storage: dict[str, AresDataInterface] = AresDataInterface.cache
 
-    # evaluation of all sinks, that were found in workflow json files
-    for wf_element_value in ares_wf.workflow.values():
-        logger_workflow_element.set(wf_element_value.name)
-        logger.info(f"Processing workflow element: {wf_element_value.name}")
+    with AresProgress(
+        "Workflow elements", total=len(ares_wf.workflow.keys())
+    ) as workflow_progress:
+        # evaluation of all sinks, that were found in workflow json files
+        for wf_element_value in ares_wf.workflow.values():
+            logger_workflow_element.set(wf_element_value.name)
+            logger.info(f"Processing workflow element: {wf_element_value.name}")
 
-        tmp_param_hash_lists: list[list[str]] = []
-        for parameter in getattr(wf_element_value, "parameter", []):
-            tmp_param_hash_lists.append(
-                list(ares_wf.workflow[parameter].hash_lists_parameter.keys())
-            )
-        tmp_data_hash_lists: list[list[str]] = []
-        for data in getattr(wf_element_value, "data", []):
-            tmp_data_hash_lists.append(
-                list(ares_wf.workflow[data].hash_lists_data.keys())
-            )
-
-        # handle workflow elements based on their type
-        match wf_element_value.type:
-            case "data":
-                AresDataInterface.wf_element_handler(
-                    wf_element_value=wf_element_value,
-                    input_hash_lists=tmp_data_hash_lists,
-                    output_dir=output_dir,
-                    meta_data=meta_data,
+            tmp_param_hash_lists: list[list[str]] = []
+            for parameter in getattr(wf_element_value, "parameter", []):
+                tmp_param_hash_lists.append(
+                    list(ares_wf.workflow[parameter].hash_lists_parameter.keys())
+                )
+            tmp_data_hash_lists: list[list[str]] = []
+            for data in getattr(wf_element_value, "data", []):
+                tmp_data_hash_lists.append(
+                    list(ares_wf.workflow[data].hash_lists_data.keys())
                 )
 
-            case "parameter":
-                AresParamInterface.wf_element_handler(
-                    wf_element_value=wf_element_value,
-                    input_hash_lists=tmp_param_hash_lists,
-                    output_dir=output_dir,
-                    meta_data=meta_data,
-                )
-
-            case "plugin" | "sim_unit" | "merge":
-                plugin_input: SimUnitElement | PluginElement | MergeElement = (
-                    wf_element_value.model_copy()
-                )
-
-                if wf_element_value.type == "sim_unit":
-                    plugin_input.plugin_path = (
-                        Path(__file__).parent.parent / "plugins" / "simunit.py"
+            # handle workflow elements based on their type
+            match wf_element_value.type:
+                case "data":
+                    AresDataInterface.wf_element_handler(
+                        wf_element_value=wf_element_value,
+                        input_hash_lists=tmp_data_hash_lists,
+                        output_dir=output_dir,
+                        meta_data=meta_data,
                     )
-                elif wf_element_value.type == "merge":
-                    plugin_input.plugin_path = (
-                        Path(__file__).parent.parent / "plugins" / "merge.py"
-                    )
-                else:
-                    plugin_input.plugin_path = plugin_input.file_path
 
-                # filtering relevant parameter for plugin element
-                plugin_input.parameter_obj = [
-                    [
-                        param_storage[hash]
-                        for hash in hash_lists
-                        if hash in param_storage
+                case "parameter":
+                    AresParamInterface.wf_element_handler(
+                        wf_element_value=wf_element_value,
+                        input_hash_lists=tmp_param_hash_lists,
+                        output_dir=output_dir,
+                        meta_data=meta_data,
+                    )
+
+                case "plugin" | "sim_unit" | "merge":
+                    plugin_input: SimUnitElement | PluginElement | MergeElement = (
+                        wf_element_value.model_copy()
+                    )
+
+                    if wf_element_value.type == "sim_unit":
+                        plugin_input.plugin_path = (
+                            Path(__file__).parent.parent / "plugins" / "simunit.py"
+                        )
+                    elif wf_element_value.type == "merge":
+                        plugin_input.plugin_path = (
+                            Path(__file__).parent.parent / "plugins" / "merge.py"
+                        )
+                    else:
+                        plugin_input.plugin_path = plugin_input.file_path
+
+                    # filtering relevant parameter for plugin element
+                    plugin_input.parameter_obj = [
+                        [
+                            param_storage[hash]
+                            for hash in hash_lists
+                            if hash in param_storage
+                        ]
+                        for hash_lists in tmp_param_hash_lists
                     ]
-                    for hash_lists in tmp_param_hash_lists
-                ]
-                plugin_input.hash_lists_parameter = tmp_param_hash_lists
+                    plugin_input.hash_lists_parameter = tmp_param_hash_lists
 
-                # filtering relevant data for plugin element
-                plugin_input.data_obj = [
-                    [data_storage[hash] for hash in hash_lists if hash in data_storage]
-                    for hash_lists in tmp_data_hash_lists
-                ]
-                plugin_input.hash_lists_data = tmp_data_hash_lists
+                    # filtering relevant data for plugin element
+                    plugin_input.data_obj = [
+                        [
+                            data_storage[hash]
+                            for hash in hash_lists
+                            if hash in data_storage
+                        ]
+                        for hash_lists in tmp_data_hash_lists
+                    ]
+                    plugin_input.hash_lists_data = tmp_data_hash_lists
 
-                plugin_input.output_dir = output_dir
+                    plugin_input.output_dir = output_dir
 
-                AresPluginInterface(
-                    plugin_input=plugin_input,
-                )
+                    AresPluginInterface(
+                        plugin_input=plugin_input,
+                    )
 
-        # update workflow element hash list and clear temporary hash list for next iteration
-        for hash_key in AresParamInterface.tmp_hash_lists:
-            wf_element_value.hash_lists_parameter[hash_key] = param_storage[
-                hash_key
-            ].dependencies
-        for hash_key in AresDataInterface.tmp_hash_lists:
-            wf_element_value.hash_lists_data[hash_key] = data_storage[
-                hash_key
-            ].dependencies
+            # update workflow element hash list and clear temporary hash list for next iteration
+            for hash_key in AresParamInterface.tmp_hash_lists:
+                wf_element_value.hash_lists_parameter[hash_key] = param_storage[
+                    hash_key
+                ].dependencies
+            for hash_key in AresDataInterface.tmp_hash_lists:
+                wf_element_value.hash_lists_data[hash_key] = data_storage[
+                    hash_key
+                ].dependencies
 
-        AresParamInterface.tmp_hash_lists = []
-        AresDataInterface.tmp_hash_lists = []
+            AresParamInterface.tmp_hash_lists = []
+            AresDataInterface.tmp_hash_lists = []
+            workflow_progress.advance()
 
     # TODO: if parameter/measurement not needed anymore => drop it
     ares_wf.save(output_dir=output_dir)
