@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 from dataclasses import dataclass
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -539,6 +540,41 @@ class TestAresDataInterfaceWfElementHandler:
             input_hash_list=[[output_hash]],
             output_dir=output_dir,
         )
+
+    def test_wf_element_handler_write_mode_tracks_each_data_file(
+        self, tmp_path, monkeypatch
+    ):
+        ConcreteDataInterface.register(".mf4", ConcreteDataInterface)
+        signal = AresSignal(
+            label="test_sig",
+            timestamps=np.array([0.0, 1.0], dtype=np.float32),
+            value=np.array([1, 2], dtype=np.int64),
+        )
+        instance = ConcreteDataInterface(data=[signal])
+        output_hash = instance.hash
+
+        wf_element = DataElement(
+            mode="write",
+            data=["test"],
+            output_format="mf4",
+        )
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        progress = MagicMock()
+        progress.__enter__.return_value = progress
+        progress_factory = MagicMock(return_value=progress)
+        monkeypatch.setattr(
+            "ares.interface.data.ares_data_interface.AresProgress", progress_factory
+        )
+
+        AresDataInterface.wf_element_handler(
+            wf_element,
+            input_hash_lists=[[output_hash, output_hash]],
+            output_dir=output_dir,
+        )
+
+        progress_factory.assert_called_once_with("Data files", total=2)
+        assert progress.advance.call_count == 2
 
 
 class TestAresDataInterfaceAbstractMethods:

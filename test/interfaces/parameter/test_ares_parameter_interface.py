@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 import json
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
@@ -322,6 +323,43 @@ class TestAresParamInterfaceWfElementHandler:
             input_hash_lists=[[output_hash]],
             output_dir=output_dir,
         )
+
+    def test_wf_element_handler_write_mode_tracks_each_parameter_file(
+        self, tmp_path, monkeypatch
+    ):
+        ConcreteParamInterface.register(".json", ConcreteParamInterface)
+        param = AresParameter(
+            label="test_param",
+            value=np.array(42.0),
+            description="test",
+            unit="m/s",
+        )
+        instance = ConcreteParamInterface(parameters=[param])
+        output_hash = instance.hash
+
+        wf_element = ParameterElement(
+            mode="write",
+            parameter=["test"],
+            output_format="json",
+        )
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+        progress = MagicMock()
+        progress.__enter__.return_value = progress
+        progress_factory = MagicMock(return_value=progress)
+        monkeypatch.setattr(
+            "ares.interface.parameter.ares_parameter_interface.AresProgress",
+            progress_factory,
+        )
+
+        AresParamInterface.wf_element_handler(
+            wf_element,
+            input_hash_lists=[[output_hash, output_hash]],
+            output_dir=output_dir,
+        )
+
+        progress_factory.assert_called_once_with("Parameter files", total=2)
+        assert progress.advance.call_count == 2
 
     def test_wf_element_handler_forwards_meta_data_to_save(self, tmp_path, monkeypatch):
         ConcreteParamInterface.register(".json", ConcreteParamInterface)

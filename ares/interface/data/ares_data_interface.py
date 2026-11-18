@@ -49,6 +49,7 @@ from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import calculate_hash
 from ares.utils.logger import create_logger
+from ares.utils.progress import AresProgress
 
 logger = create_logger(name=__name__)
 
@@ -190,15 +191,19 @@ class AresDataInterface(ABC):
 
         match wf_element_value.mode:
             case "read":
-                for file_path in wf_element_value.file_path:
-                    cls.create(
-                        file_path=file_path,
-                        label_filter=wf_element_value.label_filter,
-                        stepsize=wf_element_value.stepsize,
-                        vstack_pattern=wf_element_value.vstack_pattern,
-                        resample_method=wf_element_value.resample_method,
-                        resample_tolerance=wf_element_value.resample_tolerance,
-                    )
+                with AresProgress(
+                    "Data files", total=len(wf_element_value.file_path)
+                ) as progress:
+                    for file_path in wf_element_value.file_path:
+                        cls.create(
+                            file_path=file_path,
+                            label_filter=wf_element_value.label_filter,
+                            stepsize=wf_element_value.stepsize,
+                            vstack_pattern=wf_element_value.vstack_pattern,
+                            resample_method=wf_element_value.resample_method,
+                            resample_tolerance=wf_element_value.resample_tolerance,
+                        )
+                        progress.advance()
 
             case "write":
                 if not input_hash_lists or not output_dir:
@@ -207,42 +212,47 @@ class AresDataInterface(ABC):
                 target_extension = f".{wf_element_value.output_format}"
                 target_handler_class = cls._handlers.get(target_extension)
 
-                for wf_element_hash_lists in input_hash_lists:
-                    for output_hash in wf_element_hash_lists:
-                        if output_hash in cls.cache:
-                            source_instance = cls.cache.get(output_hash)
+                total_output_files = sum(
+                    len(hash_list) for hash_list in input_hash_lists
+                )
+                with AresProgress("Data files", total=total_output_files) as progress:
+                    for wf_element_hash_lists in input_hash_lists:
+                        for output_hash in wf_element_hash_lists:
+                            if output_hash in cls.cache:
+                                source_instance = cls.cache.get(output_hash)
 
-                            data = source_instance.get(
-                                label_filter=wf_element_value.label_filter,
-                                stepsize=wf_element_value.stepsize,
-                                vstack_pattern=wf_element_value.vstack_pattern,
-                                resample_method=wf_element_value.resample_method,
-                                resample_tolerance=wf_element_value.resample_tolerance,
-                                **kwargs,
-                            )
-
-                            target_instance = target_handler_class.__new__(
-                                target_handler_class, file_path=None
-                            )
-                            target_handler_class.__init__(
-                                target_instance, file_path=None
-                            )
-
-                            if data is not None:
-                                target_instance.add(
-                                    data=data,
+                                data = source_instance.get(
+                                    label_filter=wf_element_value.label_filter,
                                     stepsize=wf_element_value.stepsize,
+                                    vstack_pattern=wf_element_value.vstack_pattern,
+                                    resample_method=wf_element_value.resample_method,
+                                    resample_tolerance=wf_element_value.resample_tolerance,
                                     **kwargs,
                                 )
 
-                            output_path = eval_output_path(
-                                output_hash=output_hash,
-                                output_dir=output_dir,
-                                output_format=wf_element_value.output_format,
-                                wf_element_name=wf_element_value.name,
-                            )
+                                target_instance = target_handler_class.__new__(
+                                    target_handler_class, file_path=None
+                                )
+                                target_handler_class.__init__(
+                                    target_instance, file_path=None
+                                )
 
-                            target_instance._save(output_path=output_path, **kwargs)
+                                if data is not None:
+                                    target_instance.add(
+                                        data=data,
+                                        stepsize=wf_element_value.stepsize,
+                                        **kwargs,
+                                    )
+
+                                output_path = eval_output_path(
+                                    output_hash=output_hash,
+                                    output_dir=output_dir,
+                                    output_format=wf_element_value.output_format,
+                                    wf_element_name=wf_element_value.name,
+                                )
+
+                                target_instance._save(output_path=output_path, **kwargs)
+                            progress.advance()
 
     @classmethod
     @typechecked
