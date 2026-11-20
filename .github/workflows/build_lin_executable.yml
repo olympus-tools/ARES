@@ -30,6 +30,7 @@ jobs:
         uses: ./.github/workflow-actions/setup-ares
         with:
           python-version: ${{ matrix.python-version }}
+          locked: true
 
       - name: Build executable
         run: |

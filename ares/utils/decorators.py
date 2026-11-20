@@ -43,8 +43,6 @@ from collections.abc import Callable
 from functools import wraps
 from typing import Any
 
-from ares.utils.logger import create_logger
-
 
 def safely_run(
     default_return: Any = None,
@@ -72,7 +70,12 @@ def safely_run(
     Returns:
         Callable: The decorated function with try/except.
     """
-    logger = create_logger() if log is None else log
+    if log is None:
+        from ares.utils.logger import create_logger
+
+        logger = create_logger()
+    else:
+        logger = log
 
     def wrap(func: Callable) -> Callable:
         @wraps(func)  # preserve original func metadata
@@ -174,7 +177,12 @@ def error_msg(
     Returns:
         Callable: The decorated function with error context logging.
     """
-    logger = create_logger() if log is None else log
+    if log is None:
+        from ares.utils.logger import create_logger
+
+        logger = create_logger()
+    else:
+        logger = log
 
     def wrap(func: Callable) -> Callable:
         @wraps(func)
@@ -239,7 +247,7 @@ def error_msg(
     return wrap
 
 
-def typechecked_dev(func):
+def typechecked_dev(func: Callable[..., Any]) -> Callable[..., Any]:
     """Applies typeguard's @typechecked only in development mode.
 
     In production or frozen environments (PyInstaller), this decorator
@@ -253,15 +261,9 @@ def typechecked_dev(func):
     Returns:
         Callable: The decorated function (with or without type checking).
     """
-    # Check if we're in a frozen (PyInstaller) environment or if explicitly disabled
-    is_frozen = getattr(sys, "frozen", False)
-    is_disabled = os.environ.get("ARES_DISABLE_TYPEGUARD", "0") == "1"
-
-    if is_frozen or is_disabled:
-        # Return function unchanged
+    if getattr(sys, "frozen", False) or os.environ.get("ARES_DISABLE_TYPEGUARD") == "1":
         return func
-    else:
-        # Apply typeguard in development
-        from typeguard import typechecked
 
-        return typechecked(func)
+    from typeguard import typechecked
+
+    return typechecked(func)
