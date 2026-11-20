@@ -101,6 +101,7 @@ class Circle(BaseModel):
         ..., gt=0, description="Radius of the circle, must be > 0"
     )
 
+
 class CircleCalculator:
     """Example class using @safely_run and @error_msg decorators for robust error handling."""
 
@@ -109,11 +110,11 @@ class CircleCalculator:
 
     @typechecked
     @safely_run(
-        default_return=float('nan'),
+        default_return=float("nan"),
         exception_msg="Error in calculate_area: returning NaN.",
         include_args=["self"],
         instance_el=["circle"],
-        log=None  # Pass a custom logger instance if desired
+        log=None,  # Pass a custom logger instance if desired
     )
     def calculate_area(self) -> float:
         """Calculate the area of the circle.
@@ -134,7 +135,7 @@ class CircleCalculator:
         exception_map={ValueError: "Radius must be positive (ValueError)."},
         include_args=["self"],
         instance_el=["circle"],
-        log=None  # Pass a custom logger instance if desired
+        log=None,  # Pass a custom logger instance if desired
     )
     def calculate_diameter(self) -> float:
         """Calculate the diameter of the circle.
@@ -149,6 +150,7 @@ class CircleCalculator:
             raise ValueError("Radius must be greater than zero.")
         return 2 * self.circle.radius
 
+
 def test_circle_calculator():
     """Unit tests for CircleCalculator methods."""
     c1 = Circle(radius=1)
@@ -162,7 +164,6 @@ def test_circle_calculator():
 
     CircleCalculator(Circle(radius=0)).calculate_area()
     CircleCalculator(Circle(radius=0)).calculate_diameter()
-
 ```
 
 ## dict.get() for default values
@@ -200,13 +201,14 @@ Ensure that functions targeted for JIT compilation are written in a Numba-compat
 import numpy as np
 from numba import njit
 
+
 # Automatically apply @njit for heavy numerical loops
 @njit(cache=True)
 def calculate_euclidean_distance_matrix(coords):
     """Compute pairwise Euclidean distance matrix for a set of coordinates."""
     n = coords.shape[0]
     dist_matrix = np.zeros((n, n), dtype=np.float64)
-    
+
     for i in range(n):
         for j in range(i + 1, n):
             d = 0.0
@@ -216,7 +218,7 @@ def calculate_euclidean_distance_matrix(coords):
             val = np.sqrt(d)
             dist_matrix[i, j] = val
             dist_matrix[j, i] = val
-            
+
     return dist_matrix
 ```
 

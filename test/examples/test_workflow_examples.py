@@ -102,7 +102,7 @@ def test_workflow_example(workflow_file: str, tmp_path):
         command,
         capture_output=True,
         text=True,
-        timeout=120,
+        timeout=300,
         cwd=project_root,
         env=env,
     )

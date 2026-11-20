@@ -10,7 +10,14 @@ on:
 
 jobs:
   build-lin-executable:
-    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.13.7'
+            runner: ubuntu-24.04
+          - python-version: '3.14'
+            runner: ubuntu-latest
+    runs-on: ${{ matrix.runner }}
 
     steps:
       - name: Checkout repository
@@ -21,6 +28,8 @@ jobs:
 
       - name: Setup ARES Environment
         uses: ./.github/workflow-actions/setup-ares
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Build executable
         run: |
@@ -41,7 +50,7 @@ jobs:
       - name: Upload Linux executable artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ares-linux-executable
+          name: ares-linux-executable-py${{ matrix.python-version }}
           path: dist/ares
           if-no-files-found: error
           retention-days: 30
