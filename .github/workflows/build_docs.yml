@@ -21,6 +21,8 @@ jobs:
 
       - name: Setup ARES Environment
         uses: ./.github/workflow-actions/setup-ares
+        with:
+          python-version: '3.14'
 
       - name: Build documentation
         run: |

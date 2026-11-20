@@ -21,6 +21,9 @@
 RELEASE_TAG := $(shell git describe --tags --exact-match --match 'v[0-9]*' 2>/dev/null)
 VERSION := $(shell sed -n 's/^version = "\([^"]*\)"/\1/p' pyproject.toml)
 RELEASE_ARCHIVE := dist/ares-$(VERSION)-release.zip
+UPGRADE ?= true
+LOCKED ?= false
+REINSTALL_PACKAGE ?=
 
 # Platform detection for virtual environment binary path
 ifeq ($(OS),Windows_NT)
@@ -35,7 +38,13 @@ endif
 .PHONY: setup-venv
 setup-venv:
 	echo "Syncing project dependencies:"
-	uv sync --all-extras
+	@if [ "$(LOCKED)" = "true" ] || [ "$(LOCKED)" = "TRUE" ] || [ "$(LOCKED)" = "1" ]; then \
+		uv sync --all-extras --locked $(if $(REINSTALL_PACKAGE),--reinstall-package $(REINSTALL_PACKAGE),); \
+	elif [ "$(UPGRADE)" = "true" ] || [ "$(UPGRADE)" = "TRUE" ] || [ "$(UPGRADE)" = "1" ]; then \
+		uv sync --all-extras --upgrade $(if $(REINSTALL_PACKAGE),--reinstall-package $(REINSTALL_PACKAGE),); \
+	else \
+		uv sync --all-extras $(if $(REINSTALL_PACKAGE),--reinstall-package $(REINSTALL_PACKAGE),); \
+	fi
 
 .PHONY: examples
 examples: setup-venv
@@ -91,6 +100,9 @@ release-changelog:
 	@echo "CHANGELOG.md contains release $(VERSION)."
 
 .PHONY: thirdpartycheck
+thirdpartycheck: UPGRADE=false
+thirdpartycheck: LOCKED=true
+thirdpartycheck: REINSTALL_PACKAGE=dcmi
 thirdpartycheck: setup-venv
 	@echo ""
 	@echo "Running third-party dependency analysis..."

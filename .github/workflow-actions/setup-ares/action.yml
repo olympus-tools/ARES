@@ -1,12 +1,21 @@
 name: 'Setup ARES Environment'
-description: 'Setup Python 3.13.7 and print system information'
+description: 'Set up the requested Python version and the ARES environment'
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.14'
+  locked:
+    description: 'Use the committed lockfile without upgrading dependencies'
+    required: false
+    default: 'false'
 runs:
   using: "composite"
   steps:
-    - name: Set up Python 3.13.7
+    - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.13.7'
+        python-version: ${{ inputs.python-version }}
 
     - name: Print system information
       shell: bash
@@ -22,5 +31,14 @@ runs:
       run: |
         echo "::group::ARES environment setup"
         pipx install uv
+        if [ "${{ inputs.locked }}" = "true" ]; then
+          echo "UPGRADE=false" >> "$GITHUB_ENV"
+          echo "LOCKED=true" >> "$GITHUB_ENV"
+          export UPGRADE=false LOCKED=true
+        else
+          echo "UPGRADE=true" >> "$GITHUB_ENV"
+          echo "LOCKED=false" >> "$GITHUB_ENV"
+          export UPGRADE=true LOCKED=false
+        fi
         make setup-venv
         echo "::endgroup::"

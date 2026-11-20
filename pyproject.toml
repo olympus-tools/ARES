@@ -11,8 +11,9 @@ authors = [
   {name = "Andrä Carotta"},
   {name = "Jonas Bleich"},
 ]
-license = {file = "LICENSE"}
-requires-python = ">=3.13,<3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+requires-python = ">=3.13.7,<3.15"
 keywords = ["embedded", "simulation", "automotive", "sil", "ares"]
 classifiers = [
     # Intended Audience
@@ -29,10 +30,8 @@ classifiers = [
     # Programming Language
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
-
-    # License
-    "License :: OSI Approved :: Apache Software License",
 
     # Operating System
     "Operating System :: POSIX :: Linux",
@@ -43,41 +42,42 @@ classifiers = [
 ]
 
 dependencies = [
-    "numpy==2.2.4",
-    "numba==0.65.1",
-    "scipy==1.17.1",
-    "asammdf==8.8.23",
-    "jsonschema==4.24.0",
-    "pydantic==2.11.7",
-    "typeguard==4.4.4",
-    "click==8.2.1",
-    "colorlog==6.9.0",
+    "numpy>=2.5.5",
+    "numba>=0.68.1",
+    "scipy>=1.18.1",
+    "asammdf>=8.8.33",
+    "jsonschema>=4.26.0",
+    "pydantic>=2.14.4",
+    "typeguard>=4.6.0",
+    "click>=8.5.1",
+    "colorlog>=6.12.0",
     "dcmi",
+    "rich>=15.0.0",
 ]
 [project.scripts]
 ares = "ares.cli.ares:cli"
 
 [project.optional-dependencies]
 test = [
-    "pytest==8.4.1",
-    "pytest-cov==6.0.0",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
 ]
 dev = [
-    "ruff==0.12.11",
-    "build==1.3.0",
-    "twine==6.2.0",
-    "gitpython==3.1.59",
-    "pip-licenses==5.0.0",
-    "pipdeptree==2.23.4",
-    "pyinstaller==6.15.0",
-    "matplotlib==3.11.1",
+    "ruff>=0.17.6",
+    "build>=1.6.1",
+    "twine>=7.0.0",
+    "gitpython>=3.2.1",
+    "pip-licenses>=5.5.5",
+    "pipdeptree>=4.2.15",
+    "pyinstaller>=6.22.3",
+    "matplotlib>=3.11.2",
     "ares[test]",
 ]
 docs = [
-    "sphinx==8.2.3",
-    "furo==2024.8.6",
-    "myst-parser==4.0.1",
-    "sphinx-autodoc-typehints==3.1.0",
+    "sphinx>=9.2.0",
+    "furo>=2025.12.19",
+    "myst-parser>=5.2.0",
+    "sphinx-autodoc-typehints>=3.17.6",
     "sphinxcontrib-mermaid>=2.1.1",
 ]
 release = [
@@ -86,7 +86,7 @@ release = [
 ]
 
 debug = [
-    "debugpy",
+    "debugpy>=1.8.22",
 ]
 
 [tool.uv.sources]
@@ -119,7 +119,7 @@ addopts = [
 # The maximum line length.
 line-length = 88
 # The target Python version.
-target-version = "py312"
+target-version = "py313"
 # Excluded files and directories.
 exclude = [
     "ares/core/version.py",
@@ -137,7 +137,7 @@ indent-style = "space"
 [tool.pyright]
 # Pyright will analyze files in this directory.
 include = ["ares", "submodules", "test"]
-reportAny = "none"
-reportExplicitAny = "none"
-venvPath = "."
-venv = ".venv"
+
+[tool.uv]
+python-preference = "system"
+python-downloads = "manual"

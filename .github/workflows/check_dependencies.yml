@@ -21,6 +21,9 @@ jobs:
 
       - name: Setup ARES Environment
         uses: ./.github/workflow-actions/setup-ares
+        with:
+          python-version: '3.14'
+          locked: 'true'
 
       - name: Verify uv.lock is unchanged
         shell: bash

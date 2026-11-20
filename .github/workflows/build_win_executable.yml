@@ -11,6 +11,11 @@ on:
 jobs:
   build-win-executable:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        python-version:
+          - '3.13.7'
+          - '3.14'
 
     steps:
       - name: Checkout repository
@@ -21,6 +26,8 @@ jobs:
 
       - name: Setup ARES Environment
         uses: ./.github/workflow-actions/setup-ares
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - name: Build executable
         shell: bash
@@ -45,7 +52,7 @@ jobs:
       - name: Upload Windows executable artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ares-windows-executable
+          name: ares-windows-executable-py${{ matrix.python-version }}
           path: dist/ares.exe
           if-no-files-found: error
           retention-days: 30
