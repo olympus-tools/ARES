@@ -36,8 +36,6 @@ limitations under the License:
 # standard includes
 import inspect
 import logging
-import os
-import sys
 import traceback
 from collections.abc import Callable
 from functools import wraps
@@ -72,7 +70,10 @@ def safely_run(
     Returns:
         Callable: The decorated function with try/except.
     """
-    logger = create_logger() if log is None else log
+    if log is None:
+        logger = create_logger()
+    else:
+        logger = log
 
     def wrap(func: Callable) -> Callable:
         @wraps(func)  # preserve original func metadata
@@ -174,7 +175,10 @@ def error_msg(
     Returns:
         Callable: The decorated function with error context logging.
     """
-    logger = create_logger() if log is None else log
+    if log is None:
+        logger = create_logger()
+    else:
+        logger = log
 
     def wrap(func: Callable) -> Callable:
         @wraps(func)
@@ -237,31 +241,3 @@ def error_msg(
         return wrapper
 
     return wrap
-
-
-def typechecked_dev(func):
-    """Applies typeguard's @typechecked only in development mode.
-
-    In production or frozen environments (PyInstaller), this decorator
-    does nothing, allowing the code to run without runtime type checking.
-
-    Use ARES_DISABLE_TYPEGUARD=1 to disable type checking explicitly.
-
-    Args:
-        func (Callable): The function to decorate.
-
-    Returns:
-        Callable: The decorated function (with or without type checking).
-    """
-    # Check if we're in a frozen (PyInstaller) environment or if explicitly disabled
-    is_frozen = getattr(sys, "frozen", False)
-    is_disabled = os.environ.get("ARES_DISABLE_TYPEGUARD", "0") == "1"
-
-    if is_frozen or is_disabled:
-        # Return function unchanged
-        return func
-    else:
-        # Apply typeguard in development
-        from typeguard import typechecked
-
-        return typechecked(func)

@@ -41,6 +41,7 @@ from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.workflow_model import MergeElement
 from ares.utils.logger import create_logger
+from ares.utils.progress import AresProgress
 
 logger = create_logger(name=__name__)
 
@@ -88,61 +89,69 @@ def ares_plugin(plugin_input: MergeElement):
     data_dependency_lists = get_hash_combinations(hash_lists_data)
 
     # create merged parameters and data for each hash combination
-    for parameter_dependency_list in parameter_dependency_lists:
-        logger.debug(
-            "Merging parameters for each hash combination."
-        )  # TODO: offering a better log message
+    with AresProgress(
+        "Parameter Merge", total=len(parameter_dependency_lists)
+    ) as progress:
+        for parameter_dependency_list in parameter_dependency_lists:
+            logger.debug(
+                "Merging parameters for each hash combination."
+            )  # TODO: offering a better log message
 
-        merge_parameters: list[AresParameter] = []
-        for parameter_hash in parameter_dependency_list:
-            params = AresParamInterface.cache[parameter_hash].get(
+            merge_parameters: list[AresParameter] = []
+            for parameter_hash in parameter_dependency_list:
+                params = AresParamInterface.cache[parameter_hash].get(
+                    label_filter=plugin_input.label_filter_parameter,
+                    transpose=plugin_input.transpose_parameter,
+                )
+                if params is not None:
+                    merge_parameters.extend(params)
+
+            AresParamInterface.create(
+                parameters=merge_parameters,
+                dependencies=parameter_dependency_list,
                 label_filter=plugin_input.label_filter_parameter,
                 transpose=plugin_input.transpose_parameter,
             )
-            if params is not None:
-                merge_parameters.extend(params)
-
-        AresParamInterface.create(
-            parameters=merge_parameters,
-            dependencies=parameter_dependency_list,
-            label_filter=plugin_input.label_filter_parameter,
-            transpose=plugin_input.transpose_parameter,
-        )
+            progress.advance()
 
     # create merged data for each hash combination
-    for data_dependency_list in data_dependency_lists:
-        logger.debug(
-            "Merging data for each hash combination."
-        )  # TODO: offering a better log message
+    with AresProgress("Data Merge", total=len(data_dependency_lists)) as progress:
+        for data_dependency_list in data_dependency_lists:
+            logger.debug(
+                "Merging data for each hash combination."
+            )  # TODO: offering a better log message
 
-        merge_data: list[AresSignal] = []
+            merge_data: list[AresSignal] = []
 
-        # this loop is necessary to ensure that the merged data has a unified time array
-        stepsize: int = 1 if plugin_input.stepsize is None else plugin_input.stepsize
-        for data_hash in data_dependency_list:
-            if (
-                AresDataInterface.cache[data_hash].stepsize is not None
-                and AresDataInterface.cache[data_hash].stepsize < stepsize
-            ):
-                stepsize = AresDataInterface.cache[data_hash].stepsize
+            # this loop is necessary to ensure that the merged data has a unified time array
+            stepsize: int = (
+                1 if plugin_input.stepsize is None else plugin_input.stepsize
+            )
+            for data_hash in data_dependency_list:
+                if (
+                    AresDataInterface.cache[data_hash].stepsize is not None
+                    and AresDataInterface.cache[data_hash].stepsize < stepsize
+                ):
+                    stepsize = AresDataInterface.cache[data_hash].stepsize
 
-        for data_hash in data_dependency_list:
-            data = AresDataInterface.cache[data_hash].get(
+            for data_hash in data_dependency_list:
+                data = AresDataInterface.cache[data_hash].get(
+                    stepsize=stepsize,
+                    label_filter=plugin_input.label_filter_data,
+                    vstack_pattern=plugin_input.vstack_pattern_data,
+                    resample_method=plugin_input.resample_method,
+                    resample_tolerance=plugin_input.resample_tolerance,
+                )
+                if data is not None:
+                    merge_data.extend(data)
+
+            AresDataInterface.create(
+                data=merge_data,
+                dependencies=data_dependency_list,
                 stepsize=stepsize,
                 label_filter=plugin_input.label_filter_data,
                 vstack_pattern=plugin_input.vstack_pattern_data,
                 resample_method=plugin_input.resample_method,
                 resample_tolerance=plugin_input.resample_tolerance,
             )
-            if data is not None:
-                merge_data.extend(data)
-
-        AresDataInterface.create(
-            data=merge_data,
-            dependencies=data_dependency_list,
-            stepsize=stepsize,
-            label_filter=plugin_input.label_filter_data,
-            vstack_pattern=plugin_input.vstack_pattern_data,
-            resample_method=plugin_input.resample_method,
-            resample_tolerance=plugin_input.resample_tolerance,
-        )
+            progress.advance()

@@ -39,8 +39,8 @@ import numpy as np
 import numpy.typing as npt
 
 from ares.utils.decorators import safely_run
-from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 logger = create_logger(name=__name__)
 

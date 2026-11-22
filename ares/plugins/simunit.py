@@ -55,8 +55,9 @@ from ares.pydantic_models.datadictionary_model import (
 )
 from ares.pydantic_models.workflow_model import SimUnitElement
 from ares.utils.decorators import error_msg, safely_run
-from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from ares.utils.progress import AresProgress
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 logger = create_logger(name=__name__)
 
@@ -383,36 +384,40 @@ class SimUnit:
             progress_step = 0
             time_real_start = time.perf_counter()
             time_sim_start = float(timestamps[0]) if data else 0.0
-            for time_step_idx in range(time_steps):
-                self._write_base_elements_to_dll(
-                    base_element_dict=mapped_data_dict,
-                    dd_scope=self._dd.signals or {},
-                    time_step_idx=time_step_idx,
-                )
-                for sim_function in self._sim_functions_cyclical:
-                    sim_function()
-                step_result = self._read_dll_interface()
-                for signal in output_signals:
-                    sim_result[signal].value[time_step_idx] = step_result[signal]
+            with AresProgress("Simulation Progress", total=time_steps) as progress:
+                for time_step_idx in range(time_steps):
+                    self._write_base_elements_to_dll(
+                        base_element_dict=mapped_data_dict,
+                        dd_scope=self._dd.signals or {},
+                        time_step_idx=time_step_idx,
+                    )
+                    for sim_function in self._sim_functions_cyclical:
+                        sim_function()
+                    step_result = self._read_dll_interface()
+                    for signal in output_signals:
+                        sim_result[signal].value[time_step_idx] = step_result[signal]
 
-                if time_step_idx >= progress_indices[progress_step]:
-                    time_real_elapsed = time.perf_counter() - time_real_start
-                    time_sim_elapsed = (
-                        float(timestamps[time_step_idx]) - time_sim_start
-                        if data
-                        else 0.0
-                    )
-                    time_speedup_hint = (
-                        f" - speedup factor {time_sim_elapsed / time_real_elapsed:.1f}"
-                        if time_real_elapsed > 0 and time_sim_elapsed > 0
-                        else ""
-                    )
-                    logger.info(
-                        f"Simulation progress: {progress_step * 10}%{time_speedup_hint}"
-                    )
-                    progress_step += 1
-                    time_real_start = time.perf_counter()
-                    time_sim_start = float(timestamps[time_step_idx]) if data else 0.0
+                    progress.advance()
+                    if time_step_idx >= progress_indices[progress_step]:
+                        time_real_elapsed = time.perf_counter() - time_real_start
+                        time_sim_elapsed = (
+                            float(timestamps[time_step_idx]) - time_sim_start
+                            if data
+                            else 0.0
+                        )
+                        time_speedup_hint = (
+                            f" - speedup factor {time_sim_elapsed / time_real_elapsed:.1f}"
+                            if time_real_elapsed > 0 and time_sim_elapsed > 0
+                            else ""
+                        )
+                        logger.info(
+                            f"Simulation progress: {progress_step * 10}%{time_speedup_hint}"
+                        )
+                        progress_step += 1
+                        time_real_start = time.perf_counter()
+                        time_sim_start = (
+                            float(timestamps[time_step_idx]) if data else 0.0
+                        )
 
         self._interface_consistency_check(interface_dict=sim_result, direction="Output")
 
@@ -885,29 +890,34 @@ def ares_plugin(plugin_input: SimUnitElement):
     label_filter_signal = sim_unit.input_keys("signals")
     label_filter_parameter = sim_unit.input_keys("parameters")
 
-    for parameter_list in parameter_lists:
-        for parameter_obj in parameter_list:
-            for data_list in data_lists:
-                for data_obj in data_list:
-                    dependencies = [parameter_obj.hash, data_obj.hash]
+    total_variants = sum(
+        len(parameter_list) for parameter_list in parameter_lists
+    ) * sum(len(data_list) for data_list in data_lists)
+    with AresProgress("Simulation Variants", total=total_variants) as progress:
+        for parameter_list in parameter_lists:
+            for parameter_obj in parameter_list:
+                for data_list in data_lists:
+                    for data_obj in data_list:
+                        dependencies = [parameter_obj.hash, data_obj.hash]
 
-                    sim_result = sim_unit.run(
-                        data=data_obj.get(
-                            stepsize=plugin_input.stepsize,
-                            label_filter=label_filter_signal,
-                            vstack_pattern=plugin_input.vstack_pattern,
-                            resample_method=plugin_input.resample_method,
-                            resample_tolerance=plugin_input.resample_tolerance,
-                        ),
-                        parameters=parameter_obj.get(
-                            label_filter=label_filter_parameter,
-                            transpose=plugin_input.transpose_parameter,
-                        ),
-                    )
-
-                    if sim_result is not None:
-                        AresDataInterface.create(
-                            data=sim_result,
-                            dependencies=dependencies,
-                            stepsize=plugin_input.stepsize,
+                        sim_result = sim_unit.run(
+                            data=data_obj.get(
+                                stepsize=plugin_input.stepsize,
+                                label_filter=label_filter_signal,
+                                vstack_pattern=plugin_input.vstack_pattern,
+                                resample_method=plugin_input.resample_method,
+                                resample_tolerance=plugin_input.resample_tolerance,
+                            ),
+                            parameters=parameter_obj.get(
+                                label_filter=label_filter_parameter,
+                                transpose=plugin_input.transpose_parameter,
+                            ),
                         )
+
+                        if sim_result is not None:
+                            AresDataInterface.create(
+                                data=sim_result,
+                                dependencies=dependencies,
+                                stepsize=plugin_input.stepsize,
+                            )
+                        progress.advance()

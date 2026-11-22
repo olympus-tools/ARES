@@ -1,0 +1,66 @@
+r"""
+________________________________________________________________________
+|                                                                      |
+|               $$$$$$\  $$$$$$$\  $$$$$$$$\  $$$$$$\                  |
+|              $$  __$$\ $$  __$$\ $$  _____|$$  __$$\                 |
+|              $$ /  $$ |$$ |  $$ |$$ |      $$ /  \__|                |
+|              $$$$$$$$ |$$$$$$$  |$$$$$\    \$$$$$$\                  |
+|              $$  __$$ |$$  __$$< $$  __|    \____$$\                 |
+|              $$ |  $$ |$$ |  $$ |$$ |      $$\   $$ |                |
+|              $$ |  $$ |$$ |  $$ |$$$$$$$$\ \$$$$$$  |                |
+|              \__|  \__|\__|  \__|\________| \______/                 |
+|                                                                      |
+|              Automated Rapid Embedded Simulation (c)                 |
+|______________________________________________________________________|
+
+Copyright 2025 olympus-tools contributors. Dependencies and licenses
+are listed in the NOTICE file:
+
+    https://github.com/olympus-tools/ARES/blob/master/NOTICE
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License:
+
+    https://github.com/olympus-tools/ARES/blob/master/LICENSE
+"""
+
+# INFO: Dependency-free module (no ARES imports). It is imported by the logger,
+# which must stay independent of ``ares.utils.decorators`` (that module imports the logger).
+
+# standard includes
+import os
+import sys
+from collections.abc import Callable
+from typing import Any
+
+
+def typechecked_dev(func: Callable[..., Any]) -> Callable[..., Any]:
+    """Applies typeguard's @typechecked only in development mode.
+
+    In production or frozen environments (PyInstaller), this decorator
+    does nothing, allowing the code to run without runtime type checking.
+
+    Use ARES_DISABLE_TYPEGUARD=1 to disable type checking explicitly.
+
+    Args:
+        func (Callable): The function to decorate.
+
+    Returns:
+        Callable: The decorated function (with or without type checking).
+    """
+    if getattr(sys, "frozen", False) or os.environ.get("ARES_DISABLE_TYPEGUARD") == "1":
+        return func
+
+    # INFO: Imported lazily so typeguard is not loaded when type checking is disabled.
+    from typeguard import typechecked
+
+    return typechecked(func)

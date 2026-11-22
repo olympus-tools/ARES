@@ -41,8 +41,8 @@ from typing import Any
 import numpy as np
 
 from ares.utils.decorators import error_msg
-from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 ENDIAN_TYPE = "big"
 CHUNK_SIZE = 4096

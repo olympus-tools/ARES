@@ -43,6 +43,8 @@ from typing import cast
 
 import colorlog
 
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
+
 # Context variable for the current workflow element
 logger_workflow_element: contextvars.ContextVar[str] = contextvars.ContextVar(
     "workflow_element", default="N/A"
@@ -94,6 +96,23 @@ class AresFileHandler(RotatingFileHandler):
         super().emit(record)
 
 
+class AresStreamHandler(colorlog.StreamHandler):
+    """Stream handler that keeps log records above active progress tasks."""
+
+    @typechecked
+    def emit(self, record: logging.LogRecord) -> None:
+        """Write a formatted record through Rich when progress tasks are active."""
+        try:
+            from ares.utils.progress import AresProgress
+
+            if AresProgress.is_rendering():
+                AresProgress.print(self.format(record))
+            else:
+                super().emit(record)
+        except Exception:
+            self.handleError(record)
+
+
 def create_logger(
     name: str | None = None,
     log_dir: Path | None = None,
@@ -137,7 +156,7 @@ def create_logger(
 
     # Use a StreamHandler to output to stdout --> parallel to streaming to file
     # default: sys.stderr
-    stdout_handler = colorlog.StreamHandler(stream=sys.stdout)
+    stdout_handler = AresStreamHandler(stream=sys.stdout)
     stdout_handler.setLevel(level)
     # Use RotatingFileHandler with Count=4 and 4MB size -> 4 is just a good number + always use logger.INFO
     # INFO: alternatives if project grows: https://betterstack.com/community/guides/logging/how-to-manage-log-files-with-logrotate-on-ubuntu-20-04/

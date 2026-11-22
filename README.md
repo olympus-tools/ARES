@@ -56,20 +56,56 @@ make setup-venv
 uv sync --all-extras
 ```
 
+#### Option C: Via Python
+
+Create and activate a virtual environment:
+
+```bash
+# Create
+python -m venv .venv
+
+# Activate on Linux/macOS
+source .venv/bin/activate
+
+# Activate in Windows PowerShell
+.\.venv\Scripts\Activate.ps1
+
+# Activate in Windows Command Prompt
+.\.venv\Scripts\activate.bat
+```
+
+Then install ARES and its release dependencies:
+
+```bash
+python -m pip install -e ".[release]"
+```
+
 ## 2. Usage
 
 ARES is primarily used via its Command Line Interface (CLI). The main command is `pipeline`, which executes a simulation workflow defined in a JSON file.
 
+The command depends on how you set up the environment. If you used the Makefile or
+`uv`, run ARES commands with `uv run`. If you created and activated the virtual
+environment manually, run `ares` directly without the `uv run` prefix.
+
 The global `-v`/`--version` option prints the installed ARES version:
 
 ```bash
+# Makefile or uv setup (Option A/B)
 uv run ares --version
+
+# Manually created and activated virtual environment (Option C)
+ares --version
 ```
 
 ### Pipeline Command
 
 ```bash
+# Makefile or uv setup (Option A/B)
 uv run ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
+
+# Manually created and activated virtual environment (Option C)
+ares pipeline --workflow <path_to_workflow.json> [OPTIONS]
 ```
 
 ### Options

@@ -44,8 +44,8 @@ from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.pydantic_models.workflow_model import VStackPatternElement
 from ares.utils.decorators import error_msg, safely_run
-from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 logger = create_logger(name=__name__)
 
