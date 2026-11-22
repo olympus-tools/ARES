@@ -49,7 +49,7 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 
-from ares.utils.decorators import typechecked_dev as typechecked
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 
 class AresProgress:

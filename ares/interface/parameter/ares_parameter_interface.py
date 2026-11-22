@@ -40,11 +40,11 @@ from typing import ClassVar
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.pydantic_models.workflow_model import ParameterElement
 from ares.utils.decorators import error_msg
-from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.eval_output_path import eval_output_path
 from ares.utils.hash import calculate_hash
 from ares.utils.logger import create_logger
 from ares.utils.progress import AresProgress
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 logger = create_logger(name=__name__)
 

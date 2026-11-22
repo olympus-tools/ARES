@@ -43,7 +43,7 @@ from typing import cast
 
 import colorlog
 
-from ares.utils.decorators import typechecked_dev as typechecked
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 # Context variable for the current workflow element
 logger_workflow_element: contextvars.ContextVar[str] = contextvars.ContextVar(

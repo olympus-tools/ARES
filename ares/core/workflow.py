@@ -42,8 +42,8 @@ from pydantic_core import ValidationError
 
 from ares.pydantic_models.workflow_model import WorkflowModel
 from ares.utils.decorators import error_msg, safely_run
-from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 logger = create_logger(name=__name__)
 

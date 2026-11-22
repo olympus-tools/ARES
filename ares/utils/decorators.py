@@ -36,12 +36,12 @@ limitations under the License:
 # standard includes
 import inspect
 import logging
-import os
-import sys
 import traceback
 from collections.abc import Callable
 from functools import wraps
 from typing import Any
+
+from ares.utils.logger import create_logger
 
 
 def safely_run(
@@ -71,8 +71,6 @@ def safely_run(
         Callable: The decorated function with try/except.
     """
     if log is None:
-        from ares.utils.logger import create_logger
-
         logger = create_logger()
     else:
         logger = log
@@ -178,8 +176,6 @@ def error_msg(
         Callable: The decorated function with error context logging.
     """
     if log is None:
-        from ares.utils.logger import create_logger
-
         logger = create_logger()
     else:
         logger = log
@@ -245,25 +241,3 @@ def error_msg(
         return wrapper
 
     return wrap
-
-
-def typechecked_dev(func: Callable[..., Any]) -> Callable[..., Any]:
-    """Applies typeguard's @typechecked only in development mode.
-
-    In production or frozen environments (PyInstaller), this decorator
-    does nothing, allowing the code to run without runtime type checking.
-
-    Use ARES_DISABLE_TYPEGUARD=1 to disable type checking explicitly.
-
-    Args:
-        func (Callable): The function to decorate.
-
-    Returns:
-        Callable: The decorated function (with or without type checking).
-    """
-    if getattr(sys, "frozen", False) or os.environ.get("ARES_DISABLE_TYPEGUARD") == "1":
-        return func
-
-    from typeguard import typechecked
-
-    return typechecked(func)
