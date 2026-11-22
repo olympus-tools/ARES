@@ -73,8 +73,8 @@ def test_parameter_merge_progress_tracks_each_hash_combination(monkeypatch) -> N
     merge.ares_plugin(plugin_input)
 
     assert progress_factory.call_args_list == [
-        call("Parameter merge", total=4),
-        call("Data merge", total=0),
+        call("Parameter Merge", total=4),
+        call("Data Merge", total=0),
     ]
     assert tasks[0].advance.call_count == 4
     assert tasks[1].advance.call_count == 0
@@ -102,8 +102,8 @@ def test_data_merge_progress_tracks_each_hash_combination(monkeypatch) -> None:
     merge.ares_plugin(plugin_input)
 
     assert progress_factory.call_args_list == [
-        call("Parameter merge", total=0),
-        call("Data merge", total=4),
+        call("Parameter Merge", total=0),
+        call("Data Merge", total=4),
     ]
     assert tasks[0].advance.call_count == 0
     assert tasks[1].advance.call_count == 4

@@ -90,7 +90,7 @@ def ares_plugin(plugin_input: MergeElement):
 
     # create merged parameters and data for each hash combination
     with AresProgress(
-        "Parameter merge", total=len(parameter_dependency_lists)
+        "Parameter Merge", total=len(parameter_dependency_lists)
     ) as progress:
         for parameter_dependency_list in parameter_dependency_lists:
             logger.debug(
@@ -115,7 +115,7 @@ def ares_plugin(plugin_input: MergeElement):
             progress.advance()
 
     # create merged data for each hash combination
-    with AresProgress("Data merge", total=len(data_dependency_lists)) as progress:
+    with AresProgress("Data Merge", total=len(data_dependency_lists)) as progress:
         for data_dependency_list in data_dependency_lists:
             logger.debug(
                 "Merging data for each hash combination."

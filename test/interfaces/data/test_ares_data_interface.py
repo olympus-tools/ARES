@@ -573,7 +573,7 @@ class TestAresDataInterfaceWfElementHandler:
             output_dir=output_dir,
         )
 
-        progress_factory.assert_called_once_with("Data files", total=2)
+        progress_factory.assert_called_once_with("Writing Data Files", total=2)
         assert progress.advance.call_count == 2
 
 

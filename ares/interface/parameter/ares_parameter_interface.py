@@ -180,7 +180,7 @@ class AresParamInterface(ABC):
         match wf_element_value.mode:
             case "read":
                 with AresProgress(
-                    "Parameter files", total=len(wf_element_value.file_path)
+                    "Reading Parameter Files", total=len(wf_element_value.file_path)
                 ) as progress:
                     for file_path in wf_element_value.file_path:
                         cls.create(
@@ -202,7 +202,7 @@ class AresParamInterface(ABC):
                     len(hash_list) for hash_list in input_hash_lists
                 )
                 with AresProgress(
-                    "Parameter files", total=total_output_files
+                    "Writing Parameter Files", total=total_output_files
                 ) as progress:
                     for wf_element_hash_lists in input_hash_lists:
                         for output_hash in wf_element_hash_lists:

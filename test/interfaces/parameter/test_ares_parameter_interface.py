@@ -358,7 +358,7 @@ class TestAresParamInterfaceWfElementHandler:
             output_dir=output_dir,
         )
 
-        progress_factory.assert_called_once_with("Parameter files", total=2)
+        progress_factory.assert_called_once_with("Writing Parameter Files", total=2)
         assert progress.advance.call_count == 2
 
     def test_wf_element_handler_forwards_meta_data_to_save(self, tmp_path, monkeypatch):

@@ -40,6 +40,7 @@ import threading
 from types import TracebackType
 
 from rich.console import Console
+from rich.markup import escape
 from rich.progress import (
     BarColumn,
     Progress,
@@ -50,6 +51,8 @@ from rich.progress import (
 )
 
 from ares.utils.typechecked_dev import typechecked_dev as typechecked
+
+BAR_WIDTH = 80
 
 
 class AresProgress:
@@ -78,7 +81,7 @@ class AresProgress:
                 self.__class__._renderer = Progress(
                     SpinnerColumn(),
                     TextColumn("{task.description}"),
-                    BarColumn(),
+                    BarColumn(bar_width=BAR_WIDTH),
                     TextColumn("{task.completed:,.0f}/{task.total:,.0f}"),
                     TimeElapsedColumn(),
                     console=console,
@@ -88,6 +91,7 @@ class AresProgress:
                 )
 
             self._renderer = self.__class__._renderer
+            self._base_description = description
             self._task_id: TaskID = self._renderer.add_task(description, total=total)
             if self.__class__._active_tasks == 0:
                 self._renderer.start()
@@ -104,6 +108,20 @@ class AresProgress:
         if self._closed:
             return
         self._renderer.update(self._task_id, advance=amount)
+
+    @typechecked
+    def set_description(self, text: str) -> None:
+        """Append a variable text to the fixed description given at creation.
+
+        Args:
+            text: Variable part shown after the fixed description. Rich markup
+                characters are escaped and shown literally.
+        """
+        if self._closed:
+            return
+        self._renderer.update(
+            self._task_id, description=f"{self._base_description} {escape(text)}"
+        )
 
     @typechecked
     def __enter__(self) -> AresProgress:
@@ -138,7 +156,7 @@ class AresProgress:
                     task for task in self._renderer.tasks if task.id == self._task_id
                 )
                 self._renderer.update(
-                    self._task_id, description=f"{task.description} [failed]"
+                    self._task_id, description=f"{task.description.rstrip()} [failed]"
                 )
 
             self._closed = True

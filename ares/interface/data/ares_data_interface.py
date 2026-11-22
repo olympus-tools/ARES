@@ -192,7 +192,7 @@ class AresDataInterface(ABC):
         match wf_element_value.mode:
             case "read":
                 with AresProgress(
-                    "Data files", total=len(wf_element_value.file_path)
+                    "Reading Data Files", total=len(wf_element_value.file_path)
                 ) as progress:
                     for file_path in wf_element_value.file_path:
                         cls.create(
@@ -215,7 +215,9 @@ class AresDataInterface(ABC):
                 total_output_files = sum(
                     len(hash_list) for hash_list in input_hash_lists
                 )
-                with AresProgress("Data files", total=total_output_files) as progress:
+                with AresProgress(
+                    "Writing Data Files", total=total_output_files
+                ) as progress:
                     for wf_element_hash_lists in input_hash_lists:
                         for output_hash in wf_element_hash_lists:
                             if output_hash in cls.cache:

@@ -80,11 +80,16 @@ def pipeline(wf_path: Path, output_dir: Path | None, meta_data: dict[str, Any]) 
     param_storage: dict[str, AresParamInterface] = AresParamInterface.cache
     data_storage: dict[str, AresDataInterface] = AresDataInterface.cache
 
+    progress_label_width = max((len(name) for name in ares_wf.workflow), default=0)
+
     with AresProgress(
-        "Workflow elements", total=len(ares_wf.workflow.keys())
+        "Pipeline:", total=len(ares_wf.workflow.keys())
     ) as workflow_progress:
         # evaluation of all sinks, that were found in workflow json files
         for wf_element_value in ares_wf.workflow.values():
+            workflow_progress.set_description(
+                f"{wf_element_value.name:<{progress_label_width}}"
+            )
             logger_workflow_element.set(wf_element_value.name)
             logger.info(f"Processing workflow element: {wf_element_value.name}")
 

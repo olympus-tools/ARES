@@ -384,7 +384,7 @@ class SimUnit:
             progress_step = 0
             time_real_start = time.perf_counter()
             time_sim_start = float(timestamps[0]) if data else 0.0
-            with AresProgress("Simulation time steps", total=time_steps) as progress:
+            with AresProgress("Simulation Progress", total=time_steps) as progress:
                 for time_step_idx in range(time_steps):
                     self._write_base_elements_to_dll(
                         base_element_dict=mapped_data_dict,
@@ -893,7 +893,7 @@ def ares_plugin(plugin_input: SimUnitElement):
     total_variants = sum(
         len(parameter_list) for parameter_list in parameter_lists
     ) * sum(len(data_list) for data_list in data_lists)
-    with AresProgress("Simulation variants", total=total_variants) as progress:
+    with AresProgress("Simulation Variants", total=total_variants) as progress:
         for parameter_list in parameter_lists:
             for parameter_obj in parameter_list:
                 for data_list in data_lists:

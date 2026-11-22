@@ -38,6 +38,7 @@ from io import StringIO
 
 import pytest
 from rich.progress import TimeElapsedColumn
+from rich.text import Text
 
 from ares.utils.logger import AresStreamHandler
 from ares.utils.progress import AresProgress
@@ -106,6 +107,21 @@ def test_empty_progress_task_can_finish(monkeypatch: pytest.MonkeyPatch) -> None
         pass
 
     assert progress._renderer.tasks == []
+
+
+def test_set_description_updates_label_and_escapes_markup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Variable text is appended to the fixed description and escaped."""
+    monkeypatch.setattr("sys.stdout", StringIO())
+
+    with AresProgress("Pipeline:", total=2) as progress:
+        progress.set_description("data[raw]")
+        task = progress._renderer.tasks[0]
+        assert task.description == r"Pipeline: data\[raw]"
+        assert Text.from_markup(task.description).plain == "Pipeline: data[raw]"
+
+    progress.set_description("ignored after close")
 
 
 def test_negative_progress_total_is_rejected() -> None:
