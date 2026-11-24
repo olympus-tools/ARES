@@ -164,6 +164,7 @@ class MF4Handler(MDF, AresDataInterface):
         resample_tolerance: int | None = None,
         resample_method: str | None = None,
         vstack_pattern: list[VStackPatternElement] | None = None,
+        source_priority: list[str] | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
         """Get signals from mf4 file with optional resampling.
@@ -181,6 +182,9 @@ class MF4Handler(MDF, AresDataInterface):
                 Supported values depend on AresSignal, e.g. "linear", "cubic", "windowedsinc".
                 Defaults to None (treated as "linear").
             vstack_pattern (list[VStackPatternElement] | None): Pattern (regex) used to stack AresSignal's.
+            source_priority (list[str] | None): Source names ordered from highest to lowest
+                priority. If given, only one signal per label is kept before resampling.
+                Defaults to None (all occurrences are kept).
             **kwargs (Any): Additional arguments.
 
         Returns:
@@ -212,6 +216,13 @@ class MF4Handler(MDF, AresDataInterface):
             )
             tmp_data = self._vstack(data=tmp_data, vstack_pattern=vstack_pattern)
 
+        if source_priority is not None:
+            tmp_data = self._select_by_source_priority(
+                sim_data=tmp_data,
+                source_priority=source_priority,
+                exceptions=self._get_origin_sources(),
+            )
+
         if stepsize:
             logger.debug(f"Resampling all signals to: {stepsize} ms.")
             return self._resample(
@@ -222,6 +233,29 @@ class MF4Handler(MDF, AresDataInterface):
             )
         else:
             return tmp_data
+
+    @override
+    @typechecked
+    def get_sources(self) -> set[str | None]:
+        """Return the distinct source fields of all available signals.
+
+        Reads the sources from the channel metadata, so no samples are decoded.
+
+        Returns:
+            set[str | None]: Unique source values, including None for signals
+                without a source; empty if no signals are available.
+        """
+        labels = (
+            self._available_signals
+            if self._label_filter is None
+            else self._resolve_label_filter(label_filter=self._label_filter)
+        )
+        sources: set[str | None] = set()
+        for label in labels:
+            for group_index, channel_index in self.whereis(label):
+                source = self.groups[group_index].channels[channel_index].source
+                sources.add(source.path if source is not None else None)
+        return sources
 
     def _resolve_label_filter(
         self,

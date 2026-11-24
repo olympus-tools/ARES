@@ -43,6 +43,8 @@ from ares.interface.data.ares_data_interface import AresDataInterface
 from ares.interface.data.ares_signal import AresSignal
 from ares.interface.data.mf4_handler import MF4Handler
 from ares.interface.parameter.ares_parameter import AresParameter
+from ares.interface.parameter.ares_parameter_interface import AresParamInterface
+from ares.interface.parameter.jsonparam_handler import JSONParamHandler
 from ares.plugins.merge import (
     ares_plugin,
     get_all_hash_combinations,
@@ -327,3 +329,101 @@ def test_ares_plugin_common_source_mode_uses_common_source_helpers():
 
     assert get_common.call_count == 2
     get_all.assert_not_called()
+
+
+def _plugin_input(hash_lists_parameter, hash_lists_data):
+    """Builds a merge plugin input without label filters or resampling."""
+    return SimpleNamespace(
+        hash_lists_parameter=hash_lists_parameter,
+        hash_lists_data=hash_lists_data,
+        merge_mode=MergeMode.ALL,
+        allow_duplicates_data=False,
+        label_filter_parameter=None,
+        transpose_parameter=None,
+        label_filter_data=None,
+        vstack_pattern_data=None,
+        stepsize=None,
+        resample_method=None,
+        resample_tolerance=None,
+    )
+
+
+@pytest.mark.parametrize(
+    "reused_input, parameters_a, parameters_b",
+    [
+        # later input fully overrides the earlier one -> result equals input B
+        ("b", [("p", 1.0)], [("p", 2.0)]),
+        # later input adds nothing new -> result equals input A (pass-through)
+        ("a", [("p", 1.0), ("q", 2.0)], [("q", 2.0)]),
+    ],
+)
+def test_ares_plugin_parameter_merge_preserves_ancestry_of_reused_input(
+    reused_input, parameters_a, parameters_b
+):
+    """Tests that a merge result equal to an input reuses the cached instance
+    without rewriting its dependencies, so origin hashes stay valid."""
+    with (
+        patch.dict(AresParamInterface.cache, clear=True),
+        patch.dict(AresParamInterface._handlers, {".json": JSONParamHandler}),
+    ):
+        instance_a = AresParamInterface.create(
+            parameters=[
+                AresParameter(
+                    label=label,
+                    value=np.array([value]),
+                    source="ARES_DEFAULT_SOURCE",
+                )
+                for label, value in parameters_a
+            ]
+        )
+        instance_b = AresParamInterface.create(
+            parameters=[
+                AresParameter(
+                    label=label,
+                    value=np.array([value]),
+                    source="ARES_DEFAULT_SOURCE",
+                )
+                for label, value in parameters_b
+            ]
+        )
+        inputs = {"a": instance_a, "b": instance_b}
+
+        ares_plugin(_plugin_input([[instance_a.hash], [instance_b.hash]], []))
+
+        reused = inputs[reused_input]
+        assert set(AresParamInterface.cache) == {instance_a.hash, instance_b.hash}
+        assert reused.dependencies == []
+        assert reused.get_origin_hashes(AresParamInterface.cache) == {reused.hash}
+        assert get_common_source_hash_combinations(
+            [[reused.hash], [reused.hash]], AresParamInterface.cache
+        ) == [[reused.hash, reused.hash]]
+
+
+def test_ares_plugin_data_merge_preserves_ancestry_of_reused_input():
+    """Tests that a data merge equal to an input keeps the input's dependencies."""
+    timestamps = np.array([0.0, 0.01], dtype=np.float32)
+
+    def signal(label, value):
+        return AresSignal(
+            label=label,
+            timestamps=timestamps,
+            value=np.array([value, value], dtype=np.float32),
+            source="ARES_DEFAULT_SOURCE",
+        )
+
+    with (
+        patch.dict(AresDataInterface.cache, clear=True),
+        patch.dict(AresDataInterface._handlers, {".mf4": MF4Handler}),
+    ):
+        instance_a = AresDataInterface.create(data=[signal("s", 1.0)])
+        instance_b = AresDataInterface.create(data=[signal("s", 2.0)])
+
+        ares_plugin(_plugin_input([], [[instance_a.hash], [instance_b.hash]]))
+
+        # the merge result equals input B, so no new instance may be created
+        assert set(AresDataInterface.cache) == {instance_a.hash, instance_b.hash}
+        assert instance_a.dependencies == []
+        assert instance_b.dependencies == []
+        assert instance_b.get_origin_hashes(AresDataInterface.cache) == {
+            instance_b.hash
+        }

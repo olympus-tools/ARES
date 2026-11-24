@@ -42,9 +42,9 @@ from ares.interface.data.ares_signal import AresSignal
 from ares.interface.parameter.ares_parameter import AresParameter
 from ares.interface.parameter.ares_parameter_interface import AresParamInterface
 from ares.pydantic_models.workflow_model import MergeElement, MergeMode
-from ares.utils.decorators import typechecked_dev as typechecked
 from ares.utils.logger import create_logger
 from ares.utils.progress import AresProgress
+from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 logger = create_logger(name=__name__)
 

@@ -106,7 +106,7 @@ def calculate_hash(
     logger.error(
         "For calculation of hash, either file_path or interface_objects must be provided."
     )
-    raise
+    raise ValueError
 
 
 @error_msg(
@@ -183,6 +183,6 @@ def object_based_hash(interface_objects: list[Any]) -> str:
                 logger.error(
                     f"Cannot hash field '{field.name}' of type {type(value)!r}."
                 )
-                raise
+                raise TypeError
 
     return hasher.hexdigest()

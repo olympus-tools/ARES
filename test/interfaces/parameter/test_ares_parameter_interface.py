@@ -440,3 +440,46 @@ class TestAresParamInterfaceIntegration:
         result = instance.get(label_filter=["param1"])
         assert len(result) == 1
         assert result[0].label == "param1"
+
+
+def _parameter(label, source, value=1.0):
+    """Builds a parameter with the given label and source."""
+    return AresParameter(label=label, value=np.array(value), source=source)
+
+
+def test_select_by_source_priority_uses_highest_priority_source():
+    """Tests that the first listed source wins and unique labels are kept."""
+    parameters = [
+        _parameter("gain", "secondary", 1.0),
+        _parameter("offset", "primary", 2.0),
+        _parameter("gain", "primary", 3.0),
+    ]
+
+    selected = AresParamInterface._select_by_source_priority(
+        parameters=parameters, source_priority=["secondary", "primary"]
+    )
+
+    assert [(p.label, p.source) for p in selected] == [
+        ("gain", "secondary"),
+        ("offset", "primary"),
+    ]
+
+
+def test_select_by_source_priority_warns_and_uses_first_unmatched_source(caplog):
+    """Tests that unmatched duplicate labels warn and retain the first candidate."""
+    parameters = [_parameter("gain", "unlisted_a"), _parameter("gain", "unlisted_b")]
+
+    with caplog.at_level("WARNING"):
+        selected = AresParamInterface._select_by_source_priority(
+            parameters=parameters, source_priority=["primary"]
+        )
+
+    assert selected == [parameters[0]]
+    assert "Using the first parameter from source 'unlisted_a'" in caplog.text
+
+
+def test_select_by_source_priority_without_priority_keeps_all_parameters():
+    """Tests that no priority leaves the parameters untouched."""
+    parameters = [_parameter("gain", "a"), _parameter("gain", "b")]
+
+    assert AresParamInterface._select_by_source_priority(parameters) == parameters

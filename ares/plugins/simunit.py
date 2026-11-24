@@ -57,9 +57,6 @@ from ares.pydantic_models.workflow_model import SimUnitElement
 from ares.utils.decorators import error_msg, safely_run
 from ares.utils.logger import create_logger
 from ares.utils.progress import AresProgress
-from ares.utils.select_signals_by_source_priority import (
-    select_signals_by_source_priority,
-)
 from ares.utils.typechecked_dev import typechecked_dev as typechecked
 
 logger = create_logger(name=__name__)
@@ -909,21 +906,8 @@ def ares_plugin(plugin_input: SimUnitElement):
                             vstack_pattern=plugin_input.vstack_pattern,
                             resample_method=plugin_input.resample_method,
                             resample_tolerance=plugin_input.resample_tolerance,
+                            source_priority=plugin_input.source_priority,
                         )
-                        if sim_data is not None:
-                            origin_sources: set[str | None] = set()
-                            for origin_hash in data_obj.get_origin_hashes(
-                                cache=AresDataInterface.cache
-                            ):
-                                origin_sources.update(
-                                    AresDataInterface.cache[origin_hash].get_sources()
-                                )
-
-                            sim_data = select_signals_by_source_priority(
-                                sim_data=sim_data,
-                                source_priority=plugin_input.source_priority,
-                                exceptions=origin_sources,
-                            )
 
                         sim_result = sim_unit.run(
                             data=sim_data,

@@ -33,6 +33,7 @@ limitations under the License:
     https://github.com/olympus-tools/ARES/blob/master/LICENSE
 """
 
+import logging
 from dataclasses import dataclass
 from unittest.mock import MagicMock
 
@@ -214,7 +215,7 @@ class TestAresDataInterfaceCalculateHash:
         )
 
     def test_calculate_hash_no_args_raises(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             calculate_hash()
 
     def test_calculate_hash_consistency(self, tmp_path):
@@ -252,7 +253,7 @@ class TestAresDataInterfaceCalculateHash:
             timestamps=np.array([0.0, 1.0], dtype=np.float32),
             value=np.array([1.0, 2.0], dtype=np.float32),
         )
-        with pytest.raises(RuntimeError):
+        with pytest.raises(TypeError):
             calculate_hash(interface_objects=[signal])
 
 
@@ -332,7 +333,7 @@ class TestAresDataInterfaceResample:
         assert np.array_equal(result[0].timestamps, result[1].timestamps)
 
     def test_resample_empty_signal_list(self):
-        with pytest.raises(RuntimeError):
+        with pytest.raises(ValueError):
             AresDataInterface._resample([], stepsize=100)
 
 
@@ -459,8 +460,8 @@ class TestAresDataInterfaceVstack:
             ),
             AresSignal(
                 label="data_1",
-                timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
-                value=np.array([3.0, 4.0, 5.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                value=np.array([[3.0, 4.0], [5.0, 6.0]], dtype=np.float32),
             ),
         ]
         pattern = [VStackPatternElement(pattern="data_(\\d+)", signal_name="data")]
@@ -696,3 +697,109 @@ class TestAresDataInterfaceIntegration:
         )
 
         assert combinations == [[source.hash, derived.hash]]
+
+
+def test_select_by_source_priority_uses_pipeline_order():
+    """Tests that the first source passed by the pipeline has highest priority."""
+    signals = [
+        AresSignal(
+            label="vehicle_speed",
+            source="secondary",
+            timestamps=np.array([0.0]),
+            value=np.array([10.0]),
+        ),
+        AresSignal(
+            label="engine_speed",
+            source="primary",
+            timestamps=np.array([0.0]),
+            value=np.array([20.0]),
+        ),
+        AresSignal(
+            label="vehicle_speed",
+            source="primary",
+            timestamps=np.array([0.0]),
+            value=np.array([30.0]),
+        ),
+    ]
+
+    selected = AresDataInterface._select_by_source_priority(
+        sim_data=signals,
+        source_priority=["secondary", "primary"],
+    )
+
+    assert [(signal.label, signal.source) for signal in selected] == [
+        ("vehicle_speed", "secondary"),
+        ("engine_speed", "primary"),
+    ]
+
+
+def test_select_by_source_priority_warns_and_uses_first_unmatched_source(caplog):
+    """Tests that unmatched duplicate labels warn and retain the first candidate."""
+    signals = [
+        AresSignal(
+            label="vehicle_speed",
+            source="unlisted_a",
+            timestamps=np.array([0.0]),
+            value=np.array([10.0]),
+        ),
+        AresSignal(
+            label="vehicle_speed",
+            source="unlisted_b",
+            timestamps=np.array([0.0]),
+            value=np.array([20.0]),
+        ),
+    ]
+
+    with caplog.at_level(logging.WARNING):
+        selected = AresDataInterface._select_by_source_priority(
+            sim_data=signals,
+            source_priority=["secondary", "primary"],
+        )
+
+    assert selected == [signals[0]]
+    assert "vehicle_speed" in caplog.text
+    assert "unlisted_a" in caplog.text
+    assert "unlisted_b" in caplog.text
+    assert "Using the first signal from source 'unlisted_a'" in caplog.text
+
+
+def test_select_by_source_priority_keeps_unique_unmatched_signal():
+    """Tests that a unique signal is retained even when its source is unlisted."""
+    signal = AresSignal(
+        label="vehicle_speed",
+        source="unlisted",
+        timestamps=np.array([0.0]),
+        value=np.array([10.0]),
+    )
+
+    selected = AresDataInterface._select_by_source_priority(
+        sim_data=[signal],
+        source_priority=["secondary", "primary"],
+    )
+
+    assert selected == [signal]
+
+
+def test_select_by_source_priority_falls_back_without_pipeline_sources(caplog):
+    """Tests that duplicate labels fall back when the source priority is empty."""
+    signals = [
+        AresSignal(
+            label="vehicle_speed",
+            source="source_a",
+            timestamps=np.array([0.0]),
+            value=np.array([10.0]),
+        ),
+        AresSignal(
+            label="vehicle_speed",
+            source="source_b",
+            timestamps=np.array([0.0]),
+            value=np.array([20.0]),
+        ),
+    ]
+
+    with caplog.at_level(logging.WARNING):
+        selected = AresDataInterface._select_by_source_priority(signals, [])
+
+    assert selected == [signals[0]]
+    assert "source_a" in caplog.text
+    assert "source_b" in caplog.text

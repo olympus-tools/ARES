@@ -124,6 +124,19 @@ def test_ares_signal_wrong_timestamps_type():
     assert np.array_equal(signal.timestamps, np.array([1, 2, 3, 4], dtype=np.float32))
 
 
+def test_ares_signal_converts_list_timestamps():
+    """Test that list timestamps are normalized to a float32 NumPy array."""
+    signal = AresSignal(
+        label="test_signal",
+        timestamps=[0, 1, 2],
+        value=np.array([1, 2, 3], dtype=np.float32),
+    )
+
+    assert isinstance(signal.timestamps, np.ndarray)
+    assert signal.timestamps.dtype == np.dtype(np.float32)
+    assert signal.fs == np.float32(1)
+
+
 def test_ares_signal_wrong_dimension():
     """
     Test if ValueError is raised for wrong dimension.
@@ -385,15 +398,15 @@ def test_ares_signal_wrong_timestamps_type():
 
 def test_ares_signal_wrong_dimension():
     """
-    Test if RuntimeError is raised for wrong dimension.
+    Test if ValueError is raised for wrong dimension.
     """
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         AresSignal(
             label="test_signal",
             timestamps=np.array([[1, 2], [3, 4]], dtype=np.float32),
             value=np.array([1, 2, 3, 4], dtype=np.float32),
         )
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         AresSignal(
             label="test_signal",
             timestamps=np.array([1, 2, 3, 4], dtype=np.float32),
@@ -607,7 +620,7 @@ def test_ares_signal_cut_invalid_mode():
         value=np.array([0, 1, 2, 3], dtype=np.float32),
     )
 
-    with pytest.raises(RuntimeError):
+    with pytest.raises(ValueError):
         test_signal.cut(start=0, end=1, mode="bogus")
 
 

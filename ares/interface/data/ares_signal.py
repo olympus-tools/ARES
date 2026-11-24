@@ -82,6 +82,8 @@ class AresSignal:
         the first dimension of ``value``.
         """
 
+        self.timestamps = np.asarray(self.timestamps)
+
         if self.timestamps.shape[0] > 1:
             self.timestamps = np.linspace(
                 self.timestamps[0],
@@ -99,7 +101,7 @@ class AresSignal:
                 f"Signal '{self.label}' has timestamps with dtype {self.timestamps.dtype}, "
                 f"expected a floating-point dtype."
             )
-            raise
+            raise TypeError
         if self.timestamps.ndim != 1 or (
             self.value.ndim >= 0 and self.timestamps.shape[0] != self.value.shape[0]
         ):
@@ -107,7 +109,7 @@ class AresSignal:
                 f"Signal '{self.label}' has mismatched timestamps and value array shapes: "
                 f"timestamps shape {self.timestamps.shape}, value shape {self.value.shape}."
             )
-            raise
+            raise ValueError
 
     @typechecked
     def _cast(
@@ -469,7 +471,7 @@ class AresSignal:
             i, j = int(start), int(end)
         else:
             logger.error(f"Invalid cut mode: '{mode}'. Supported: 'time', 'index'.")
-            raise
+            raise ValueError
 
         if i > 0 or j < self.shape[0] - 1:
             logger.debug(
