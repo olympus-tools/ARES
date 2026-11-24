@@ -35,9 +35,11 @@ limitations under the License:
 
 import os
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
+from asammdf import MDF, Signal
 from asammdf.blocks.utils import MdfException
 
 from ares.interface.data.ares_signal import AresSignal
@@ -175,6 +177,27 @@ def test_ares_mf4handler_add_explicit():
     assert len(result) == 2, "Exactly two signals should be present."
 
 
+def test_ares_mf4handler_add_unequal_lengths_uses_separate_timebases():
+    """Test that unequal signal lengths are written on separate timebases."""
+    signal_a = AresSignal(
+        label="sig_a",
+        timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
+        value=np.array([10.0, 20.0, 30.0], dtype=np.float64),
+    )
+    signal_b = AresSignal(
+        label="sig_b",
+        timestamps=np.array([0.0, 1.0], dtype=np.float32),
+        value=np.array([1, 2], dtype=np.int32),
+    )
+
+    handler = MF4Handler(file_path=None)
+    with patch.object(handler, "append") as append:
+        handler.add(data=[signal_a, signal_b])
+
+    assert append.call_count == 2
+    assert all(call.kwargs["common_timebase"] is True for call in append.call_args_list)
+
+
 def test_ares_mf4handler_add_2d_signal():
     """
     Test if mf4handler.add() correctly handles 2D signals (1D array per timestep).
@@ -243,20 +266,22 @@ def test_ares_mf4handler_add_4d_signal():
     assert result[0].value.shape == value_4d.shape, "Array shape must be preserved."
 
 
-def test_ares_mf4handler_add_deduplication():
+def test_ares_mf4handler_add_keeps_duplicate_labels():
     """
-    Test if mf4handler.add() deduplicates signals with the same label,
-    keeping the last occurrence.
+    Test if mf4handler.add() keeps every signal sharing a label, so that
+    duplicates from different sources can be resolved by the consumer.
     """
     signal_first = AresSignal(
         label="dup_signal",
         timestamps=np.array([0.0, 1.0], dtype=np.float32),
         value=np.array([1.0, 2.0], dtype=np.float32),
+        source="source_a",
     )
     signal_last = AresSignal(
         label="dup_signal",
         timestamps=np.array([0.0, 1.0], dtype=np.float32),
         value=np.array([99.0, 100.0], dtype=np.float32),
+        source="source_b",
     )
 
     handler = MF4Handler(file_path=None, data=[signal_first, signal_last])
@@ -264,10 +289,157 @@ def test_ares_mf4handler_add_deduplication():
 
     assert result is not None, "get() must return signals."
     dup_signals = [s for s in result if s.label == "dup_signal"]
-    assert len(dup_signals) == 1, "Duplicate signals must be deduplicated to one."
-    assert np.array_equal(dup_signals[0].value, signal_last.value), (
-        "The last occurrence of the duplicate signal must be kept."
+    assert len(dup_signals) == 2, "Every duplicate occurrence must be kept once."
+    assert {s.source: s.value.tolist() for s in dup_signals} == {
+        "source_a": [1.0, 2.0],
+        "source_b": [99.0, 100.0],
+    }
+
+
+def test_ares_mf4handler_duplicate_labels_survive_save_and_load(tmp_path: Path):
+    """Tests that scalar and array duplicates with different sources round-trip."""
+    timestamps = np.array([0.0, 1.0], dtype=np.float32)
+    signals = [
+        AresSignal(
+            label="scalar",
+            timestamps=timestamps,
+            value=np.array([1.0, 2.0], dtype=np.float32),
+            source="source_a",
+        ),
+        AresSignal(
+            label="array",
+            timestamps=timestamps,
+            value=np.zeros((2, 2, 3), dtype=np.float32),
+            source="source_a",
+        ),
+        AresSignal(
+            label="scalar",
+            timestamps=timestamps,
+            value=np.array([3.0, 4.0], dtype=np.float32),
+            source="source_b",
+        ),
+        AresSignal(
+            label="array",
+            timestamps=timestamps,
+            value=np.ones((2, 2, 3), dtype=np.float32),
+            source="source_b",
+        ),
+    ]
+    file_path = tmp_path / "duplicates.mf4"
+
+    MF4Handler(file_path=None, data=signals)._save(output_path=file_path)
+    handler = MF4Handler(file_path=file_path)
+    result = handler.get(label_filter=["^scalar$", "^array$"])
+    handler.close()
+
+    assert result is not None
+    by_key = {(s.label, s.source): s.value for s in result}
+    assert len(result) == 4
+    assert by_key[("scalar", "source_a")].tolist() == [1.0, 2.0]
+    assert by_key[("scalar", "source_b")].tolist() == [3.0, 4.0]
+    assert np.array_equal(by_key[("array", "source_a")], np.zeros((2, 2, 3)))
+    assert np.array_equal(by_key[("array", "source_b")], np.ones((2, 2, 3)))
+
+
+def test_ares_mf4handler_vstack_separates_sources_and_timebases():
+    """Tests that vstack does not combine arrays across sources or timebases."""
+    from ares.pydantic_models.workflow_model import VStackPatternElement
+
+    timestamps = np.array([0.0, 1.0], dtype=np.float32)
+    other_timestamps = np.array([0.0, 1.0, 2.0], dtype=np.float32)
+    signals = [
+        AresSignal(
+            label=f"array_{index}",
+            timestamps=signal_timestamps,
+            value=np.array(values, dtype=np.float32),
+            source=source,
+        )
+        for source, signal_timestamps, arrays in [
+            ("source_a", timestamps, [[1.0, 2.0], [3.0, 4.0]]),
+            ("source_b", timestamps, [[10.0, 20.0], [30.0, 40.0]]),
+            (
+                "source_a",
+                other_timestamps,
+                [[100.0, 200.0, 300.0], [400.0, 500.0, 600.0]],
+            ),
+        ]
+        for index, values in enumerate(arrays)
+    ]
+    handler = MF4Handler(file_path=None, data=signals)
+
+    result = handler.get(
+        vstack_pattern=[
+            VStackPatternElement(pattern=r"(array)_([0-9]+)", signal_name=1, axes=[2])
+        ]
     )
+
+    assert result is not None
+    stacked = {
+        (signal.source, tuple(signal.timestamps.tolist())): signal
+        for signal in result
+        if signal.label == "array"
+    }
+    assert set(stacked) == {
+        ("source_a", (0.0, 1.0)),
+        ("source_b", (0.0, 1.0)),
+        ("source_a", (0.0, 1.0, 2.0)),
+    }
+    assert np.array_equal(
+        stacked[("source_a", (0.0, 1.0))].value,
+        np.array([[1.0, 3.0], [2.0, 4.0]], dtype=np.float32),
+    )
+    assert np.array_equal(
+        stacked[("source_b", (0.0, 1.0))].value,
+        np.array([[10.0, 30.0], [20.0, 40.0]], dtype=np.float32),
+    )
+    assert np.array_equal(
+        stacked[("source_a", (0.0, 1.0, 2.0))].value,
+        np.array([[100.0, 400.0], [200.0, 500.0], [300.0, 600.0]], dtype=np.float32),
+    )
+
+
+def test_ares_mf4handler_get_reads_single_and_duplicate_channels(tmp_path: Path):
+    """Tests that a filter returns single channels and every duplicate occurrence."""
+    file_path = tmp_path / "duplicate_channels.mf4"
+    mdf = MDF(version="4.10")
+    mdf.append(
+        [
+            Signal(
+                samples=np.array([7.0, 8.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                name="single_signal",
+            ),
+            Signal(
+                samples=np.array([1.0, 2.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0], dtype=np.float32),
+                name="dup_signal",
+            ),
+        ]
+    )
+    mdf.append(
+        [
+            Signal(
+                samples=np.array([99.0, 100.0, 101.0], dtype=np.float32),
+                timestamps=np.array([0.0, 1.0, 2.0], dtype=np.float32),
+                name="dup_signal",
+            )
+        ]
+    )
+    mdf.save(file_path)
+    mdf.close()
+
+    handler = MF4Handler(file_path=file_path)
+    result = handler.get(label_filter=["single_signal", "dup_signal"])
+    handler.close()
+
+    assert result is not None
+    assert len(result) == 3
+    single_signal = next(signal for signal in result if signal.label == "single_signal")
+    duplicate_signals = [
+        signal.value.tolist() for signal in result if signal.label == "dup_signal"
+    ]
+    assert single_signal.value.tolist() == [7.0, 8.0]
+    assert duplicate_signals == [[1.0, 2.0], [99.0, 100.0, 101.0]]
 
 
 def test_ares_mf4handler_get_no_match_returns_none():
@@ -315,6 +487,59 @@ def test_ares_mf4handler_get_with_stepsize():
         assert np.array_equal(sig.timestamps, ref_timestamps), (
             "All resampled signals must share a common time vector."
         )
+
+
+def test_ares_mf4handler_get_resolves_source_priority_before_resampling():
+    """
+    Test if mf4handler.get() applies the source priority before resampling, so that a
+    discarded short duplicate does not truncate the preferred signal.
+    """
+    short_timestamps = np.arange(0.0, 1.05, 0.1, dtype=np.float32)
+    long_timestamps = np.arange(0.0, 10.05, 0.1, dtype=np.float32)
+    signals = [
+        AresSignal(
+            label="speed",
+            timestamps=short_timestamps,
+            value=np.ones_like(short_timestamps),
+            source="secondary",
+        ),
+        AresSignal(
+            label="speed",
+            timestamps=long_timestamps,
+            value=np.ones_like(long_timestamps),
+            source="primary",
+        ),
+    ]
+
+    handler = MF4Handler(file_path=None, data=signals)
+    result = handler.get(stepsize=100, source_priority=["primary", "secondary"])
+
+    assert result is not None, "get() with source_priority must return signals."
+    assert [s.source for s in result] == ["primary"], "Only the preferred source stays."
+    assert result[0].timestamps[-1] == np.float32(10.0), (
+        "The preferred signal must not be cut to the overlap with discarded duplicates."
+    )
+
+
+def test_ares_mf4handler_get_sources_reads_metadata_without_decoding_samples():
+    """
+    Test if mf4handler.get_sources() returns the same sources as get() while
+    respecting the label filter and without decoding any signal samples.
+    """
+    timestamps = np.array([0.0, 1.0], dtype=np.float32)
+    signals = [
+        AresSignal(label="a", timestamps=timestamps, value=timestamps, source="s1"),
+        AresSignal(label="a", timestamps=timestamps, value=timestamps, source="s2"),
+        AresSignal(label="b", timestamps=timestamps, value=timestamps, source="s3"),
+    ]
+
+    handler = MF4Handler(file_path=None, data=signals, label_filter=["^a$"])
+    expected = {signal.source for signal in handler.get()}
+
+    with patch.object(MF4Handler, "_get_signals", side_effect=AssertionError):
+        sources = handler.get_sources()
+
+    assert sources == expected == {"s1", "s2"}
 
 
 def test_ares_mf4handler_get_with_vstack_pattern():

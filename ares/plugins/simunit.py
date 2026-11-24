@@ -677,9 +677,9 @@ class SimUnit:
         dimension). For signals, provide ``time_step_idx`` to index into the value array.
 
         Args:
-            base_element_dict (dict[str, AresSignal | AresParameter]): Dictionary of
+            base_element_dict (Mapping[str, AresSignal | AresParameter]): Mapping of
                 AresSignal or AresParameter objects keyed by label.
-            dd_scope (dict[str, SignalElement | ParameterModel]): The corresponding
+            dd_scope (Mapping[str, SignalElement | ParameterModel]): The corresponding
                 section from the Data Dictionary (signals or parameters).
             time_step_idx (int | None): Time step index for signal values. Use ``None``
                 for parameters which have no time dimension.
@@ -836,7 +836,7 @@ class SimUnit:
         dtypes are skipped as they cannot represent these special values.
 
         Args:
-            interface_dict (dict[str, AresSignal | AresParameter]): Dictionary of
+            interface_dict (Mapping[str, AresSignal | AresParameter]): Mapping of
                 AresSignal or AresParameter objects to validate.
             direction (Literal["Input", "Output"]): Direction context used in warning
                 messages to indicate whether the affected variable is an input or output.
@@ -900,14 +900,17 @@ def ares_plugin(plugin_input: SimUnitElement):
                     for data_obj in data_list:
                         dependencies = [parameter_obj.hash, data_obj.hash]
 
+                        sim_data = data_obj.get(
+                            stepsize=plugin_input.stepsize,
+                            label_filter=label_filter_signal,
+                            vstack_pattern=plugin_input.vstack_pattern,
+                            resample_method=plugin_input.resample_method,
+                            resample_tolerance=plugin_input.resample_tolerance,
+                            source_priority=plugin_input.source_priority,
+                        )
+
                         sim_result = sim_unit.run(
-                            data=data_obj.get(
-                                stepsize=plugin_input.stepsize,
-                                label_filter=label_filter_signal,
-                                vstack_pattern=plugin_input.vstack_pattern,
-                                resample_method=plugin_input.resample_method,
-                                resample_tolerance=plugin_input.resample_tolerance,
-                            ),
+                            data=sim_data,
                             parameters=parameter_obj.get(
                                 label_filter=label_filter_parameter,
                                 transpose=plugin_input.transpose_parameter,
@@ -918,6 +921,10 @@ def ares_plugin(plugin_input: SimUnitElement):
                             AresDataInterface.create(
                                 data=sim_result,
                                 dependencies=dependencies,
-                                stepsize=plugin_input.stepsize,
+                            )
+                        else:
+                            logger.warning(
+                                f"Simulation returned no result for parameter hash '{parameter_obj.hash}' "
+                                f"and data hash '{data_obj.hash}'."
                             )
                         progress.advance()

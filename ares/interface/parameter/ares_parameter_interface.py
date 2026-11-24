@@ -34,6 +34,7 @@ limitations under the License:
 """
 
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from pathlib import Path
 from typing import ClassVar
 
@@ -123,17 +124,62 @@ class AresParamInterface(ABC):
 
         Args:
             file_path (Path | None): Path to the parameter file to load
-            dependencies (list[str] | None): Optional list of parameter labels that this instance depends on
+            dependencies (list[str] | None): Optional list of parameter labels that this instance depends on.
+                Only applied on first initialization; a cached (flyweight) instance
+                keeps its original dependencies when re-initialized.
             label_filter (list[str] | None): Optional list of parameter names or patterns to filter
             transpose (bool | None): Whether to transpose 2D parameters. If None,
                 parameters are not transposed by default.
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(
-            self, "dependencies", dependencies if dependencies is not None else []
-        )
+        if not hasattr(self, "dependencies"):
+            object.__setattr__(
+                self, "dependencies", dependencies if dependencies is not None else []
+            )
         object.__setattr__(self, "_label_filter", label_filter)
         object.__setattr__(self, "_transpose", transpose)
+
+    @typechecked
+    def get_origin_hashes(
+        self,
+        cache: Mapping[str, "AresParamInterface"],
+        visited: set[str] | None = None,
+    ) -> set[str]:
+        """Return the source hashes in this object's parameter dependency tree.
+
+        Args:
+            cache (Mapping[str, AresParamInterface]): Cache used to resolve parameter
+                dependencies.
+            visited (set[str] | None): Hashes already visited during recursion.
+
+        Returns:
+            set[str]: Hashes of the root parameter objects in the dependency tree.
+        """
+        visited = set() if visited is None else visited
+        if self.hash in visited:
+            return set()
+        visited.add(self.hash)
+
+        dependencies = [
+            cache[dependency] for dependency in self.dependencies if dependency in cache
+        ]
+        if not dependencies:
+            return {self.hash}
+
+        origin_hashes: set[str] = set()
+        for dependency in dependencies:
+            origin_hashes.update(dependency.get_origin_hashes(cache, visited))
+        return origin_hashes
+
+    @typechecked
+    def get_sources(self) -> set[str | None]:
+        """Return the distinct source fields of all available parameters.
+
+        Returns:
+            set[str | None]: Unique source values, including None for parameters
+                without a source; empty if no parameters are available.
+        """
+        return {parameter.source for parameter in (self.get() or [])}
 
     @classmethod
     @typechecked
@@ -259,7 +305,7 @@ class AresParamInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _filter_deduplicates(
+    def _filter_duplicates(
         parameters: list[AresParameter],
     ) -> list[AresParameter]:
         """Remove duplicate parameters by label, keeping the last occurrence.
@@ -283,6 +329,85 @@ class AresParamInterface(ABC):
             parameters_filtered[param.label] = param
         return list(parameters_filtered.values())
 
+    def _get_origin_sources(self) -> set[str | None]:
+        """Return the sources of all origin parameter objects of this instance.
+
+        Returns:
+            set[str | None]: Distinct parameter sources found in the origin parameter objects.
+        """
+        origin_sources: set[str | None] = set()
+        for origin_hash in self.get_origin_hashes(cache=self.cache):
+            origin_sources.update(self.cache[origin_hash].get_sources())
+        return origin_sources
+
+    @staticmethod
+    @typechecked
+    def _select_by_source_priority(
+        parameters: list[AresParameter],
+        source_priority: list[str] | None = None,
+        exceptions: set[str | None] | None = None,
+    ) -> list[AresParameter]:
+        """Keep the highest-priority parameter for each label.
+
+        If no source matches the priority list, use the first parameter. Only warn
+        when that parameter's source is not among the warning exceptions.
+
+        Args:
+            parameters (list[AresParameter]): Parameters retrieved for a simulation.
+            source_priority (list[str] | None): Source names ordered from highest to
+                lowest priority. If None, no priority is applied.
+            exceptions (set[str | None] | None): Sources exempt from warnings when
+                an unmatched parameter is selected. Defaults to no exceptions.
+
+        Returns:
+            list[AresParameter]: At most one parameter per label, selected using the
+                configured source priority.
+        """
+        if source_priority is not None:
+            parameters_by_label: dict[str, list[AresParameter]] = {}
+            for parameter in parameters:
+                if parameter.label not in parameters_by_label:
+                    parameters_by_label[parameter.label] = []
+                parameters_by_label[parameter.label].append(parameter)
+
+            selected_parameters: list[AresParameter] = []
+            for label, candidates in parameters_by_label.items():
+                if len(candidates) == 1:
+                    selected_parameters.append(candidates[0])
+                    continue
+
+                selected_parameter = None
+                for source in source_priority:
+                    for parameter in candidates:
+                        if parameter.source == source:
+                            selected_parameter = parameter
+                            break
+                    if selected_parameter is not None:
+                        break
+
+                if selected_parameter is None:
+                    selected_parameter = candidates[0]
+                    if (
+                        exceptions is None
+                        or selected_parameter.source not in exceptions
+                    ):
+                        available_sources = []
+                        for parameter in candidates:
+                            if parameter.source not in available_sources:
+                                available_sources.append(parameter.source)
+                        logger.warning(
+                            f"No parameter for label '{label}' matched source priority "
+                            f"{source_priority}. Available sources: {available_sources}. "
+                            f"Using the first parameter from source '{selected_parameter.source}'."
+                        )
+
+                selected_parameters.append(selected_parameter)
+
+        else:
+            selected_parameters = parameters
+
+        return selected_parameters
+
     @abstractmethod
     def get(
         self, label_filter: list[str] | None = None, **kwargs
@@ -294,7 +419,8 @@ class AresParamInterface(ABC):
             **kwargs (Any): Additional format-specific arguments
 
         Returns:
-            list[AresParameter]: List of all AresParameter objects stored in the interface
+            list[AresParameter] | None: Parameters stored in the interface, or ``None``
+                if no parameters are available.
         """
         pass
 

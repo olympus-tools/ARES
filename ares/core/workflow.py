@@ -183,7 +183,7 @@ class Workflow:
                 logger.error(
                     f"Failed to determine execution path for sink '{wf_sink}'.",
                 )
-                raise
+                raise ValueError
             for step in path:
                 if step not in workflow_order:
                     workflow_order.append(step)

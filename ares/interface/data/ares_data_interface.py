@@ -37,6 +37,7 @@ import logging
 import re
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Mapping
 from pathlib import Path
 from typing import ClassVar
 
@@ -121,10 +122,7 @@ class AresDataInterface(ABC):
         file_path: Path | None = None,
         dependencies: list[str] | None = None,
         vstack_pattern: list[VStackPatternElement] | None = None,
-        stepsize: int | None = None,
         label_filter: list[str] | None = None,
-        resample_method: str | None = None,
-        resample_tolerance: int | None = None,
     ):
         """Initialize base attributes for all data handlers.
 
@@ -132,22 +130,61 @@ class AresDataInterface(ABC):
 
         Args:
             file_path (Path | None): Path to the data file to load
-            dependencies (list[str] | None): List of dependencies for this data handler
+            dependencies (list[str] | None): List of dependencies for this data handler.
+                Only applied on first initialization; a cached (flyweight) instance
+                keeps its original dependencies when re-initialized.
             vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
-            stepsize (int | None): Step size for resampling signals. If None, no resampling is performed. Defaults to None.
             label_filter (list[str] | None): List of signal names to filter when retrieving data
-            resample_method (str | None): Resampling method for signals. Defaults to None.
-            resample_tolerance (int | None): Tolerance for resampling signals. Defaults to None.
         """
         object.__setattr__(self, "_file_path", file_path)
-        object.__setattr__(
-            self, "dependencies", dependencies if dependencies is not None else []
-        )
-        object.__setattr__(self, "stepsize", stepsize)
+        if not hasattr(self, "dependencies"):
+            object.__setattr__(
+                self, "dependencies", dependencies if dependencies is not None else []
+            )
         object.__setattr__(self, "_label_filter", label_filter)
         object.__setattr__(self, "_vstack_pattern", vstack_pattern)
-        object.__setattr__(self, "_resample_method", resample_method)
-        object.__setattr__(self, "_resample_tolerance", resample_tolerance)
+
+    @typechecked
+    def get_origin_hashes(
+        self,
+        cache: Mapping[str, "AresDataInterface"],
+        visited: set[str] | None = None,
+    ) -> set[str]:
+        """Return the source hashes in this object's data dependency tree.
+
+        Args:
+            cache (Mapping[str, AresDataInterface]): Cache used to resolve data
+                dependencies.
+            visited (set[str] | None): Hashes already visited during recursion.
+
+        Returns:
+            set[str]: Hashes of the root data objects in the dependency tree.
+        """
+        visited = set() if visited is None else visited
+        if self.hash in visited:
+            return set()
+        visited.add(self.hash)
+
+        dependencies = [
+            cache[dependency] for dependency in self.dependencies if dependency in cache
+        ]
+        if not dependencies:
+            return {self.hash}
+
+        origin_hashes: set[str] = set()
+        for dependency in dependencies:
+            origin_hashes.update(dependency.get_origin_hashes(cache, visited))
+        return origin_hashes
+
+    @typechecked
+    def get_sources(self) -> set[str | None]:
+        """Return the distinct source fields of all available signals.
+
+        Returns:
+            set[str | None]: Unique source values, including None for signals
+                without a source; empty if no signals are available.
+        """
+        return {signal.source for signal in (self.get() or [])}
 
     @classmethod
     @typechecked
@@ -198,10 +235,7 @@ class AresDataInterface(ABC):
                         cls.create(
                             file_path=file_path,
                             label_filter=wf_element_value.label_filter,
-                            stepsize=wf_element_value.stepsize,
                             vstack_pattern=wf_element_value.vstack_pattern,
-                            resample_method=wf_element_value.resample_method,
-                            resample_tolerance=wf_element_value.resample_tolerance,
                         )
                         progress.advance()
 
@@ -290,7 +324,7 @@ class AresDataInterface(ABC):
 
     @staticmethod
     @typechecked
-    def _filter_deduplicates(data: list[AresSignal]) -> list[AresSignal]:
+    def _filter_duplicates(data: list[AresSignal]) -> list[AresSignal]:
         """Remove duplicate signals by label, keeping the last occurrence.
 
         When multiple signals with the same label exist in the input list,
@@ -311,6 +345,82 @@ class AresDataInterface(ABC):
                 )
             data_filtered[signal.label] = signal
         return list(data_filtered.values())
+
+    def _get_origin_sources(self) -> set[str | None]:
+        """Return the sources of all origin data objects of this instance.
+
+        Returns:
+            set[str | None]: Distinct signal sources found in the origin data objects.
+        """
+        origin_sources: set[str | None] = set()
+        for origin_hash in self.get_origin_hashes(cache=self.cache):
+            origin_sources.update(self.cache[origin_hash].get_sources())
+        return origin_sources
+
+    @staticmethod
+    @typechecked
+    def _select_by_source_priority(
+        sim_data: list[AresSignal],
+        source_priority: list[str] | None = None,
+        exceptions: set[str | None] | None = None,
+    ) -> list[AresSignal]:
+        """Keep the highest-priority signal for each label.
+
+        If no source matches the priority list, use the first signal. Only warn
+        when that signal's source is not among the warning exceptions.
+
+        Args:
+            sim_data (list[AresSignal]): Signals retrieved for a simulation.
+            source_priority (list[str] | None): Source names ordered from highest to
+                lowest priority. If None, no priority is applied.
+            exceptions (set[str | None] | None): Sources exempt from warnings when
+                an unmatched signal is selected. Defaults to no exceptions.
+
+        Returns:
+            list[AresSignal]: At most one signal per label, selected using the
+                configured source priority.
+        """
+        if source_priority is not None:
+            signals_by_label: dict[str, list[AresSignal]] = {}
+            for signal in sim_data:
+                if signal.label not in signals_by_label:
+                    signals_by_label[signal.label] = []
+                signals_by_label[signal.label].append(signal)
+
+            selected_signals: list[AresSignal] = []
+            for label, candidates in signals_by_label.items():
+                if len(candidates) == 1:
+                    selected_signals.append(candidates[0])
+                    continue
+
+                selected_signal = None
+                for source in source_priority:
+                    for signal in candidates:
+                        if signal.source == source:
+                            selected_signal = signal
+                            break
+                    if selected_signal is not None:
+                        break
+
+                if selected_signal is None:
+                    selected_signal = candidates[0]
+                    if exceptions is None or selected_signal.source not in exceptions:
+                        available_sources = []
+                        for signal in candidates:
+                            if signal.source not in available_sources:
+                                available_sources.append(signal.source)
+                        logger.warning(
+                            f"No signal for label '{label}' matched source priority "
+                            f"{source_priority}. Available sources: {available_sources}. "
+                            f"Using the first signal from source '{selected_signal.source}'."
+                        )
+
+                selected_signals.append(selected_signal)
+
+        else:
+            selected_signals = sim_data
+
+        return selected_signals
 
     @staticmethod
     @error_msg(
@@ -342,10 +452,10 @@ class AresDataInterface(ABC):
         """
         if not data:
             logger.error("Resampling requires at least one input signal.")
-            raise
+            raise ValueError
         elif not stepsize:
             logger.error("Resampling requires a valid stepsize.")
-            raise
+            raise ValueError
 
         latest_start_time = np.float32(0.0)
         earliest_end_time = np.float32(np.inf)
@@ -441,6 +551,8 @@ class AresDataInterface(ABC):
         The first regex group identifies the resulting signal name. Additional
         regex groups identify stacking axes. Signals are stacked into an array
         with time as the first dimension, followed by the configured axes.
+        Only signals with the same source and identical timestamps are stacked
+        together.
 
         The VStackPatternElement consists of the following fields:
             - signal_name: regex pattern used to determine signals for stacking (default: group1)
@@ -485,11 +597,18 @@ class AresDataInterface(ABC):
                 else:
                     group_key = pattern_match.group(1)
 
-                signal_stack_dict[group_key]["signals"].append(signal_match)
-                signal_stack_dict[group_key]["patterns"].append(pattern_match)
+                # signals are only stacked with signals of the same source and timebase
+                stack_key = (
+                    group_key,
+                    signal_match.source,
+                    signal_match.timestamps.tobytes(),
+                )
+                signal_stack_dict[stack_key]["signals"].append(signal_match)
+                signal_stack_dict[stack_key]["patterns"].append(pattern_match)
 
             # iterate over collected groups and stack them to combined signal
-            for signal_name, data_stack in signal_stack_dict.items():
+            for stack_key, data_stack in signal_stack_dict.items():
+                signal_name = stack_key[0]
                 signal_matches = data_stack["signals"]
                 pattern_matches = data_stack["patterns"]
 
@@ -571,6 +690,7 @@ class AresDataInterface(ABC):
         vstack_pattern: list[VStackPatternElement] | None = None,
         resample_method: str | None = None,
         resample_tolerance: int | None = None,
+        source_priority: list[str] | None = None,
         **kwargs,
     ) -> list[AresSignal] | None:
         """Get data from the interface.
@@ -581,6 +701,9 @@ class AresDataInterface(ABC):
             vstack_pattern (list[VStackPatternElement]| None): Pattern (regex) used to stack AresSignal's
             resample_method (str | None): Resampling method for signals. Defaults to None.
             resample_tolerance (int | None): Tolerance for resampling signals. Defaults to None.
+            source_priority (list[str] | None): Source names ordered from highest to lowest priority.
+                If given, only one signal per label is kept. The selection happens before
+                resampling, so discarded duplicates do not influence the common time vector.
             **kwargs (Any): Additional format-specific arguments
 
         Returns:

@@ -232,14 +232,14 @@ class TestAresParamInterfaceCalculateHash:
 
 
 class TestAresParamInterfaceFilterDeduplicates:
-    """Tests for the _filter_deduplicates static method."""
+    """Tests for the _filter_duplicates static method."""
 
     def test_filter_no_duplicates(self):
         params = [
             AresParameter(label="param1", value=np.array(1.0)),
             AresParameter(label="param2", value=np.array(2.0)),
         ]
-        result = AresParamInterface._filter_deduplicates(params)
+        result = AresParamInterface._filter_duplicates(params)
         assert len(result) == 2
         assert [p.label for p in result] == ["param1", "param2"]
 
@@ -248,13 +248,13 @@ class TestAresParamInterfaceFilterDeduplicates:
             AresParameter(label="param1", value=np.array(1.0)),
             AresParameter(label="param1", value=np.array(99.0)),
         ]
-        result = AresParamInterface._filter_deduplicates(params)
+        result = AresParamInterface._filter_duplicates(params)
         assert len(result) == 1
         assert result[0].label == "param1"
         assert np.array_equal(result[0].value, np.array(99.0))
 
     def test_filter_empty_list(self):
-        result = AresParamInterface._filter_deduplicates([])
+        result = AresParamInterface._filter_duplicates([])
         assert result == []
 
     def test_filter_multiple_duplicates(self):
@@ -265,7 +265,7 @@ class TestAresParamInterfaceFilterDeduplicates:
             AresParameter(label="c", value=np.array(4.0)),
             AresParameter(label="b", value=np.array(5.0)),
         ]
-        result = AresParamInterface._filter_deduplicates(params)
+        result = AresParamInterface._filter_duplicates(params)
         assert len(result) == 3
         assert [p.label for p in result] == ["a", "b", "c"]
         assert np.array_equal(result[0].value, np.array(3.0))
@@ -440,3 +440,46 @@ class TestAresParamInterfaceIntegration:
         result = instance.get(label_filter=["param1"])
         assert len(result) == 1
         assert result[0].label == "param1"
+
+
+def _parameter(label, source, value=1.0):
+    """Builds a parameter with the given label and source."""
+    return AresParameter(label=label, value=np.array(value), source=source)
+
+
+def test_select_by_source_priority_uses_highest_priority_source():
+    """Tests that the first listed source wins and unique labels are kept."""
+    parameters = [
+        _parameter("gain", "secondary", 1.0),
+        _parameter("offset", "primary", 2.0),
+        _parameter("gain", "primary", 3.0),
+    ]
+
+    selected = AresParamInterface._select_by_source_priority(
+        parameters=parameters, source_priority=["secondary", "primary"]
+    )
+
+    assert [(p.label, p.source) for p in selected] == [
+        ("gain", "secondary"),
+        ("offset", "primary"),
+    ]
+
+
+def test_select_by_source_priority_warns_and_uses_first_unmatched_source(caplog):
+    """Tests that unmatched duplicate labels warn and retain the first candidate."""
+    parameters = [_parameter("gain", "unlisted_a"), _parameter("gain", "unlisted_b")]
+
+    with caplog.at_level("WARNING"):
+        selected = AresParamInterface._select_by_source_priority(
+            parameters=parameters, source_priority=["primary"]
+        )
+
+    assert selected == [parameters[0]]
+    assert "Using the first parameter from source 'unlisted_a'" in caplog.text
+
+
+def test_select_by_source_priority_without_priority_keeps_all_parameters():
+    """Tests that no priority leaves the parameters untouched."""
+    parameters = [_parameter("gain", "a"), _parameter("gain", "b")]
+
+    assert AresParamInterface._select_by_source_priority(parameters) == parameters

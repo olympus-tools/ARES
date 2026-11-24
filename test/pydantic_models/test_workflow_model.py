@@ -38,12 +38,13 @@ from pathlib import Path
 from typing import ClassVar
 
 import pytest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from ares.core.workflow import Workflow
 from ares.pydantic_models.workflow_model import (
     BaseElement,
     MergeElement,
+    MergeMode,
     PluginElement,
     SimUnitElement,
 )
@@ -71,6 +72,58 @@ def test_runtime_fields_are_reset_to_model_defaults():
     assert element.hash_lists_data == {}
 
 
+def test_merge_mode_defaults_to_none():
+    """Tests that merge mode and the duplicate-data option are unset by default."""
+    element = MergeElement.model_validate({"type": "merge"})
+
+    assert element.merge_mode is None
+    assert element.allow_duplicates_data is None
+
+
+def test_merge_element_allows_duplicate_options():
+    """Tests that merge elements accept the boolean duplicate-data option."""
+    element = MergeElement.model_validate(
+        {
+            "type": "merge",
+            "allow_duplicates_data": True,
+        }
+    )
+
+    assert element.allow_duplicates_data is True
+
+
+def test_merge_element_rejects_duplicate_parameter_option():
+    """Tests that parameters cannot be configured to retain duplicate labels."""
+    with pytest.raises(ValidationError):
+        MergeElement.model_validate(
+            {"type": "merge", "allow_duplicates_parameter": True}
+        )
+
+
+def test_merge_mode_accepts_common_source():
+    """Tests that merge elements accept the shared-source strategy."""
+    element = MergeElement.model_validate(
+        {"type": "merge", "merge_mode": "common_source"}
+    )
+
+    assert element.merge_mode == MergeMode.COMMON_SOURCE
+
+
+def test_sim_unit_resets_user_defined_source_priority():
+    """Tests that source priority is runtime state, not taken from workflow JSON."""
+    element = SimUnitElement.model_validate(
+        {
+            "type": "sim_unit",
+            "file_path": "unit.so",
+            "stepsize": 1,
+            "data_dictionary": "data.json",
+            "source_priority": ["primary", "secondary"],
+        }
+    )
+
+    assert element.source_priority is None
+
+
 @pytest.mark.parametrize(
     "element_type, data",
     [
@@ -94,7 +147,7 @@ def test_runtime_field_registry_is_inherited_by_element_subclasses(
 
     Args:
         element_type (type[BaseModel]): Element model under test.
-        data (dict): Minimal valid element input.
+        data (dict[str, object]): Minimal valid element input.
     """
     data.update(
         {
